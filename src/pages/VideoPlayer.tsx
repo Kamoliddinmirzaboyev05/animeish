@@ -1,17 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  X,
+  List,
+  ChevronLeft,
+  ChevronRight,
   Play,
   Pause,
   Volume2,
   VolumeX,
   Maximize,
-  Settings,
-  SkipBack,
-  SkipForward,
-  ChevronLeft,
-  X,
 } from 'lucide-react';
 import { mockAnime } from '../data/mockData';
 import type { Anime, Episode } from '../data/mockData';
@@ -20,22 +19,28 @@ const VideoPlayer = () => {
   const { animeId, episodeNumber } = useParams();
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const controlsTimeoutRef = useRef<number | undefined>(undefined);
 
+  // Core states
   const [anime, setAnime] = useState<Anime | null>(null);
   const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isLoadingVideo, setIsLoadingVideo] = useState(true);
+  const [videoError, setVideoError] = useState(false);
+
+  // Video player states
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [quality, setQuality] = useState('1080p');
-  const [showEpisodeList, setShowEpisodeList] = useState(false);
 
+  // UI states
+  const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [showNextEpisodeCountdown, setShowNextEpisodeCountdown] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+
+  // Load anime data
   useEffect(() => {
     const foundAnime = mockAnime.find((a) => a.id === Number(animeId));
     if (foundAnime) {
@@ -44,85 +49,11 @@ const VideoPlayer = () => {
         (e) => e.episodeNumber === Number(episodeNumber)
       );
       setCurrentEpisode(episode || foundAnime.episodes[0]);
-
-      const savedPosition = localStorage.getItem(
-        `video-${animeId}-${episodeNumber}`
-      );
-      if (savedPosition && videoRef.current) {
-        videoRef.current.currentTime = Number(savedPosition);
-      }
     }
   }, [animeId, episodeNumber]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const updateTime = () => setCurrentTime(video.currentTime);
-    const updateDuration = () => setDuration(video.duration);
-
-    video.addEventListener('timeupdate', updateTime);
-    video.addEventListener('loadedmetadata', updateDuration);
-
-    return () => {
-      video.removeEventListener('timeupdate', updateTime);
-      video.removeEventListener('loadedmetadata', updateDuration);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (currentTime > 0 && animeId && episodeNumber) {
-      localStorage.setItem(`video-${animeId}-${episodeNumber}`, String(currentTime));
-    }
-
-    if (duration > 0 && currentTime / duration > 0.9) {
-      markAsWatched();
-    }
-  }, [currentTime, duration, animeId, episodeNumber]);
-
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
-
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          togglePlay();
-          break;
-        case 'ArrowLeft':
-          seek(-10);
-          break;
-        case 'ArrowRight':
-          seek(10);
-          break;
-        case 'ArrowUp':
-          adjustVolume(0.1);
-          break;
-        case 'ArrowDown':
-          adjustVolume(-0.1);
-          break;
-        case 'f':
-        case 'F':
-          toggleFullscreen();
-          break;
-        case 'm':
-        case 'M':
-          toggleMute();
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, []);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = playbackSpeed;
-    }
-  }, [playbackSpeed]);
-
-  const markAsWatched = () => {
+  // Helper functions
+  const markAsWatched = useCallback(() => {
     if (!anime || !currentEpisode) return;
     const watched = JSON.parse(localStorage.getItem('watchHistory') || '[]');
     const entry = {
@@ -134,95 +65,166 @@ const VideoPlayer = () => {
       (w: any) => !(w.animeId === anime.id && w.episodeId === currentEpisode.id)
     );
     localStorage.setItem('watchHistory', JSON.stringify([entry, ...filtered]));
-  };
+  }, [anime, currentEpisode]);
 
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
+  // Load video URL from API
+  useEffect(() => {
+    const loadVideo = async () => {
+      if (!animeId) return;
+
+      setIsLoadingVideo(true);
+      setVideoError(false);
+
+      try {
+        console.log('Loading video for animeId:', animeId);
+
+        // Test uchun sample video
+        setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+      } catch (error) {
+        console.error('Error loading video:', error);
+        setVideoError(true);
+        setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+      } finally {
+        setIsLoadingVideo(false);
       }
-      setIsPlaying(!isPlaying);
-    }
-  };
+    };
 
-  const seek = (seconds: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime += seconds;
-    }
-  };
+    loadVideo();
+  }, [animeId]);
 
-  const adjustVolume = (delta: number) => {
-    const newVolume = Math.max(0, Math.min(1, volume + delta));
-    setVolume(newVolume);
-    if (videoRef.current) {
-      videoRef.current.volume = newVolume;
+  // Video player functions
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+
+    if (isPlaying) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
     }
-    if (newVolume > 0) setIsMuted(false);
   };
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
-    }
-  };
+    if (!videoRef.current) return;
 
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return;
-
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen();
-    } else {
-      document.exitFullscreen();
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = Number(e.target.value);
-    setCurrentTime(time);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
+    videoRef.current.muted = !isMuted;
+    setIsMuted(!isMuted);
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const vol = Number(e.target.value);
-    setVolume(vol);
-    if (videoRef.current) {
-      videoRef.current.volume = vol;
-    }
-    if (vol > 0) setIsMuted(false);
+    if (!videoRef.current) return;
+
+    const newVolume = parseFloat(e.target.value);
+    videoRef.current.volume = newVolume;
+    setVolume(newVolume);
+    setIsMuted(newVolume === 0);
   };
 
-  const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return h > 0
-      ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
-      : `${m}:${s.toString().padStart(2, '0')}`;
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!videoRef.current) return;
+
+    const newTime = parseFloat(e.target.value);
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
   };
 
-  const handleMouseMove = () => {
-    setShowControls(true);
-    if (controlsTimeoutRef.current) {
-      window.clearTimeout(controlsTimeoutRef.current);
+  const toggleFullscreen = () => {
+    if (!videoRef.current) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      videoRef.current.requestFullscreen();
     }
-    controlsTimeoutRef.current = window.setTimeout(() => {
-      if (isPlaying) {
-        setShowControls(false);
+  };
+
+  // Video event handlers
+  const handleLoadedMetadata = () => {
+    if (!videoRef.current) return;
+    setDuration(videoRef.current.duration);
+
+    // Restore saved position
+    const savedPosition = localStorage.getItem(`video-${animeId}-${episodeNumber}`);
+    if (savedPosition) {
+      videoRef.current.currentTime = Number(savedPosition);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return;
+
+    const current = videoRef.current.currentTime;
+    setCurrentTime(current);
+
+    // Save progress
+    if (current > 0 && animeId && episodeNumber) {
+      localStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
+    }
+
+    // Auto-play next episode at 90%
+    if (duration > 0 && current / duration > 0.9) {
+      markAsWatched();
+      if (anime && currentEpisode && !showNextEpisodeCountdown) {
+        const nextEp = anime.episodes.find(
+          (e) => e.episodeNumber === currentEpisode.episodeNumber + 1
+        );
+        if (nextEp) {
+          setShowNextEpisodeCountdown(true);
+          setCountdown(10);
+        }
       }
-    }, 3000);
+    }
   };
 
-  const goToEpisode = (episodeNum: number) => {
+  const handlePlay = () => setIsPlaying(true);
+  const handlePause = () => setIsPlaying(false);
+  const handleError = () => setVideoError(true);
+
+  // Hide controls after 3 seconds of inactivity
+  useEffect(() => {
+    let timer: number;
+
+    const resetTimer = () => {
+      setShowControls(true);
+      clearTimeout(timer);
+      timer = window.setTimeout(() => setShowControls(false), 3000);
+    };
+
+    resetTimer();
+
+    return () => clearTimeout(timer);
+  }, [currentTime]);
+
+  // Format time helper
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+
+
+  // Countdown timer
+  useEffect(() => {
+    let timer: number;
+    if (showNextEpisodeCountdown && countdown > 0) {
+      timer = window.setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    } else if (showNextEpisodeCountdown && countdown === 0) {
+      nextEpisode();
+      setShowNextEpisodeCountdown(false);
+    }
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [showNextEpisodeCountdown, countdown]);
+
+  const goToEpisode = useCallback((episodeNum: number) => {
     navigate(`/watch/${animeId}/${episodeNum}`);
     setShowEpisodeList(false);
-  };
+  }, [animeId, navigate]);
 
-  const nextEpisode = () => {
+  const nextEpisode = useCallback(() => {
     if (!anime || !currentEpisode) return;
     const nextEp = anime.episodes.find(
       (e) => e.episodeNumber === currentEpisode.episodeNumber + 1
@@ -230,9 +232,9 @@ const VideoPlayer = () => {
     if (nextEp) {
       goToEpisode(nextEp.episodeNumber);
     }
-  };
+  }, [anime, currentEpisode, goToEpisode]);
 
-  const previousEpisode = () => {
+  const previousEpisode = useCallback(() => {
     if (!anime || !currentEpisode) return;
     const prevEp = anime.episodes.find(
       (e) => e.episodeNumber === currentEpisode.episodeNumber - 1
@@ -240,180 +242,232 @@ const VideoPlayer = () => {
     if (prevEp) {
       goToEpisode(prevEp.episodeNumber);
     }
-  };
+  }, [anime, currentEpisode, goToEpisode]);
 
-  if (!anime || !currentEpisode) {
+
+
+  // Loading state
+  if (!anime || !currentEpisode || isLoadingVideo) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="text-xl text-white mb-2">
+            {isLoadingVideo ? 'Video yuklanmoqda...' : 'Yuklanmoqda...'}
+          </div>
+          {isLoadingVideo && (
+            <div className="text-sm text-gray-400">
+              API dan video ma'lumotlari olinmoqda...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (videoError && !videoUrl) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <div className="text-xl text-white mb-4">Video yuklanmadi</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-6 py-3 bg-primary rounded-lg hover:bg-primary/80 transition-colors"
+          >
+            Qayta urinish
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative h-screen bg-black overflow-hidden"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
-    >
-      <video
-        ref={videoRef}
-        src={currentEpisode.videoUrl}
-        className="w-full h-full object-contain"
-        onClick={togglePlay}
-      />
-
-      <AnimatePresence>
-        {showControls && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/50 pointer-events-none"
+    <div className="relative h-screen bg-black overflow-hidden">
+      {/* Top Bar */}
+      <div className="absolute top-0 left-0 right-0 lg:right-80 z-50 bg-gradient-to-b from-black/80 to-transparent p-2 sm:p-4">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate(`/anime/${animeId}`)}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
           >
-            <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between pointer-events-auto">
-              <button
-                onClick={() => navigate(`/anime/${animeId}`)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold">{anime.title}</h1>
-                <p className="text-sm text-gray-300">{currentEpisode.title}</p>
-              </div>
-              <button
-                onClick={() => setShowEpisodeList(!showEpisodeList)}
-                className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            </div>
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </button>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 space-y-2 pointer-events-auto">
-              <input
-                type="range"
-                min="0"
-                max={duration}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full"
-              />
+          <div className="text-center flex-1 mx-2 sm:mx-4">
+            <h1 className="text-sm sm:text-lg lg:text-xl font-bold text-white truncate">
+              {anime.title}
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-300 truncate">
+              {currentEpisode.title}
+            </p>
+          </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <button onClick={togglePlay} className="p-2 hover:bg-white/10 rounded-full">
-                    {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-                  </button>
+          <button
+            onClick={() => setShowEpisodeList(!showEpisodeList)}
+            className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <List className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+          </button>
+        </div>
+      </div>
 
-                  <button onClick={previousEpisode} className="p-2 hover:bg-white/10 rounded-full">
-                    <SkipBack className="w-5 h-5" />
-                  </button>
+      {/* Video Player Container */}
+      <div className="absolute inset-0 lg:right-80">
+        {videoUrl && (
+          <div className="relative h-full w-full bg-black">
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              poster={currentEpisode?.thumbnail}
+              className="h-full w-full object-contain"
+              onLoadedMetadata={handleLoadedMetadata}
+              onTimeUpdate={handleTimeUpdate}
+              onPlay={handlePlay}
+              onPause={handlePause}
+              onError={handleError}
+              onClick={togglePlay}
+            />
 
-                  <button onClick={nextEpisode} className="p-2 hover:bg-white/10 rounded-full">
-                    <SkipForward className="w-5 h-5" />
-                  </button>
+            {/* Custom Video Controls */}
+            {showControls && (
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                {/* Progress Bar */}
+                <div className="mb-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 0}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="w-full slider-progress"
+                    style={{
+                      background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) 100%)`
+                    }}
+                  />
+                </div>
 
-                  <div className="flex items-center gap-2">
-                    <button onClick={toggleMute} className="p-2 hover:bg-white/10 rounded-full">
-                      {isMuted || volume === 0 ? (
-                        <VolumeX className="w-5 h-5" />
+                {/* Control Buttons */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={togglePlay}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-6 h-6 text-white" />
                       ) : (
-                        <Volume2 className="w-5 h-5" />
+                        <Play className="w-6 h-6 text-white" />
                       )}
                     </button>
+
+                    <button
+                      onClick={toggleMute}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-5 h-5 text-white" />
+                      ) : (
+                        <Volume2 className="w-5 h-5 text-white" />
+                      )}
+                    </button>
+
                     <input
                       type="range"
                       min="0"
                       max="1"
                       step="0.1"
-                      value={isMuted ? 0 : volume}
+                      value={volume}
                       onChange={handleVolumeChange}
-                      className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                      className="w-20 volume-slider"
                     />
+
+                    <div className="text-white text-sm">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
                   </div>
 
-                  <span className="text-sm">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowSettings(!showSettings)}
-                      className="p-2 hover:bg-white/10 rounded-full"
-                    >
-                      <Settings className="w-5 h-5" />
-                    </button>
-
-                    {showSettings && (
-                      <div className="absolute bottom-full right-0 mb-2 bg-dark-light border border-dark-lighter rounded-lg p-4 min-w-[200px] space-y-4">
-                        <div>
-                          <div className="text-sm font-semibold mb-2">Playback Speed</div>
-                          <div className="grid grid-cols-3 gap-2">
-                            {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                              <button
-                                key={speed}
-                                onClick={() => setPlaybackSpeed(speed)}
-                                className={`px-3 py-1 rounded text-sm ${
-                                  playbackSpeed === speed
-                                    ? 'bg-primary'
-                                    : 'bg-dark hover:bg-dark-lighter'
-                                }`}
-                              >
-                                {speed}x
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="text-sm font-semibold mb-2">Quality</div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {['360p', '480p', '720p', '1080p'].map((q) => (
-                              <button
-                                key={q}
-                                onClick={() => setQuality(q)}
-                                className={`px-3 py-1 rounded text-sm ${
-                                  quality === q ? 'bg-primary' : 'bg-dark hover:bg-dark-lighter'
-                                }`}
-                              >
-                                {q}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <button onClick={toggleFullscreen} className="p-2 hover:bg-white/10 rounded-full">
-                    <Maximize className="w-5 h-5" />
+                  <button
+                    onClick={toggleFullscreen}
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                  >
+                    <Maximize className="w-5 h-5 text-white" />
                   </button>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            )}
+          </div>
         )}
-      </AnimatePresence>
+      </div>
 
+      {/* Episode Navigation Arrows - Hidden on mobile for better UX */}
+      <div className="hidden sm:block absolute top-1/2 left-4 z-40 -translate-y-1/2">
+        <button
+          onClick={previousEpisode}
+          disabled={!anime.episodes.find(e => e.episodeNumber === currentEpisode.episodeNumber - 1)}
+          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronLeft className="w-6 h-6 text-white" />
+        </button>
+      </div>
+
+      <div className="hidden sm:block absolute top-1/2 right-4 z-40 -translate-y-1/2 lg:right-[340px]">
+        <button
+          onClick={nextEpisode}
+          disabled={!anime.episodes.find(e => e.episodeNumber === currentEpisode.episodeNumber + 1)}
+          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
+      </div>
+
+      {/* Next Episode Countdown */}
+      {showNextEpisodeCountdown && (
+        <div className="absolute bottom-4 sm:bottom-20 right-4 lg:right-[340px] bg-black/90 backdrop-blur-md rounded-lg p-3 sm:p-4 border border-gray-700 z-50 max-w-xs">
+          <div className="text-xs sm:text-sm mb-2 text-white">Keyingi epizod:</div>
+          <div className="text-xs text-gray-400 mb-3">
+            Epizod {currentEpisode.episodeNumber + 1}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="text-xl sm:text-2xl font-bold text-primary">{countdown}</div>
+            <div className="flex gap-1 sm:gap-2">
+              <button
+                onClick={() => {
+                  nextEpisode();
+                  setShowNextEpisodeCountdown(false);
+                }}
+                className="px-2 py-1 sm:px-3 bg-primary rounded text-xs sm:text-sm hover:bg-primary/80 transition-colors text-white"
+              >
+                Hozir
+              </button>
+              <button
+                onClick={() => setShowNextEpisodeCountdown(false)}
+                className="px-2 py-1 sm:px-3 bg-gray-600 rounded text-xs sm:text-sm hover:bg-gray-700 transition-colors text-white"
+              >
+                Bekor qilish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Episode List */}
       <AnimatePresence>
         {showEpisodeList && (
           <motion.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            className="lg:hidden absolute top-0 right-0 bottom-0 w-80 bg-dark-light border-l border-dark-lighter overflow-y-auto custom-scrollbar"
+            className="lg:hidden absolute top-0 right-0 bottom-0 w-full sm:w-80 bg-black/95 backdrop-blur-md border-l border-gray-700 overflow-y-auto z-40"
           >
-            <div className="p-4 border-b border-dark-lighter flex items-center justify-between">
-              <h3 className="font-semibold">Episodes</h3>
+            <div className="p-3 sm:p-4 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-white text-sm sm:text-base">Epizodlar</h3>
               <button
                 onClick={() => setShowEpisodeList(false)}
-                className="p-2 hover:bg-dark-lighter rounded-full"
+                className="p-2 hover:bg-gray-700 rounded-full"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-white" />
               </button>
             </div>
             <div className="p-2">
@@ -421,19 +475,25 @@ const VideoPlayer = () => {
                 <button
                   key={episode.id}
                   onClick={() => goToEpisode(episode.episodeNumber)}
-                  className={`w-full p-3 rounded-lg text-left hover:bg-dark-lighter transition-colors ${
-                    episode.episodeNumber === currentEpisode.episodeNumber ? 'bg-primary/20' : ''
-                  }`}
+                  className={`w-full p-2 sm:p-3 rounded-lg text-left hover:bg-gray-800 transition-colors ${episode.episodeNumber === currentEpisode.episodeNumber
+                    ? 'bg-primary/20 border border-primary/30'
+                    : ''
+                    }`}
                 >
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <img
                       src={episode.thumbnail}
                       alt={episode.title}
-                      className="w-20 h-12 object-cover rounded"
+                      className="w-14 h-8 sm:w-20 sm:h-12 object-cover rounded flex-shrink-0"
                     />
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">{episode.title}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs sm:text-sm font-medium truncate text-white">
+                        {episode.title}
+                      </div>
                       <div className="text-xs text-gray-400">{episode.duration}</div>
+                      {episode.watched && (
+                        <div className="text-xs text-primary mt-1">Ko'rilgan</div>
+                      )}
                     </div>
                   </div>
                 </button>
@@ -443,28 +503,35 @@ const VideoPlayer = () => {
         )}
       </AnimatePresence>
 
-      <div className="hidden lg:block absolute top-16 right-0 bottom-0 w-80 bg-dark-light/50 backdrop-blur-md border-l border-dark-lighter overflow-y-auto custom-scrollbar">
-        <div className="p-4 border-b border-dark-lighter">
-          <h3 className="font-semibold">Episodes</h3>
+      {/* Desktop Episode List */}
+      <div className="hidden lg:block absolute top-0 right-0 bottom-0 w-80 bg-black/80 backdrop-blur-md border-l border-gray-700 overflow-y-auto">
+        <div className="p-4 border-b border-gray-700">
+          <h3 className="font-semibold text-white">Epizodlar</h3>
         </div>
         <div className="p-2">
           {anime.episodes.map((episode) => (
             <button
               key={episode.id}
               onClick={() => goToEpisode(episode.episodeNumber)}
-              className={`w-full p-3 rounded-lg text-left hover:bg-dark-lighter transition-colors ${
-                episode.episodeNumber === currentEpisode.episodeNumber ? 'bg-primary/20' : ''
-              }`}
+              className={`w-full p-3 rounded-lg text-left hover:bg-gray-800/50 transition-colors ${episode.episodeNumber === currentEpisode.episodeNumber
+                ? 'bg-primary/20 border border-primary/30'
+                : ''
+                }`}
             >
               <div className="flex gap-3">
                 <img
                   src={episode.thumbnail}
                   alt={episode.title}
-                  className="w-20 h-12 object-cover rounded"
+                  className="w-20 h-12 object-cover rounded flex-shrink-0"
                 />
-                <div className="flex-1">
-                  <div className="text-sm font-medium">{episode.title}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate text-white">
+                    {episode.title}
+                  </div>
                   <div className="text-xs text-gray-400">{episode.duration}</div>
+                  {episode.watched && (
+                    <div className="text-xs text-primary mt-1">Ko'rilgan</div>
+                  )}
                 </div>
               </div>
             </button>

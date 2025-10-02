@@ -47,13 +47,13 @@ const Navbar = () => {
 
             <div className="hidden md:flex items-center gap-6">
               <Link to="/home" className="text-sm hover:text-primary transition-colors">
-                Home
+                Bosh Sahifa
               </Link>
               <Link to="/search" className="text-sm hover:text-primary transition-colors">
-                Browse
+                Qidirish
               </Link>
               <Link to="/my-list" className="text-sm hover:text-primary transition-colors">
-                My List
+                Mening Ro'yxatim
               </Link>
             </div>
           </div>
@@ -65,7 +65,7 @@ const Navbar = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search anime..."
+                  placeholder="Anime qidirish..."
                   className="bg-dark-light border border-dark-lighter rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors w-64"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -89,14 +89,14 @@ const Navbar = () => {
                   to="/profile"
                   className="block px-4 py-3 hover:bg-dark-lighter transition-colors"
                 >
-                  Profile
+                  Profil
                 </Link>
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-3 hover:bg-dark-lighter transition-colors flex items-center gap-2 text-red-400"
                 >
                   <LogOut className="w-4 h-4" />
-                  Logout
+                  Chiqish
                 </button>
               </div>
             </div>
@@ -126,7 +126,7 @@ const Navbar = () => {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search anime..."
+                    placeholder="Anime qidirish..."
                     className="bg-dark border border-dark-lighter rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors w-full"
                   />
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -138,35 +138,35 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 hover:text-primary transition-colors"
               >
-                Home
+                Bosh Sahifa
               </Link>
               <Link
                 to="/search"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 hover:text-primary transition-colors"
               >
-                Browse
+                Qidirish
               </Link>
               <Link
                 to="/my-list"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 hover:text-primary transition-colors"
               >
-                My List
+                Mening Ro'yxatim
               </Link>
               <Link
                 to="/profile"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block py-2 hover:text-primary transition-colors"
               >
-                Profile
+                Profil
               </Link>
               <button
                 onClick={handleLogout}
                 className="w-full text-left py-2 text-red-400 flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
-                Logout
+                Chiqish
               </button>
             </div>
           </motion.div>

@@ -1,6 +1,10 @@
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
 
 @layer base {
   body {
@@ -54,5 +58,208 @@
   
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-primary-dark;
+  }
+
+  /* Video Player Styles */
+  .video-controls {
+    @apply transition-opacity duration-300;
+  }
+
+  .video-controls.hidden {
+    @apply opacity-0 pointer-events-none;
+  }
+
+  /* Range Input Styles */
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-track {
+    @apply bg-gray-600 rounded-lg;
+    height: 4px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    @apply bg-primary rounded-full;
+    height: 16px;
+    width: 16px;
+    margin-top: -6px;
+  }
+
+  input[type="range"]::-moz-range-track {
+    @apply bg-gray-600 rounded-lg;
+    height: 4px;
+    border: none;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    @apply bg-primary rounded-full border-0;
+    height: 16px;
+    width: 16px;
+  }
+
+  /* Progress Slider Styles */
+  .slider-progress {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .slider-progress::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #8B5CF6;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .slider-progress::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #8B5CF6;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Volume Slider */
+  .volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(75, 85, 99, 0.5);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+  }
+
+  .volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 640px) {
+    .slider-progress {
+      height: 8px;
+    }
+    
+    .slider-progress::-webkit-slider-thumb {
+      width: 20px;
+      height: 20px;
+    }
+
+    .slider-progress::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  /* Disabled button styles */
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Plyr Custom Styles */
+  .plyr {
+    --plyr-color-main: #8B5CF6;
+    --plyr-video-background: #000;
+    --plyr-menu-background: rgba(24, 24, 27, 0.95);
+    --plyr-menu-color: #fff;
+    --plyr-control-icon-size: 18px;
+    --plyr-control-spacing: 10px;
+    --plyr-progress-loading-size: 25px;
+    --plyr-progress-loading-background: rgba(255, 255, 255, 0.25);
+  }
+
+  .plyr--video {
+    background: #000;
+  }
+
+  .plyr__control--overlaid {
+    background: rgba(139, 92, 246, 0.9);
+    border: none;
+  }
+
+  .plyr__control--overlaid:hover {
+    background: rgba(139, 92, 246, 1);
+  }
+
+  .plyr__menu {
+    color: white;
+    background: rgba(24, 24, 27, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  .plyr__menu__container {
+    background: rgba(24, 24, 27, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  .plyr__control[aria-expanded="true"] {
+    background: var(--plyr-color-main);
+  }
+
+  .plyr__progress__buffer {
+    color: rgba(139, 92, 246, 0.25);
+  }
+
+  .plyr__volume__input,
+  .plyr__progress__input {
+    color: var(--plyr-color-main);
+  }
+
+  .plyr__captions {
+    font-size: 1.2em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  }
+
+  .plyr__controls {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+    padding: 20px;
+  }
+
+  .plyr__control {
+    color: white;
+  }
+
+  .plyr__control:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .plyr__tooltip {
+    background: rgba(24, 24, 27, 0.9);
+    color: white;
+    border: 1px solid rgba(75, 85, 99, 0.3);
   }
 }

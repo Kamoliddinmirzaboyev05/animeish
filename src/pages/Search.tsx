@@ -5,6 +5,7 @@ import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import { mockAnime } from '../data/mockData';
+import { translateGenres } from '../utils/translations';
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -90,7 +91,7 @@ const Search = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search anime..."
+                placeholder="Anime qidirish..."
                 className="w-full bg-dark-light border border-dark-lighter rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:border-primary transition-colors"
               />
               <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -105,14 +106,14 @@ const Search = () => {
 
           <div className="flex items-center gap-4 text-sm text-gray-400">
             <span>
-              {filteredAnime.length} {filteredAnime.length === 1 ? 'result' : 'results'}
+              {filteredAnime.length} ta natija
             </span>
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
                 className="text-primary hover:text-primary-light transition-colors"
               >
-                Reset filters
+                Filtrlarni tozalash
               </button>
             )}
           </div>
@@ -129,7 +130,7 @@ const Search = () => {
               >
                 <div className="lg:sticky lg:top-24">
                   <div className="flex items-center justify-between mb-6 lg:hidden">
-                    <h2 className="text-xl font-bold">Filters</h2>
+                    <h2 className="text-xl font-bold">Filtrlar</h2>
                     <button
                       onClick={() => setShowFilters(false)}
                       className="p-2 hover:bg-dark-light rounded-full"
@@ -140,7 +141,7 @@ const Search = () => {
 
                   <div className="space-y-6">
                     <div>
-                      <h3 className="font-semibold mb-3">Genre</h3>
+                      <h3 className="font-semibold mb-3">Janr</h3>
                       <div className="space-y-2">
                         {allGenres.map((genre) => (
                           <label
@@ -154,7 +155,7 @@ const Search = () => {
                               className="w-4 h-4 rounded border-dark-lighter bg-dark-light checked:bg-primary focus:ring-0 focus:ring-offset-0"
                             />
                             <span className="text-sm group-hover:text-primary transition-colors">
-                              {genre}
+                              {translateGenres([genre])[0]}
                             </span>
                           </label>
                         ))}
@@ -162,10 +163,10 @@ const Search = () => {
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-3">Year</h3>
+                      <h3 className="font-semibold mb-3">Yil</h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="text-sm text-gray-400">From</label>
+                          <label className="text-sm text-gray-400">Dan</label>
                           <input
                             type="number"
                             min="2000"
@@ -178,7 +179,7 @@ const Search = () => {
                           />
                         </div>
                         <div>
-                          <label className="text-sm text-gray-400">To</label>
+                          <label className="text-sm text-gray-400">Gacha</label>
                           <input
                             type="number"
                             min="2000"
@@ -194,7 +195,7 @@ const Search = () => {
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-3">Minimum Rating</h3>
+                      <h3 className="font-semibold mb-3">Minimal Reyting</h3>
                       <div className="space-y-2">
                         <input
                           type="range"
@@ -214,7 +215,7 @@ const Search = () => {
                     </div>
 
                     <div>
-                      <h3 className="font-semibold mb-3">Status</h3>
+                      <h3 className="font-semibold mb-3">Holat</h3>
                       <div className="space-y-2">
                         {['', 'Ongoing', 'Completed', 'Upcoming'].map((status) => (
                           <label key={status} className="flex items-center gap-2 cursor-pointer group">
@@ -226,7 +227,7 @@ const Search = () => {
                               className="w-4 h-4 border-dark-lighter bg-dark-light checked:bg-primary focus:ring-0 focus:ring-offset-0"
                             />
                             <span className="text-sm group-hover:text-primary transition-colors">
-                              {status || 'All'}
+                              {status === '' ? 'Barchasi' : status === 'Ongoing' ? 'Davom etmoqda' : status === 'Completed' ? 'Tugallangan' : status === 'Upcoming' ? 'Tez orada' : status}
                             </span>
                           </label>
                         ))}
@@ -238,13 +239,13 @@ const Search = () => {
                         onClick={() => setShowFilters(false)}
                         className="w-full px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors lg:hidden"
                       >
-                        Apply Filters
+                        Filtrlarni Qo'llash
                       </button>
                       <button
                         onClick={resetFilters}
                         className="w-full px-4 py-2 bg-dark-light rounded-lg hover:bg-dark-lighter transition-colors"
                       >
-                        Reset
+                        Tozalash
                       </button>
                     </div>
                   </div>
@@ -270,9 +271,9 @@ const Search = () => {
                 <div className="w-24 h-24 bg-dark-light rounded-full flex items-center justify-center mb-6">
                   <SearchIcon className="w-12 h-12 text-gray-600" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">No results found</h2>
+                <h2 className="text-2xl font-bold mb-2">Hech narsa topilmadi</h2>
                 <p className="text-gray-400 mb-6">
-                  Try adjusting your search or filters
+                  Qidiruv yoki filtrlarni o'zgartirib ko'ring
                 </p>
               </motion.div>
             ) : (

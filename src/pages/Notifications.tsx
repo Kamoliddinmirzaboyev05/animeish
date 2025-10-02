@@ -20,8 +20,8 @@ const mockNotifications: Notification[] = [
   {
     id: 1,
     type: 'new-episode',
-    title: 'New Episode Available',
-    message: 'Attack on Titan - Episode 26 is now available to watch!',
+    title: 'Yangi Epizod Mavjud',
+    message: 'Attack on Titan - 26-epizod tomosha qilish uchun tayyor!',
     timestamp: Date.now() - 1000 * 60 * 30,
     read: false,
     animeId: 2,
@@ -30,8 +30,8 @@ const mockNotifications: Notification[] = [
   {
     id: 2,
     type: 'new-episode',
-    title: 'New Episode Available',
-    message: 'My Hero Academia - Episode 26 is now available to watch!',
+    title: 'Yangi Epizod Mavjud',
+    message: 'My Hero Academia - 26-epizod tomosha qilish uchun tayyor!',
     timestamp: Date.now() - 1000 * 60 * 60 * 2,
     read: false,
     animeId: 3,
@@ -40,8 +40,8 @@ const mockNotifications: Notification[] = [
   {
     id: 3,
     type: 'recommendation',
-    title: 'Recommended for You',
-    message: 'Based on your watch history, you might like "Hunter x Hunter"',
+    title: 'Siz Uchun Tavsiya',
+    message: 'Tomosha tarixingizga asoslanib, sizga "Hunter x Hunter" yoqishi mumkin',
     timestamp: Date.now() - 1000 * 60 * 60 * 5,
     read: true,
     animeId: 12,
@@ -49,16 +49,16 @@ const mockNotifications: Notification[] = [
   {
     id: 4,
     type: 'system',
-    title: 'New Features Available',
-    message: 'We\'ve added new video quality options and playback speed controls!',
+    title: 'Yangi Xususiyatlar',
+    message: 'Biz yangi video sifat tanlovlari va tomosha tezligi boshqaruvini qo\'shdik!',
     timestamp: Date.now() - 1000 * 60 * 60 * 12,
     read: true,
   },
   {
     id: 5,
     type: 'new-episode',
-    title: 'New Episode Available',
-    message: 'Jujutsu Kaisen - Episode 25 is now available to watch!',
+    title: 'Yangi Epizod Mavjud',
+    message: 'Jujutsu Kaisen - 25-epizod tomosha qilish uchun tayyor!',
     timestamp: Date.now() - 1000 * 60 * 60 * 24,
     read: true,
     animeId: 4,
@@ -67,8 +67,8 @@ const mockNotifications: Notification[] = [
   {
     id: 6,
     type: 'recommendation',
-    title: 'Recommended for You',
-    message: 'You might enjoy "Steins;Gate" based on your preferences',
+    title: 'Siz Uchun Tavsiya',
+    message: 'Afzalliklaringizga asoslanib, sizga "Steins;Gate" yoqishi mumkin',
     timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2,
     read: true,
     animeId: 11,
@@ -76,16 +76,16 @@ const mockNotifications: Notification[] = [
   {
     id: 7,
     type: 'system',
-    title: 'Maintenance Scheduled',
-    message: 'Platform will be under maintenance on Jan 15, 2024 from 2-4 AM',
+    title: 'Texnik Ishlar Rejalashtirilgan',
+    message: 'Platforma 15-yanvar 2024 yil soat 2:00-4:00 da texnik ishlar olib boriladi',
     timestamp: Date.now() - 1000 * 60 * 60 * 24 * 3,
     read: true,
   },
   {
     id: 8,
     type: 'new-episode',
-    title: 'New Episode Available',
-    message: 'Demon Slayer - Episode 27 is now available to watch!',
+    title: 'Yangi Epizod Mavjud',
+    message: 'Demon Slayer - 27-epizod tomosha qilish uchun tayyor!',
     timestamp: Date.now() - 1000 * 60 * 60 * 24 * 4,
     read: true,
     animeId: 1,
@@ -147,9 +147,9 @@ const Notifications = () => {
         >
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Notifications</h1>
+              <h1 className="text-3xl font-bold mb-2">Bildirishnomalar</h1>
               <p className="text-gray-400">
-                {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'All caught up!'}
+                {unreadCount > 0 ? `${unreadCount} ta o'qilmagan bildirishnoma` : 'Hammasi o\'qilgan!'}
               </p>
             </div>
             {unreadCount > 0 && (
@@ -158,7 +158,7 @@ const Notifications = () => {
                 className="px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
-                Mark all as read
+                Barchasini O'qilgan Deb Belgilash
               </button>
             )}
           </div>
@@ -172,7 +172,7 @@ const Notifications = () => {
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              All
+              Barchasi
             </button>
             <button
               onClick={() => setFilter('new-episode')}
@@ -182,7 +182,7 @@ const Notifications = () => {
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              New Episodes
+              Yangi Epizodlar
             </button>
             <button
               onClick={() => setFilter('recommendation')}
@@ -192,7 +192,7 @@ const Notifications = () => {
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              Recommendations
+              Tavsiyalar
             </button>
             <button
               onClick={() => setFilter('system')}
@@ -202,7 +202,7 @@ const Notifications = () => {
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              System Updates
+              Tizim Yangiliklari
             </button>
           </div>
         </motion.div>
@@ -262,9 +262,9 @@ const Notifications = () => {
               <div className="w-24 h-24 bg-dark-light rounded-full flex items-center justify-center mb-6">
                 <Bell className="w-12 h-12 text-gray-600" />
               </div>
-              <h2 className="text-2xl font-bold mb-2">No notifications</h2>
+              <h2 className="text-2xl font-bold mb-2">Bildirishnomalar yo'q</h2>
               <p className="text-gray-400">
-                You don't have any {filter !== 'all' ? filter.replace('-', ' ') : ''} notifications
+                Sizda {filter !== 'all' ? (filter === 'new-episode' ? 'yangi epizod' : filter === 'recommendation' ? 'tavsiya' : 'tizim yangiligi') : ''} bildirishnomalari yo'q
               </p>
             </motion.div>
           )}

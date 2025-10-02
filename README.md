@@ -36,18 +36,24 @@ A modern, full-featured anime streaming platform built with React 18, TypeScript
 - Add to My List functionality
 
 **Video Player:**
-- Custom video controls
+- Custom responsive video controls
 - Play/Pause, Timeline scrubber
-- Volume slider
+- Volume slider with mute toggle
 - Playback speed selector (0.5x - 2x)
 - Quality selector (360p - 1080p)
 - Fullscreen toggle
+- Picture-in-Picture support
 - Next/Previous episode buttons
-- Episode playlist sidebar (collapsible)
+- Episode playlist sidebar (collapsible on mobile)
 - Auto-hide controls (3 seconds)
-- Keyboard shortcuts (Space, Arrows, F, M)
+- Touch gestures (swipe to seek/volume)
+- Double-tap to play/pause
+- Auto-play next episode with countdown
+- Keyboard shortcuts (Space, Arrows, F, M, P)
 - Playback position saving
-- Auto-mark as watched
+- Auto-mark as watched (90% completion)
+- Loading states and error handling
+- Mobile-optimized controls
 
 **My List Page:**
 - Grid of saved anime
@@ -102,10 +108,16 @@ npm install
 ### Development
 
 ```bash
+# Quick start with script
+./start.sh
+
+# Or manually
 npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+**Video Source:** The app uses `/public/video.mp4` for all episodes. Replace with your video files or API integration.
 
 ### Build for Production
 
@@ -187,6 +199,13 @@ Create a new account or use test credentials after registering.
 - `↑ ↓` - Volume up/down
 - `F` - Fullscreen
 - `M` - Mute/Unmute
+- `P` - Picture-in-Picture
+
+## Touch Gestures (Mobile)
+
+- **Double-tap** - Play/Pause
+- **Swipe left/right** - Seek backward/forward (10s)
+- **Swipe up/down** - Volume up/down
 
 ## Responsive Breakpoints
 

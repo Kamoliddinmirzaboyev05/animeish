@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import AnimeSlider from '../components/AnimeSlider';
 import { mockAnime } from '../data/mockData';
+import { translateStatus, translateGenres } from '../utils/translations';
 
 const AnimeDetail = () => {
   const { id } = useParams();
@@ -31,7 +32,7 @@ const AnimeDetail = () => {
   };
 
   if (!anime) {
-    return <div className="min-h-screen flex items-center justify-center">Anime not found</div>;
+    return <div className="min-h-screen flex items-center justify-center">Anime topilmadi</div>;
   }
 
   const relatedAnime = mockAnime
@@ -72,11 +73,11 @@ const AnimeDetail = () => {
                   <span className="text-gray-400">•</span>
                   <div className="flex items-center gap-2">
                     <Film className="w-5 h-5" />
-                    <span>{anime.totalEpisodes} Episodes</span>
+                    <span>{anime.totalEpisodes} Epizod</span>
                   </div>
                   <span className="text-gray-400">•</span>
                   <span className="px-3 py-1 bg-primary/20 text-primary rounded-full text-sm">
-                    {anime.status}
+                    {translateStatus(anime.status)}
                   </span>
                 </div>
                 <div className="flex gap-3">
@@ -85,7 +86,7 @@ const AnimeDetail = () => {
                     className="px-8 py-3 bg-primary hover:bg-primary-dark rounded-full font-semibold flex items-center gap-2 transition-colors"
                   >
                     <Play className="w-5 h-5 fill-white" />
-                    Watch Now
+                    Hozir Tomosha Qilish
                   </Link>
                   <button
                     onClick={toggleSaved}
@@ -96,7 +97,7 @@ const AnimeDetail = () => {
                     }`}
                   >
                     <Heart className={`w-5 h-5 ${isSaved ? 'fill-primary' : ''}`} />
-                    {isSaved ? 'In My List' : 'Add to My List'}
+                    {isSaved ? 'Ro\'yxatimda' : 'Ro\'yxatga Qo\'shish'}
                   </button>
                 </div>
               </motion.div>
@@ -107,15 +108,15 @@ const AnimeDetail = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid lg:grid-cols-3 gap-8 mb-12">
             <div className="lg:col-span-2">
-              <h2 className="text-2xl font-bold mb-4">Synopsis</h2>
+              <h2 className="text-2xl font-bold mb-4">Qisqacha Mazmun</h2>
               <p className="text-gray-300 leading-relaxed mb-6">{anime.description}</p>
               
               <div className="mb-6">
-                <h3 className="text-xl font-bold mb-3">Genres</h3>
+                <h3 className="text-xl font-bold mb-3">Janrlar</h3>
                 <div className="flex flex-wrap gap-2">
-                  {anime.genres.map((genre) => (
+                  {translateGenres(anime.genres).map((genre, index) => (
                     <span
-                      key={genre}
+                      key={anime.genres[index]}
                       className="px-4 py-2 bg-dark-light border border-dark-lighter rounded-full hover:border-primary transition-colors"
                     >
                       {genre}
@@ -127,22 +128,22 @@ const AnimeDetail = () => {
 
             <div>
               <div className="bg-dark-light border border-dark-lighter rounded-lg p-6">
-                <h3 className="text-xl font-bold mb-4">Information</h3>
+                <h3 className="text-xl font-bold mb-4">Ma'lumot</h3>
                 <div className="space-y-3 text-sm">
                   <div>
-                    <span className="text-gray-400">Status:</span>
-                    <span className="ml-2 font-semibold">{anime.status}</span>
+                    <span className="text-gray-400">Holat:</span>
+                    <span className="ml-2 font-semibold">{translateStatus(anime.status)}</span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Episodes:</span>
+                    <span className="text-gray-400">Epizodlar:</span>
                     <span className="ml-2 font-semibold">{anime.totalEpisodes}</span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Year:</span>
+                    <span className="text-gray-400">Yil:</span>
                     <span className="ml-2 font-semibold">{anime.year}</span>
                   </div>
                   <div>
-                    <span className="text-gray-400">Rating:</span>
+                    <span className="text-gray-400">Reyting:</span>
                     <span className="ml-2 font-semibold">{anime.rating}/10</span>
                   </div>
                 </div>
@@ -151,7 +152,7 @@ const AnimeDetail = () => {
           </div>
 
           <div className="mb-12">
-            <h2 className="text-2xl font-bold mb-4">Episodes</h2>
+            <h2 className="text-2xl font-bold mb-4">Epizodlar</h2>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {anime.episodes.map((episode) => (
                 <Link
@@ -186,7 +187,7 @@ const AnimeDetail = () => {
           </div>
 
           {relatedAnime.length > 0 && (
-            <AnimeSlider title="You Might Also Like" anime={relatedAnime} />
+            <AnimeSlider title="Sizga Yoqishi Mumkin" anime={relatedAnime} />
           )}
         </div>
       </div>

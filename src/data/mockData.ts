@@ -33,7 +33,7 @@ export const mockAnime: Anime[] = [
     year: 2019,
     totalEpisodes: 26,
     genres: ["Action", "Fantasy", "Drama"],
-    description: "A family is attacked by demons and only two members survive - Tanjiro and his sister Nezuko, who is turning into a demon slowly. Tanjiro sets out to become a demon slayer to avenge his family and cure his sister.",
+    description: "Oilaga jinlar hujum qiladi va faqat ikki a'zo omon qoladi - Tanjiro va uning singlisi Nezuko, u asta-sekin jinga aylanib bormoqda. Tanjiro oilasining qasosini olish va singlisini davolash uchun jin qiruvchi bo'lishga qaror qiladi.",
     status: "Completed",
     episodes: Array.from({ length: 26 }, (_, i) => ({
       id: i + 1,
@@ -41,7 +41,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}: ${['Cruelty', 'Trainer Sakonji Urokodaki', 'Sabito and Makomo', 'Final Selection'][i % 4]}`,
       thumbnail: "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 5
     }))
   },
@@ -54,7 +54,7 @@ export const mockAnime: Anime[] = [
     year: 2013,
     totalEpisodes: 75,
     genres: ["Action", "Drama", "Fantasy"],
-    description: "After his hometown is destroyed and his mother is killed, young Eren Yeager vows to cleanse the earth of the giant humanoid Titans that have brought humanity to the brink of extinction.",
+    description: "Uning tug'ilgan shahri vayron qilingan va onasi o'ldirilganidan so'ng, yosh Eren Yeager insoniyatni yo'q bo'lish arafasiga olib kelgan ulkan gumanoid Titanlardan yerni tozalashga va'da beradi.",
     status: "Completed",
     episodes: Array.from({ length: 25 }, (_, i) => ({
       id: i + 1,
@@ -62,7 +62,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 10
     }))
   },
@@ -83,7 +83,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -104,7 +104,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1613376023733-0a73315d9b06?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 3
     }))
   },
@@ -125,7 +125,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1601850494422-3cf14624b0b3?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -146,7 +146,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1618945524163-32451704427c?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 15
     }))
   },
@@ -167,7 +167,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -188,7 +188,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1574269909862-7e1d70bb8078?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 20
     }))
   },
@@ -209,7 +209,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1609743522471-83c84ce23e32?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -230,7 +230,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1628840042765-356cda07504e?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 30
     }))
   },
@@ -251,7 +251,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1635003236519-39e47a927c3d?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -272,7 +272,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1617096200347-cb04ae810b1d?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 8
     }))
   },
@@ -293,7 +293,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -314,7 +314,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -335,7 +335,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1606144042614-b2417e99c39c?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 12
     }))
   },
@@ -356,7 +356,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1618336753974-aae8e04506aa?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -377,7 +377,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1534412319409-fb4b71ed1b4a?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -398,7 +398,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1616530940355-351fabd9524b?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -419,7 +419,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1620121692029-d088224ddc74?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 5
     }))
   },
@@ -440,7 +440,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1635805737707-575885ab0820?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: i < 25
     }))
   },
@@ -461,7 +461,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1618004652321-13a63e576b80?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   },
@@ -482,7 +482,7 @@ export const mockAnime: Anime[] = [
       title: `Episode ${i + 1}`,
       thumbnail: "https://images.unsplash.com/photo-1601814933824-fd0b574dd592?w=300&h=170&fit=crop",
       duration: "24:00",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "/video.mp4",
       watched: false
     }))
   }

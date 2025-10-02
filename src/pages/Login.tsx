@@ -7,8 +7,8 @@ import { motion } from 'framer-motion';
 import { Mail, Lock } from 'lucide-react';
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Noto\'g\'ri email manzil'),
+  password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -35,7 +35,7 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify(user));
       navigate('/home');
     } else {
-      setError('Invalid email or password');
+      setError('Noto\'g\'ri email yoki parol');
     }
   };
 
@@ -62,7 +62,7 @@ const Login = () => {
             </div>
           </Link>
 
-          <h2 className="text-2xl font-bold text-center mb-8">Welcome Back</h2>
+          <h2 className="text-2xl font-bold text-center mb-8">Xush Kelibsiz</h2>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 mb-6">
@@ -79,7 +79,7 @@ const Login = () => {
                   {...register('email')}
                   type="email"
                   className="w-full pl-10 pr-4 py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors"
-                  placeholder="your@email.com"
+                  placeholder="sizning@email.com"
                 />
               </div>
               {errors.email && (
@@ -88,7 +88,7 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2">Parol</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -107,14 +107,14 @@ const Login = () => {
               type="submit"
               className="w-full py-3 bg-primary hover:bg-primary-dark rounded-lg font-semibold transition-colors"
             >
-              Sign In
+              Kirish
             </button>
           </form>
 
           <p className="mt-6 text-center text-gray-400">
-            Don't have an account?{' '}
+            Hisobingiz yo'qmi?{' '}
             <Link to="/register" className="text-primary hover:text-primary-light">
-              Sign up
+              Ro'yxatdan o'tish
             </Link>
           </p>
         </div>

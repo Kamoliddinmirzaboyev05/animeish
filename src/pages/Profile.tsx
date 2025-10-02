@@ -92,7 +92,7 @@ const Profile = () => {
             </div>
             <div>
               <h1 className="text-3xl font-bold mb-2">{user.email || user.username || 'User'}</h1>
-              <p className="text-gray-400">Anime Enthusiast</p>
+              <p className="text-gray-400">Anime Muxlisi</p>
             </div>
           </div>
 
@@ -109,7 +109,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.totalEpisodesWatched}</div>
-                  <div className="text-sm text-gray-400">Episodes Watched</div>
+                  <div className="text-sm text-gray-400">Tomosha Qilingan Epizodlar</div>
                 </div>
               </div>
             </motion.div>
@@ -126,7 +126,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.hoursSpent}</div>
-                  <div className="text-sm text-gray-400">Hours Spent</div>
+                  <div className="text-sm text-gray-400">O'tkazilgan Soatlar</div>
                 </div>
               </div>
             </motion.div>
@@ -143,7 +143,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{stats.favoriteGenre}</div>
-                  <div className="text-sm text-gray-400">Favorite Genre</div>
+                  <div className="text-sm text-gray-400">Sevimli Janr</div>
                 </div>
               </div>
             </motion.div>
@@ -157,14 +157,14 @@ const Profile = () => {
           >
             <div className="flex items-center gap-3 mb-6">
               <TrendingUp className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold">Watch History</h2>
+              <h2 className="text-xl font-bold">Tomosha Tarixi</h2>
             </div>
 
             {recentHistory.length === 0 ? (
               <div className="text-center py-12 text-gray-400">
                 <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No watch history yet</p>
-                <p className="text-sm mt-2">Start watching anime to see your history here</p>
+                <p>Hali tomosha tarixi yo'q</p>
+                <p className="text-sm mt-2">Tarixni ko'rish uchun anime tomosha qilishni boshlang</p>
               </div>
             ) : (
               <div className="space-y-4">

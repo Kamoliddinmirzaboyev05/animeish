@@ -7,12 +7,12 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, User } from 'lucide-react';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  name: z.string().min(2, 'Ism kamida 2 ta belgidan iborat bo\'lishi kerak'),
+  email: z.string().email('Noto\'g\'ri email manzil'),
+  password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: "Parollar mos kelmaydi",
   path: ['confirmPassword'],
 });
 
@@ -34,7 +34,7 @@ const Register = () => {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     
     if (users.find((u: any) => u.email === data.email)) {
-      setError('Email already registered');
+      setError('Bu email allaqachon ro\'yxatdan o\'tgan');
       return;
     }
 
@@ -75,7 +75,7 @@ const Register = () => {
             </div>
           </Link>
 
-          <h2 className="text-2xl font-bold text-center mb-8">Create Account</h2>
+          <h2 className="text-2xl font-bold text-center mb-8">Hisob Yaratish</h2>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 mb-6">
@@ -85,14 +85,14 @@ const Register = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">Name</label>
+              <label className="block text-sm font-medium mb-2">Ism</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   {...register('name')}
                   type="text"
                   className="w-full pl-10 pr-4 py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors"
-                  placeholder="Your name"
+                  placeholder="Sizning ismingiz"
                 />
               </div>
               {errors.name && (
@@ -108,7 +108,7 @@ const Register = () => {
                   {...register('email')}
                   type="email"
                   className="w-full pl-10 pr-4 py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors"
-                  placeholder="your@email.com"
+                  placeholder="sizning@email.com"
                 />
               </div>
               {errors.email && (
@@ -117,7 +117,7 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Password</label>
+              <label className="block text-sm font-medium mb-2">Parol</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -133,7 +133,7 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Confirm Password</label>
+              <label className="block text-sm font-medium mb-2">Parolni Tasdiqlash</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -152,14 +152,14 @@ const Register = () => {
               type="submit"
               className="w-full py-3 bg-primary hover:bg-primary-dark rounded-lg font-semibold transition-colors"
             >
-              Create Account
+              Hisob Yaratish
             </button>
           </form>
 
           <p className="mt-6 text-center text-gray-400">
-            Already have an account?{' '}
+            Hisobingiz bormi?{' '}
             <Link to="/login" className="text-primary hover:text-primary-light">
-              Sign in
+              Kirish
             </Link>
           </p>
         </div>

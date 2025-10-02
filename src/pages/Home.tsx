@@ -21,13 +21,13 @@ const Home = () => {
         <HeroSlider anime={getFeaturedAnime()} />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-          <AnimeSlider title="Continue Watching" anime={getContinueWatching()} showProgress />
-          <AnimeSlider title="Trending Now" anime={getTrendingAnime()} />
-          <AnimeSlider title="Popular This Week" anime={getPopularAnime()} />
-          <AnimeSlider title="New Releases" anime={getNewReleases()} />
-          <AnimeSlider title="Action" anime={getActionAnime()} />
-          <AnimeSlider title="Romance" anime={getRomanceAnime()} />
-          <AnimeSlider title="Fantasy" anime={getFantasyAnime()} />
+          <AnimeSlider title="Tomosha Davom Etish" anime={getContinueWatching()} showProgress />
+          <AnimeSlider title="Hozir Mashhur" anime={getTrendingAnime()} />
+          <AnimeSlider title="Bu Hafta Ommabop" anime={getPopularAnime()} />
+          <AnimeSlider title="Yangi Chiqarilganlar" anime={getNewReleases()} />
+          <AnimeSlider title="Jangari" anime={getActionAnime()} />
+          <AnimeSlider title="Romantik" anime={getRomanceAnime()} />
+          <AnimeSlider title="Fantastik" anime={getFantasyAnime()} />
         </div>
       </div>
     </div>

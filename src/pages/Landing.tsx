@@ -25,13 +25,13 @@ const Landing = () => {
                 to="/login"
                 className="px-6 py-2 hover:bg-white/10 rounded-full transition-colors"
               >
-                Sign In
+                Kirish
               </Link>
               <Link
                 to="/register"
                 className="px-6 py-2 bg-primary hover:bg-primary-dark rounded-full transition-colors"
               >
-                Get Started
+                Boshlash
               </Link>
             </div>
           </nav>
@@ -45,13 +45,13 @@ const Landing = () => {
                 className="max-w-2xl"
               >
                 <h1 className="text-6xl md:text-7xl font-bold mb-6">
-                  Watch Unlimited
+                  Cheksiz
                   <br />
-                  <span className="text-primary">Anime</span>
+                  <span className="text-primary">Anime</span> Tomosha Qiling
                 </h1>
                 <p className="text-xl text-gray-300 mb-8">
-                  Stream thousands of anime series and movies. Watch anywhere, anytime.
-                  Start your journey into the world of anime today.
+                  Minglab anime seriallar va filmlarni tomosha qiling. Istalgan joyda, istalgan vaqtda.
+                  Anime dunyosiga sayohatingizni bugun boshlang.
                 </p>
                 <div className="flex gap-4">
                   <Link
@@ -59,13 +59,13 @@ const Landing = () => {
                     className="px-8 py-4 bg-primary hover:bg-primary-dark rounded-full font-semibold text-lg flex items-center gap-2 transition-colors"
                   >
                     <Play className="w-5 h-5 fill-white" />
-                    Start Watching
+                    Tomosha Boshlash
                   </Link>
                   <a
                     href="#features"
                     className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold text-lg transition-colors"
                   >
-                    Learn More
+                    Batafsil
                   </a>
                 </div>
               </motion.div>
@@ -76,7 +76,7 @@ const Landing = () => {
 
       <div id="features" className="py-20 bg-dark-light">
         <div className="max-w-7xl mx-auto px-8">
-          <h2 className="text-4xl font-bold text-center mb-16">Why Choose Animeish?</h2>
+          <h2 className="text-4xl font-bold text-center mb-16">Nega Animeish?</h2>
           <div className="grid md:grid-cols-3 gap-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -87,9 +87,9 @@ const Landing = () => {
               <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-4">
                 <Tv className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Huge Library</h3>
+              <h3 className="text-xl font-bold mb-2">Katta Kutubxona</h3>
               <p className="text-gray-400">
-                Access thousands of anime series and movies from classics to the latest releases.
+                Klassikadan tortib eng yangi chiqarilganlargacha minglab anime serial va filmlar.
               </p>
             </motion.div>
 
@@ -103,9 +103,9 @@ const Landing = () => {
               <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-4">
                 <Star className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">HD Quality</h3>
+              <h3 className="text-xl font-bold mb-2">HD Sifat</h3>
               <p className="text-gray-400">
-                Watch in stunning 1080p with multiple quality options for your connection.
+                Ajoyib 1080p sifatda tomosha qiling, internetingizga mos turli sifat tanlovlari bilan.
               </p>
             </motion.div>
 
@@ -119,9 +119,9 @@ const Landing = () => {
               <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mb-4">
                 <Users className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-xl font-bold mb-2">Watch Together</h3>
+              <h3 className="text-xl font-bold mb-2">Birga Tomosha</h3>
               <p className="text-gray-400">
-                Create your watchlist and track your progress across all devices.
+                Tomosha ro'yxatingizni yarating va barcha qurilmalarda jarayoningizni kuzatib boring.
               </p>
             </motion.div>
           </div>
@@ -130,22 +130,22 @@ const Landing = () => {
 
       <div className="py-20 bg-dark">
         <div className="max-w-4xl mx-auto px-8 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to start watching?</h2>
+          <h2 className="text-4xl font-bold mb-6">Tomosha qilishga tayyormisiz?</h2>
           <p className="text-xl text-gray-300 mb-8">
-            Join thousands of anime fans and start your journey today.
+            Minglab anime muxlislari qatoriga qo'shilib, bugun sayohatingizni boshlang.
           </p>
           <Link
             to="/register"
             className="inline-block px-12 py-4 bg-primary hover:bg-primary-dark rounded-full font-semibold text-lg transition-colors"
           >
-            Get Started Now
+            Hoziroq Boshlash
           </Link>
         </div>
       </div>
 
       <footer className="py-8 bg-dark-light border-t border-dark-lighter">
         <div className="max-w-7xl mx-auto px-8 text-center text-gray-400">
-          <p>&copy; 2025 Animeish. All rights reserved.</p>
+          <p>&copy; 2025 Animeish. Barcha huquqlar himoyalangan.</p>
         </div>
       </footer>
     </div>
