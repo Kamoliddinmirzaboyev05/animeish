@@ -119,7 +119,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #8B5CF6;
+    background: #740775;
     cursor: pointer;
     border: 2px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -129,7 +129,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #8B5CF6;
+    background: #740775;
     cursor: pointer;
     border: 2px solid white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -188,9 +188,19 @@
     cursor: not-allowed;
   }
 
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Plyr Custom Styles */
   .plyr {
-    --plyr-color-main: #8B5CF6;
+    --plyr-color-main: #740775;
     --plyr-video-background: #000;
     --plyr-menu-background: rgba(24, 24, 27, 0.95);
     --plyr-menu-color: #fff;
@@ -205,12 +215,12 @@
   }
 
   .plyr__control--overlaid {
-    background: rgba(139, 92, 246, 0.9);
+    background: rgba(116, 7, 117, 0.9);
     border: none;
   }
 
   .plyr__control--overlaid:hover {
-    background: rgba(139, 92, 246, 1);
+    background: rgba(116, 7, 117, 1);
   }
 
   .plyr__menu {
@@ -231,7 +241,7 @@
   }
 
   .plyr__progress__buffer {
-    color: rgba(139, 92, 246, 0.25);
+    color: rgba(116, 7, 117, 0.25);
   }
 
   .plyr__volume__input,

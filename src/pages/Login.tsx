@@ -4,10 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
+import { loginUser, storeAuthData, type ApiError } from '../services/api';
 
 const loginSchema = z.object({
-  email: z.string().email('Noto\'g\'ri email manzil'),
+  username: z.string().email('Noto\'g\'ri email manzil'),
   password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
 });
 
@@ -16,6 +17,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 const Login = () => {
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
   const {
     register,
@@ -25,17 +27,27 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const user = users.find(
-      (u: any) => u.email === data.email && u.password === data.password
-    );
+  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    setError('');
 
-    if (user) {
-      localStorage.setItem('user', JSON.stringify(user));
-      navigate('/home');
-    } else {
-      setError('Noto\'g\'ri email yoki parol');
+    try {
+      const response = await loginUser(data);
+      storeAuthData(response);
+      navigate('/');
+    } catch (err) {
+      const apiError = err as ApiError;
+      
+      if (apiError.errors) {
+        const errorMessages = Object.entries(apiError.errors)
+          .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+          .join('\n');
+        setError(errorMessages);
+      } else {
+        setError('Noto\'g\'ri email yoki parol');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -57,8 +69,11 @@ const Login = () => {
       >
         <div className="bg-dark-light border border-dark-lighter rounded-2xl p-8 shadow-2xl">
           <Link to="/" className="block text-center mb-8">
-            <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
-              Animeish
+            <div className="flex items-center gap-3 justify-center">
+              <img src="/logo.svg" alt="Aniki" className="w-8 h-8" />
+              <div className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
+                Aniki
+              </div>
             </div>
           </Link>
 
@@ -66,7 +81,7 @@ const Login = () => {
 
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 mb-6">
-              {error}
+              <div className="whitespace-pre-line text-sm">{error}</div>
             </div>
           )}
 
@@ -76,14 +91,15 @@ const Login = () => {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  {...register('email')}
+                  {...register('username')}
                   type="email"
                   className="w-full pl-10 pr-4 py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors"
                   placeholder="sizning@email.com"
+                  disabled={isLoading}
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+              {errors.username && (
+                <p className="mt-1 text-sm text-red-500">{errors.username.message}</p>
               )}
             </div>
 
@@ -96,6 +112,7 @@ const Login = () => {
                   type="password"
                   className="w-full pl-10 pr-4 py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors"
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
               </div>
               {errors.password && (
@@ -105,9 +122,17 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full py-3 bg-primary hover:bg-primary-dark rounded-lg font-semibold transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-primary hover:bg-primary-dark rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Kirish
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Kirmoqda...
+                </>
+              ) : (
+                'Kirish'
+              )}
             </button>
           </form>
 

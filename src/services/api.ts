@@ -1,9 +1,161 @@
-const API_BASE_URL = 'https://68de5c4fd7b591b4b78f41c3.mockapi.io/animeishapi/v1';
+const API_BASE_URL = 'https://animeish.pythonanywhere.com/api';
 
 export interface VideoData {
     id: string;
     videoUrl: string;
 }
+
+export interface RegisterData {
+    first_name: string;
+    email: string;
+    password: string;
+    confirm_password: string;
+}
+
+export interface LoginData {
+    username: string;
+    password: string;
+}
+
+export interface AuthResponse {
+    access: string;
+    refresh: string;
+    user?: {
+        id: number;
+        email: string;
+        first_name: string;
+    };
+}
+
+export interface ApiError {
+    message: string;
+    errors?: Record<string, string[]>;
+}
+
+export interface UserProfile {
+    id: number;
+    first_name: string;
+    username: string;
+    avatar: string | null;
+    bio: string | null;
+    is_premium: boolean;
+    created_at: string;
+}
+
+// Authentication functions
+export const registerUser = async (userData: RegisterData): Promise<AuthResponse> => {
+    try {
+        console.log('Registering user with data:', userData);
+        
+        const response = await fetch(`${API_BASE_URL}/users/register/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData),
+        });
+
+        const data = await response.json();
+        console.log('Registration response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: 'Registration failed',
+                errors: data,
+            } as ApiError;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Registration error:', error);
+        throw error;
+    }
+};
+
+export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => {
+    try {
+        console.log('Logging in user with data:', loginData);
+        
+        const response = await fetch(`${API_BASE_URL}/token/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(loginData),
+        });
+
+        const data = await response.json();
+        console.log('Login response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: 'Login failed',
+                errors: data,
+            } as ApiError;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Login error:', error);
+        throw error;
+    }
+};
+
+// Helper function to store auth data
+export const storeAuthData = (authData: AuthResponse) => {
+    localStorage.setItem('access_token', authData.access);
+    localStorage.setItem('refresh_token', authData.refresh);
+    if (authData.user) {
+        localStorage.setItem('user', JSON.stringify(authData.user));
+    }
+};
+
+// Helper function to get stored auth data
+export const getAuthToken = (): string | null => {
+    return localStorage.getItem('access_token');
+};
+
+// Helper function to clear auth data
+export const clearAuthData = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
+};
+
+// User profile functions
+export const getUserProfile = async (): Promise<UserProfile> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('No access token found');
+        }
+
+        console.log('Fetching user profile...');
+        
+        const response = await fetch(`${API_BASE_URL}/users/me/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+        console.log('Profile response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: 'Failed to fetch profile',
+                errors: data,
+            } as ApiError;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        throw error;
+    }
+};
 
 export const fetchVideoData = async (): Promise<VideoData[]> => {
     try {

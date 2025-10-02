@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Animeish development server..."
+echo "🚀 Starting Aniki development server..."
 echo ""
 echo "📦 Checking dependencies..."
 npm install

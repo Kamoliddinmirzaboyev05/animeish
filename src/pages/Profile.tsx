@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { User, Clock, Star, TrendingUp, Play } from 'lucide-react';
+import { User, Clock, Star, TrendingUp, Play, Crown, Calendar, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { mockAnime } from '../data/mockData';
+import { getUserProfile, type UserProfile, type ApiError } from '../services/api';
 
 interface WatchHistoryEntry {
   animeId: number;
@@ -11,17 +12,47 @@ interface WatchHistoryEntry {
 }
 
 const Profile = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    const fetchUserData = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+        
+        // Fetch user profile from API
+        const profileData = await getUserProfile();
+        setUser(profileData);
+        
+        // Also update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(profileData));
+        
+      } catch (err) {
+        const apiError = err as ApiError;
+        setError(apiError.message || 'Profil ma\'lumotlarini yuklashda xatolik');
+        console.error('Profile fetch error:', err);
+        
+        // Fallback to localStorage data if API fails
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          try {
+            setUser(JSON.parse(userData));
+          } catch (parseError) {
+            console.error('Error parsing user data:', parseError);
+          }
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     const history = JSON.parse(localStorage.getItem('watchHistory') || '[]');
     setWatchHistory(history);
+    
+    fetchUserData();
   }, []);
 
   const stats = useMemo(() => {
@@ -65,12 +96,46 @@ const Profile = () => {
       .filter((entry) => entry.anime && entry.episode);
   }, [watchHistory]);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="pt-24 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="text-xl">Profil yuklanmoqda...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !user) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="pt-24 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 text-xl mb-4">Xatolik yuz berdi</div>
+            <div className="text-gray-400 mb-4">{error}</div>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 bg-primary rounded-lg hover:bg-primary-dark transition-colors"
+            >
+              Qayta urinish
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen">
         <Navbar />
         <div className="pt-24 flex items-center justify-center">
-          <div className="text-xl">Loading...</div>
+          <div className="text-xl">Foydalanuvchi ma'lumotlari topilmadi</div>
         </div>
       </div>
     );
@@ -86,30 +151,76 @@ const Profile = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="flex items-center gap-6 mb-8">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center">
-              <User className="w-12 h-12" />
+          {error && (
+            <div className="bg-yellow-500/10 border border-yellow-500 text-yellow-500 rounded-lg p-3 mb-6">
+              <div className="text-sm">
+                <strong>Ogohlantirish:</strong> {error}
+                <br />
+                <span className="text-xs opacity-75">Mahalliy ma'lumotlar ko'rsatilmoqda.</span>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{user.email || user.username || 'User'}</h1>
-              <p className="text-gray-400">Anime Muxlisi</p>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8">
+            <div className="relative">
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.first_name}
+                  className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center">
+                  <User className="w-12 h-12" />
+                </div>
+              )}
+              {user.is_premium && (
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                  <Crown className="w-4 h-4 text-white" />
+                </div>
+              )}
+            </div>
+            <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold">{user.first_name}</h1>
+                {user.is_premium && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-sm font-medium">
+                    <Crown className="w-4 h-4" />
+                    Premium
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-400 mb-2">{user.username}</p>
+              {user.bio && (
+                <p className="text-gray-300 text-sm mb-2">{user.bio}</p>
+              )}
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Calendar className="w-4 h-4" />
+                <span>
+                  Qo'shilgan: {new Date(user.created_at).toLocaleDateString('uz-UZ', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-dark-light border border-dark-lighter rounded-lg p-6"
+              className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                  <Play className="w-6 h-6 text-primary" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                  <Play className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{stats.totalEpisodesWatched}</div>
-                  <div className="text-sm text-gray-400">Tomosha Qilingan Epizodlar</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.totalEpisodesWatched}</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Tomosha Qilingan Epizodlar</div>
                 </div>
               </div>
             </motion.div>
@@ -118,15 +229,15 @@ const Profile = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-dark-light border border-dark-lighter rounded-lg p-6"
+              className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-primary" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{stats.hoursSpent}</div>
-                  <div className="text-sm text-gray-400">O'tkazilgan Soatlar</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.hoursSpent}</div>
+                  <div className="text-xs sm:text-sm text-gray-400">O'tkazilgan Soatlar</div>
                 </div>
               </div>
             </motion.div>
@@ -135,15 +246,15 @@ const Profile = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-dark-light border border-dark-lighter rounded-lg p-6"
+              className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6 sm:col-span-2 lg:col-span-1"
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                  <Star className="w-6 h-6 text-primary" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-lg flex items-center justify-center">
+                  <Star className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{stats.favoriteGenre}</div>
-                  <div className="text-sm text-gray-400">Sevimli Janr</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.favoriteGenre}</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Sevimli Janr</div>
                 </div>
               </div>
             </motion.div>
@@ -153,11 +264,11 @@ const Profile = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-dark-light border border-dark-lighter rounded-lg p-6"
+            className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <TrendingUp className="w-6 h-6 text-primary" />
-              <h2 className="text-xl font-bold">Tomosha Tarixi</h2>
+            <div className="flex items-center gap-3 mb-4 sm:mb-6">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <h2 className="text-lg sm:text-xl font-bold">Tomosha Tarixi</h2>
             </div>
 
             {recentHistory.length === 0 ? (
@@ -174,19 +285,19 @@ const Profile = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + index * 0.05 }}
-                    className="flex items-center gap-4 p-4 bg-dark hover:bg-dark-lighter rounded-lg transition-colors cursor-pointer"
+                    className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-dark hover:bg-dark-lighter rounded-lg transition-colors cursor-pointer"
                     onClick={() => window.location.href = `/watch/${entry.anime?.id}/${entry.episode?.episodeNumber}`}
                   >
                     <img
                       src={entry.episode?.thumbnail}
                       alt={entry.episode?.title}
-                      className="w-32 h-18 object-cover rounded"
+                      className="w-20 h-12 sm:w-32 sm:h-18 object-cover rounded flex-shrink-0"
                     />
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{entry.anime?.title}</h3>
-                      <p className="text-sm text-gray-400 mb-2">{entry.episode?.title}</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold mb-1 text-sm sm:text-base truncate">{entry.anime?.title}</h3>
+                      <p className="text-xs sm:text-sm text-gray-400 mb-1 sm:mb-2 truncate">{entry.episode?.title}</p>
                       <p className="text-xs text-gray-500">
-                        {new Date(entry.timestamp).toLocaleDateString('en-US', {
+                        {new Date(entry.timestamp).toLocaleDateString('uz-UZ', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric',

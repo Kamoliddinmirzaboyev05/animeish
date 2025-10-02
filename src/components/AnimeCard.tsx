@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Star, Heart, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Anime } from '../data/mockData';
@@ -10,8 +10,11 @@ interface AnimeCardProps {
 }
 
 const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
+  const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  
+  const isLoggedIn = localStorage.getItem('access_token');
 
   useEffect(() => {
     const myList = JSON.parse(localStorage.getItem('myList') || '[]');
@@ -21,6 +24,12 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
   const toggleSaved = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    
     const myList = JSON.parse(localStorage.getItem('myList') || '[]');
     
     if (isSaved) {

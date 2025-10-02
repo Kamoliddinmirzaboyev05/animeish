@@ -139,34 +139,35 @@ const Notifications = () => {
     <div className="min-h-screen">
       <Navbar />
 
-      <div className="pt-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="pt-20 sm:pt-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6 sm:mb-8"
         >
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">Bildirishnomalar</h1>
-              <p className="text-gray-400">
+              <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Bildirishnomalar</h1>
+              <p className="text-gray-400 text-sm sm:text-base">
                 {unreadCount > 0 ? `${unreadCount} ta o'qilmagan bildirishnoma` : 'Hammasi o\'qilgan!'}
               </p>
             </div>
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 <Check className="w-4 h-4" />
-                Barchasini O'qilgan Deb Belgilash
+                <span className="hidden sm:inline">Barchasini O'qilgan Deb Belgilash</span>
+                <span className="sm:hidden">Hammasi O'qilgan</span>
               </button>
             )}
           </div>
 
-          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
             <button
               onClick={() => setFilter('all')}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
                 filter === 'all'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
@@ -176,7 +177,7 @@ const Notifications = () => {
             </button>
             <button
               onClick={() => setFilter('new-episode')}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
                 filter === 'new-episode'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
@@ -186,7 +187,7 @@ const Notifications = () => {
             </button>
             <button
               onClick={() => setFilter('recommendation')}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
                 filter === 'recommendation'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
@@ -196,7 +197,7 @@ const Notifications = () => {
             </button>
             <button
               onClick={() => setFilter('system')}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
                 filter === 'system'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
@@ -207,7 +208,7 @@ const Notifications = () => {
           </div>
         </motion.div>
 
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <AnimatePresence mode="popLayout">
             {filteredNotifications.map((notification, index) => (
               <motion.div
@@ -224,29 +225,29 @@ const Notifications = () => {
                     window.location.href = `/anime/${notification.animeId}`;
                   }
                 }}
-                className={`relative p-4 rounded-lg border transition-all cursor-pointer ${
+                className={`relative p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${
                   notification.read
                     ? 'bg-dark-light border-dark-lighter hover:bg-dark-lighter'
                     : 'bg-primary/10 border-primary/30 hover:bg-primary/15'
                 }`}
               >
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-dark-light rounded-full flex items-center justify-center">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-dark-light rounded-full flex items-center justify-center">
                     {getIcon(notification.type)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-semibold">{notification.title}</h3>
+                      <h3 className="font-semibold text-sm sm:text-base">{notification.title}</h3>
                       <span className="text-xs text-gray-400 whitespace-nowrap">
                         {formatTimestamp(notification.timestamp)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-400">{notification.message}</p>
+                    <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">{notification.message}</p>
                   </div>
 
                   {!notification.read && (
-                    <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full"></div>
+                    <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-1"></div>
                   )}
                 </div>
               </motion.div>

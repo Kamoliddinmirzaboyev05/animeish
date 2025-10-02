@@ -1,4 +1,4 @@
-# Animeish - Modern Anime Streaming Platform
+# Aniki - Modern Anime Streaming Platform
 
 A modern, full-featured anime streaming platform built with React 18, TypeScript, Tailwind CSS v4, and Framer Motion.
 

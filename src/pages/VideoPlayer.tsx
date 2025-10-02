@@ -20,6 +20,17 @@ const VideoPlayer = () => {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Check if user is logged in
+  const isLoggedIn = localStorage.getItem('access_token');
+  
+  // Redirect to login if not logged in
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+  }, [isLoggedIn, navigate]);
+
   // Core states
   const [anime, setAnime] = useState<Anime | null>(null);
   const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
@@ -34,6 +45,7 @@ const VideoPlayer = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   // UI states
   const [showEpisodeList, setShowEpisodeList] = useState(false);
@@ -175,9 +187,16 @@ const VideoPlayer = () => {
     }
   };
 
-  const handlePlay = () => setIsPlaying(true);
+  const handlePlay = () => {
+    setIsPlaying(true);
+    setIsBuffering(false);
+  };
+  
   const handlePause = () => setIsPlaying(false);
   const handleError = () => setVideoError(true);
+  
+  const handleWaiting = () => setIsBuffering(true);
+  const handleCanPlay = () => setIsBuffering(false);
 
   // Hide controls after 3 seconds of inactivity
   useEffect(() => {
@@ -193,6 +212,19 @@ const VideoPlayer = () => {
 
     return () => clearTimeout(timer);
   }, [currentTime]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   // Format time helper
   const formatTime = (time: number) => {
@@ -327,8 +359,22 @@ const VideoPlayer = () => {
               onPlay={handlePlay}
               onPause={handlePause}
               onError={handleError}
+              onWaiting={handleWaiting}
+              onCanPlay={handleCanPlay}
               onClick={togglePlay}
             />
+
+            {/* YouTube-style Loading Spinner */}
+            {(isLoadingVideo || isBuffering) && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary rounded-full opacity-20"></div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Custom Video Controls */}
             {showControls && (
@@ -343,7 +389,7 @@ const VideoPlayer = () => {
                     onChange={handleSeek}
                     className="w-full slider-progress"
                     style={{
-                      background: `linear-gradient(to right, #8B5CF6 0%, #8B5CF6 ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) 100%)`
+                      background: `linear-gradient(to right, #740775 0%, #740775 ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) 100%)`
                     }}
                   />
                 </div>
@@ -362,26 +408,35 @@ const VideoPlayer = () => {
                       )}
                     </button>
 
-                    <button
-                      onClick={toggleMute}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                    >
-                      {isMuted ? (
-                        <VolumeX className="w-5 h-5 text-white" />
-                      ) : (
-                        <Volume2 className="w-5 h-5 text-white" />
-                      )}
-                    </button>
-
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={volume}
-                      onChange={handleVolumeChange}
-                      className="w-20 volume-slider"
-                    />
+                    <div className="flex items-center gap-2 group">
+                      <button
+                        onClick={toggleMute}
+                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                      >
+                        {isMuted || volume === 0 ? (
+                          <VolumeX className="w-5 h-5 text-white" />
+                        ) : volume < 0.5 ? (
+                          <Volume2 className="w-5 h-5 text-white" />
+                        ) : (
+                          <Volume2 className="w-5 h-5 text-white" />
+                        )}
+                      </button>
+                      
+                      <div className="relative w-0 group-hover:w-20 transition-all duration-200 overflow-hidden">
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolumeChange}
+                          className="w-20 volume-slider"
+                          style={{
+                            background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(75, 85, 99, 0.5) ${(isMuted ? 0 : volume) * 100}%, rgba(75, 85, 99, 0.5) 100%)`
+                          }}
+                        />
+                      </div>
+                    </div>
 
                     <div className="text-white text-sm">
                       {formatTime(currentTime)} / {formatTime(duration)}
