@@ -21,7 +21,7 @@ const VideoPlayer = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Check if user is logged in
-  const isLoggedIn = localStorage.getItem('access_token');
+  const isLoggedIn = sessionStorage.getItem('access_token');
   
   // Redirect to login if not logged in
   useEffect(() => {
@@ -67,7 +67,7 @@ const VideoPlayer = () => {
   // Helper functions
   const markAsWatched = useCallback(() => {
     if (!anime || !currentEpisode) return;
-    const watched = JSON.parse(localStorage.getItem('watchHistory') || '[]');
+    const watched = JSON.parse(sessionStorage.getItem('watchHistory') || '[]');
     const entry = {
       animeId: anime.id,
       episodeId: currentEpisode.id,
@@ -76,7 +76,7 @@ const VideoPlayer = () => {
     const filtered = watched.filter(
       (w: any) => !(w.animeId === anime.id && w.episodeId === currentEpisode.id)
     );
-    localStorage.setItem('watchHistory', JSON.stringify([entry, ...filtered]));
+    sessionStorage.setItem('watchHistory', JSON.stringify([entry, ...filtered]));
   }, [anime, currentEpisode]);
 
   // Load video URL from API
@@ -155,7 +155,7 @@ const VideoPlayer = () => {
     setDuration(videoRef.current.duration);
 
     // Restore saved position
-    const savedPosition = localStorage.getItem(`video-${animeId}-${episodeNumber}`);
+    const savedPosition = sessionStorage.getItem(`video-${animeId}-${episodeNumber}`);
     if (savedPosition) {
       videoRef.current.currentTime = Number(savedPosition);
     }
@@ -169,7 +169,7 @@ const VideoPlayer = () => {
 
     // Save progress
     if (current > 0 && animeId && episodeNumber) {
-      localStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
+      sessionStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
     }
 
     // Auto-play next episode at 90%

@@ -27,16 +27,16 @@ const Profile = () => {
         const profileData = await getUserProfile();
         setUser(profileData);
         
-        // Also update localStorage with fresh data
-        localStorage.setItem('user', JSON.stringify(profileData));
+        // Also update sessionStorage with fresh data
+        sessionStorage.setItem('user', JSON.stringify(profileData));
         
       } catch (err) {
         const apiError = err as ApiError;
         setError(apiError.message || 'Profil ma\'lumotlarini yuklashda xatolik');
         console.error('Profile fetch error:', err);
         
-        // Fallback to localStorage data if API fails
-        const userData = localStorage.getItem('user');
+        // Fallback to sessionStorage data if API fails
+        const userData = sessionStorage.getItem('user');
         if (userData) {
           try {
             setUser(JSON.parse(userData));
@@ -49,7 +49,7 @@ const Profile = () => {
       }
     };
 
-    const history = JSON.parse(localStorage.getItem('watchHistory') || '[]');
+    const history = JSON.parse(sessionStorage.getItem('watchHistory') || '[]');
     setWatchHistory(history);
     
     fetchUserData();

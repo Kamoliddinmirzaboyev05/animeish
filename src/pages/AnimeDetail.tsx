@@ -13,10 +13,10 @@ const AnimeDetail = () => {
   const anime = mockAnime.find((a) => a.id === Number(id));
   const [isSaved, setIsSaved] = useState(false);
 
-  const isLoggedIn = localStorage.getItem('access_token');
+  const isLoggedIn = sessionStorage.getItem('access_token');
 
   useEffect(() => {
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
     setIsSaved(myList.includes(Number(id)));
   }, [id]);
 
@@ -42,15 +42,15 @@ const AnimeDetail = () => {
       return;
     }
 
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
 
     if (isSaved) {
       const updated = myList.filter((animeId: number) => animeId !== Number(id));
-      localStorage.setItem('myList', JSON.stringify(updated));
+      sessionStorage.setItem('myList', JSON.stringify(updated));
       setIsSaved(false);
     } else {
       myList.push(Number(id));
-      localStorage.setItem('myList', JSON.stringify(myList));
+      sessionStorage.setItem('myList', JSON.stringify(myList));
       setIsSaved(true);
     }
   };

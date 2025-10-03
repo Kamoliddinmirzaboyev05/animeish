@@ -5,10 +5,10 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const user = localStorage.getItem('user');
+  const token = sessionStorage.getItem('access_token');
   
-  if (!user) {
-    return <Navigate to="/" replace />;
+  if (!token) {
+    return <Navigate to="/login" replace />;
   }
 
   return <>{children}</>;

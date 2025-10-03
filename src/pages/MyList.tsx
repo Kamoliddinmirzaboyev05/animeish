@@ -17,7 +17,7 @@ const MyList = () => {
   }, []);
 
   const loadMyList = () => {
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
     const anime = mockAnime.filter((a) => myList.includes(a.id));
     setMyListAnime(anime);
   };
@@ -25,9 +25,9 @@ const MyList = () => {
   const removeFromList = (animeId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
     const updated = myList.filter((id: number) => id !== animeId);
-    localStorage.setItem('myList', JSON.stringify(updated));
+    sessionStorage.setItem('myList', JSON.stringify(updated));
     loadMyList();
   };
 
@@ -39,7 +39,7 @@ const MyList = () => {
         return b.rating - a.rating;
       case 'recent':
       default:
-        const myList = JSON.parse(localStorage.getItem('myList') || '[]');
+        const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
         return myList.indexOf(b.id) - myList.indexOf(a.id);
     }
   });

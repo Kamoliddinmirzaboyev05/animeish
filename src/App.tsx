@@ -20,38 +20,15 @@ function App() {
         
         <Route path="/home" element={<Home />} />
         
-        <Route
-          path="/anime/:id"
-          element={
-            <ProtectedRoute>
-              <AnimeDetail />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/watch/:animeId/:episodeNumber"
-          element={
-            <ProtectedRoute>
-              <VideoPlayer />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/anime/:id" element={<AnimeDetail />} />
+        <Route path="/watch/:animeId/:episodeNumber" element={<VideoPlayer />} />
+        <Route path="/search" element={<Search />} />
         
         <Route
           path="/my-list"
           element={
             <ProtectedRoute>
               <MyList />
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route
-          path="/search"
-          element={
-            <ProtectedRoute>
-              <Search />
             </ProtectedRoute>
           }
         />
