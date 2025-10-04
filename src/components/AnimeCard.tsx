@@ -65,34 +65,34 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: isHovered ? 1 : 0 }}
-                className="w-12 h-12 bg-primary rounded-full flex items-center justify-center"
+                className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-primary rounded-full flex items-center justify-center"
               >
-                <Play className="w-6 h-6 fill-white" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 fill-white" />
               </motion.div>
             </div>
           </div>
 
-          <div className="absolute top-2 right-2 flex gap-2">
-            <div className="bg-dark/90 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1">
-              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+          <div className="absolute top-1 sm:top-2 right-1 sm:right-2 flex gap-1 sm:gap-2">
+            <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
+              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
               <span className="text-xs font-semibold">{anime.rating || 'N/A'}</span>
             </div>
           </div>
 
           <button
             onClick={toggleSaved}
-            className="absolute top-2 left-2 w-8 h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary transition-colors opacity-0 group-hover:opacity-100"
+            className="absolute top-1 sm:top-2 left-1 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary transition-colors opacity-0 group-hover:opacity-100"
           >
             <Heart
-              className={`w-4 h-4 ${isSaved ? 'fill-primary text-primary' : 'text-white'}`}
+              className={`w-3 h-3 sm:w-4 sm:h-4 ${isSaved ? 'fill-primary text-primary' : 'text-white'}`}
             />
           </button>
 
           {showProgress && watchedEpisodes > 0 && (
             <div className="absolute bottom-0 left-0 right-0">
-              <div className="bg-dark/90 backdrop-blur-sm px-2 py-1">
+              <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-1">
                 <div className="text-xs mb-1">
-                  {watchedEpisodes} / {anime.totalEpisodes || 0} episodes
+                  {watchedEpisodes} / {anime.totalEpisodes || 0} eps
                 </div>
                 <div className="h-1 bg-dark-lighter rounded-full overflow-hidden">
                   <div
@@ -106,19 +106,19 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
         </div>
 
         <div className="mt-2 space-y-1">
-          <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors text-sm sm:text-base">
             {anime.title}
           </h3>
-          <div className="flex items-center gap-2 text-xs text-gray-400">
+          <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-400">
             <span>{anime.year || 'N/A'}</span>
-            <span>•</span>
-            <span>{anime.totalEpisodes || 0} eps</span>
+            <span className="hidden sm:inline">•</span>
+            <span className="hidden sm:inline">{anime.totalEpisodes || 0} eps</span>
           </div>
           <div className="flex flex-wrap gap-1">
-            {anime.genres?.slice(0, 2).map((genre: string, index: number) => (
+            {anime.genres?.slice(0, 1).map((genre: string, index: number) => (
               <span
                 key={`${genre}-${index}`}
-                className="text-xs bg-dark-light px-2 py-0.5 rounded-full text-gray-300"
+                className="text-xs bg-dark-light px-1.5 sm:px-2 py-0.5 rounded-full text-gray-300"
               >
                 {genre}
               </span>
