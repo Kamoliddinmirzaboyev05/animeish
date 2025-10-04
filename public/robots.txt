@@ -11,6 +11,13 @@ Allow: /
 Allow: /search
 Allow: /anime/
 Allow: /watch/
+Allow: /genre/
+
+# High-priority pages for crawling
+Allow: /anime/naruto
+Allow: /anime/one-piece
+Allow: /anime/attack-on-titan
+Allow: /anime/demon-slayer
 
 # Sitemap location
 Sitemap: https://aniki.uz/sitemap.xml

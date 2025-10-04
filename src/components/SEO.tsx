@@ -11,9 +11,9 @@ interface SEOProps {
 }
 
 const SEO = ({
-  title = 'Aniki - Eng Yaxshi Anime Seriallar va Filmlar | Bepul Tomosha Qiling',
-  description = 'O\'zbekistondagi eng yaxshi anime streaming platformasi. Minglab anime seriallar va filmlarni yuqori sifatda, bepul va reklamasiz tomosha qiling.',
-  keywords = 'anime, anime uzbek, anime serial, anime film, naruto, one piece, attack on titan, demon slayer, aniki, anime streaming, bepul anime, anime online',
+  title = 'Aniki - Eng Yaxshi Anime Seriallar | Bepul Tomosha',
+  description = 'O\'zbekistondagi #1 anime streaming platformasi. 1000+ anime serial va filmni HD sifatda bepul tomosha qiling. Naruto, One Piece va boshqalar.',
+  keywords = 'anime, anime uzbek, anime serial, bepul anime, anime tomosha, naruto uzbek, one piece uzbek, attack on titan uzbek, demon slayer uzbek, aniki',
   image = 'https://aniki.uz/og-image.jpg',
   url = 'https://aniki.uz',
   type = 'website',

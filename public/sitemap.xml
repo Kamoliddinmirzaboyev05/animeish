@@ -61,10 +61,32 @@
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
     <image:image>
-      <image:loc>https://aniki.uz/images/naruto.jpg</image:loc>
-      <image:title>Naruto</image:title>
-      <image:caption>Naruto anime seriali</image:caption>
+      <image:loc>https://aniki.uz/images/naruto-poster.webp</image:loc>
+      <image:title>Naruto Anime Poster - HD Sifat</image:title>
+      <image:caption>Naruto Uzumaki ninja anime seriali posteri, 720 qism</image:caption>
     </image:image>
+  </url>
+
+  <!-- Genre Pages -->
+  <url>
+    <loc>https://aniki.uz/genre/action</loc>
+    <lastmod>2025-01-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aniki.uz/genre/romance</loc>
+    <lastmod>2025-01-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://aniki.uz/genre/fantasy</loc>
+    <lastmod>2025-01-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
   </url>
 
   <url>
