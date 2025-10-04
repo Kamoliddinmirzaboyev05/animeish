@@ -1,9 +1,8 @@
 {
-  "rewrites": [
-    { "source": "/old-path", "destination": "/new-path" },
-    { "source": "/blog/:slug", "destination": "/posts/:slug" }
-  ],
-  "redirects": [
-    { "source": "/old-home", "destination": "/", "permanent": true }
-  ]
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
 }
