@@ -14,6 +14,8 @@ import {
   Minimize,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
+  RotateCw,
 } from 'lucide-react';
 import { fetchAnimeById } from '../services/api';
 
@@ -54,7 +56,21 @@ const VideoPlayer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
-  const [lastTap, setLastTap] = useState(0);
+
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [showSkipLabel, setShowSkipLabel] = useState<'forward' | 'backward' | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Load anime data
   useEffect(() => {
@@ -180,10 +196,29 @@ const VideoPlayer = () => {
 
     try {
       if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
+        if (isMobile) {
+          // Mobile fullscreen with landscape orientation
+          await containerRef.current.requestFullscreen();
+          if (screen.orientation && 'lock' in screen.orientation) {
+            try {
+              await (screen.orientation as any).lock('landscape');
+            } catch (err) {
+              console.log('Orientation lock not supported');
+            }
+          }
+        } else {
+          await containerRef.current.requestFullscreen();
+        }
         setIsFullscreen(true);
       } else {
         await document.exitFullscreen();
+        if (isMobile && screen.orientation && 'unlock' in screen.orientation) {
+          try {
+            (screen.orientation as any).unlock();
+          } catch (err) {
+            console.log('Orientation unlock not supported');
+          }
+        }
         setIsFullscreen(false);
       }
     } catch (error) {
@@ -194,11 +229,22 @@ const VideoPlayer = () => {
   const skipForward = () => {
     if (!videoRef.current) return;
     videoRef.current.currentTime = Math.min(videoRef.current.currentTime + 10, duration);
+    setShowSkipLabel('forward');
+    setTimeout(() => setShowSkipLabel(null), 1000);
   };
 
   const skipBackward = () => {
     if (!videoRef.current) return;
     videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+    setShowSkipLabel('backward');
+    setTimeout(() => setShowSkipLabel(null), 1000);
+  };
+
+  const changePlaybackSpeed = (speed: number) => {
+    if (!videoRef.current) return;
+    videoRef.current.playbackRate = speed;
+    setPlaybackSpeed(speed);
+    setShowSpeedMenu(false);
   };
 
   // Video events
@@ -211,6 +257,13 @@ const VideoPlayer = () => {
     if (savedPosition) {
       videoRef.current.currentTime = Number(savedPosition);
     }
+
+    // Auto-play new episode
+    setTimeout(() => {
+      if (videoRef.current) {
+        videoRef.current.play().catch(console.error);
+      }
+    }, 500);
   };
 
   const handleTimeUpdate = () => {
@@ -255,7 +308,7 @@ const VideoPlayer = () => {
   // Progress bar interaction
   const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !videoRef.current) return;
-    
+
     const rect = progressBarRef.current.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     const time = pos * duration;
@@ -268,7 +321,7 @@ const VideoPlayer = () => {
 
   const handleProgressBarTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !isSeeking) return;
-    
+
     const touch = e.touches[0];
     const rect = progressBarRef.current.getBoundingClientRect();
     const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
@@ -278,33 +331,31 @@ const VideoPlayer = () => {
 
   const handleProgressBarTouchEnd = () => {
     if (!videoRef.current || !isSeeking) return;
-    
+
     videoRef.current.currentTime = currentTime;
     setIsSeeking(false);
   };
 
-  // Mobile double tap to skip
+  // Single click to toggle play/pause
   const handleVideoClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTap;
+    e.stopPropagation();
+    togglePlay();
+    setShowControls(true);
+  };
 
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const width = rect.width;
+  // Double tap for mobile skip
+  const handleVideoDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMobile) return;
 
-      if (x < width / 3) {
-        skipBackward();
-      } else if (x > (width * 2) / 3) {
-        skipForward();
-      } else {
-        togglePlay();
-      }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+
+    if (x < width / 2) {
+      skipBackward();
     } else {
-      setShowControls(!showControls);
+      skipForward();
     }
-
-    setLastTap(now);
   };
 
   // Control visibility
@@ -324,6 +375,19 @@ const VideoPlayer = () => {
       }
     };
   }, [showControls, isPlaying]);
+
+  // Mouse move handler for showing controls
+  const handleMouseMove = () => {
+    setShowControls(true);
+    if (hideControlsTimerRef.current) {
+      clearTimeout(hideControlsTimerRef.current);
+    }
+    if (isPlaying) {
+      hideControlsTimerRef.current = window.setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  };
 
   // Keyboard controls
   useEffect(() => {
@@ -386,12 +450,29 @@ const VideoPlayer = () => {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  // Click outside to close speed menu
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (showSpeedMenu) {
+        setShowSpeedMenu(false);
+      }
+    };
+
+    if (showSpeedMenu) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [showSpeedMenu]);
+
   const formatTime = (time: number) => {
     if (!time || isNaN(time)) return '0:00';
     const hours = Math.floor(time / 3600);
     const minutes = Math.floor((time % 3600) / 60);
     const seconds = Math.floor(time % 60);
-    
+
     if (hours > 0) {
       return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
@@ -417,6 +498,10 @@ const VideoPlayer = () => {
   const goToEpisode = useCallback((episodeNum: number) => {
     navigate(`/watch/${animeId}/${episodeNum}`);
     setShowEpisodeList(false);
+    // Reset video state for new episode
+    setCurrentTime(0);
+    setIsPlaying(false);
+    setIsLoadingVideo(true);
   }, [animeId, navigate]);
 
   const nextEpisode = useCallback(() => {
@@ -452,9 +537,9 @@ const VideoPlayer = () => {
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="relative h-screen bg-black overflow-hidden"
+      className={`relative h-screen bg-black overflow-hidden ${isFullscreen && isMobile ? 'landscape-fullscreen' : ''}`}
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       <style>{`
@@ -480,7 +565,7 @@ const VideoPlayer = () => {
 
         .progress-bar-fill {
           height: 100%;
-          background: #ff0000;
+          background: #740775;
           border-radius: 3px;
           position: relative;
         }
@@ -502,6 +587,18 @@ const VideoPlayer = () => {
           transform: scale(0.95);
         }
 
+        .landscape-fullscreen {
+          transform: rotate(90deg);
+          transform-origin: center;
+          width: 100vh;
+          height: 100vw;
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          margin-left: -50vh;
+          margin-top: -50vw;
+        }
+
         @media (max-width: 768px) {
           .progress-bar {
             height: 4px;
@@ -511,14 +608,29 @@ const VideoPlayer = () => {
             padding: 0.75rem;
           }
         }
+
+        @media screen and (orientation: landscape) and (max-width: 768px) {
+          .landscape-fullscreen {
+            transform: none;
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            margin: 0;
+          }
+        }
       `}</style>
 
       {/* Video Container */}
-      <div className="absolute inset-0 lg:right-80">
+      <div className={`absolute inset-0 ${!isFullscreen ? 'lg:right-80' : ''}`}>
         {videoUrl && (
-          <div 
+          <div
             className="relative h-full w-full bg-black"
             onClick={handleVideoClick}
+            onDoubleClick={handleVideoDoubleClick}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={() => setShowControls(true)}
           >
             {isVimeoVideo ? (
               <iframe
@@ -553,13 +665,34 @@ const VideoPlayer = () => {
             {/* Loading/Buffering */}
             {(isLoadingVideo || isBuffering) && !isVimeoVideo && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
-                <div className="w-16 h-16 border-4 border-gray-600 border-t-red-600 rounded-full animate-spin"></div>
+                <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
               </div>
             )}
 
+            {/* Skip Labels */}
+            <AnimatePresence>
+              {showSkipLabel && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className={`absolute top-1/2 ${showSkipLabel === 'backward' ? 'left-8' : 'right-8'} transform -translate-y-1/2 bg-black/80 backdrop-blur-sm rounded-lg p-4 pointer-events-none`}
+                >
+                  <div className="flex items-center gap-2 text-white">
+                    {showSkipLabel === 'backward' ? (
+                      <RotateCcw className="w-6 h-6" />
+                    ) : (
+                      <RotateCw className="w-6 h-6" />
+                    )}
+                    <span className="text-sm font-medium">10s</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Center Play/Pause Button */}
             <AnimatePresence>
-              {!isVimeoVideo && showControls && (
+              {!isVimeoVideo && showControls && !isPlaying && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -567,11 +700,7 @@ const VideoPlayer = () => {
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
                   <div className="bg-black/60 rounded-full p-4 backdrop-blur-sm">
-                    {isPlaying ? (
-                      <Pause className="w-12 h-12 md:w-16 md:h-16 text-white" />
-                    ) : (
-                      <Play className="w-12 h-12 md:w-16 md:h-16 text-white ml-1" />
-                    )}
+                    <Play className="w-12 h-12 md:w-16 md:h-16 text-white ml-1" />
                   </div>
                 </motion.div>
               )}
@@ -584,15 +713,19 @@ const VideoPlayer = () => {
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="absolute top-0 left-0 right-0 lg:right-80 bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 md:p-4"
+                  className={`absolute top-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 md:p-4`}
                 >
                   <div className="flex items-center justify-between">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/anime/${animeId}`);
+                        if (isFullscreen) {
+                          toggleFullscreen();
+                        } else {
+                          navigate(`/anime/${animeId}`);
+                        }
                       }}
-                      className="control-btn p-2 hover:bg-white/10 rounded-full"
+                      className="control-btn p-2 hover:bg-primary/20 rounded-full"
                     >
                       <ChevronLeft className="w-6 h-6 text-white" />
                     </button>
@@ -611,7 +744,7 @@ const VideoPlayer = () => {
                         e.stopPropagation();
                         setShowEpisodeList(!showEpisodeList);
                       }}
-                      className="lg:hidden control-btn p-2 hover:bg-white/10 rounded-full"
+                      className={`${isFullscreen ? 'block' : 'lg:hidden'} control-btn p-2 hover:bg-primary/20 rounded-full`}
                     >
                       <List className="w-6 h-6 text-white" />
                     </button>
@@ -628,7 +761,7 @@ const VideoPlayer = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="absolute bottom-0 left-0 right-0 lg:right-80 bg-gradient-to-t from-black/90 via-black/60 to-transparent"
+                    className={`absolute bottom-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-t from-black/90 via-black/60 to-transparent`}
                   >
                     {/* Progress Bar */}
                     <div className="px-4 pb-2">
@@ -662,7 +795,7 @@ const VideoPlayer = () => {
                               previousEpisode();
                             }}
                             disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
-                            className="control-btn p-2 disabled:opacity-30"
+                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
                           >
                             <SkipBack className="w-6 h-6 text-white" />
                           </button>
@@ -673,7 +806,7 @@ const VideoPlayer = () => {
                                 e.stopPropagation();
                                 skipBackward();
                               }}
-                              className="control-btn"
+                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
                             >
                               <ChevronLeft className="w-8 h-8 text-white" />
                             </button>
@@ -683,7 +816,7 @@ const VideoPlayer = () => {
                                 e.stopPropagation();
                                 togglePlay();
                               }}
-                              className="control-btn p-3 bg-red-600 rounded-full"
+                              className="control-btn p-3 bg-primary hover:bg-primary-dark rounded-full"
                             >
                               {isPlaying ? (
                                 <Pause className="w-7 h-7 text-white" />
@@ -697,7 +830,7 @@ const VideoPlayer = () => {
                                 e.stopPropagation();
                                 skipForward();
                               }}
-                              className="control-btn"
+                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
                             >
                               <ChevronRight className="w-8 h-8 text-white" />
                             </button>
@@ -709,7 +842,7 @@ const VideoPlayer = () => {
                               nextEpisode();
                             }}
                             disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
-                            className="control-btn p-2 disabled:opacity-30"
+                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
                           >
                             <SkipForward className="w-6 h-6 text-white" />
                           </button>
@@ -720,23 +853,54 @@ const VideoPlayer = () => {
                             {formatTime(currentTime)}
                           </span>
 
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowSpeedMenu(!showSpeedMenu);
-                              }}
-                              className="control-btn p-2"
-                            >
-                              <Settings className="w-5 h-5" />
-                            </button>
+                          <div className="flex items-center gap-3 relative">
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowSpeedMenu(!showSpeedMenu);
+                                }}
+                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                              >
+                                <Settings className="w-5 h-5" />
+                              </button>
+
+                              {/* Speed Menu */}
+                              <AnimatePresence>
+                                {showSpeedMenu && (
+                                  <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    className="absolute bottom-full right-0 mb-2 bg-dark/95 backdrop-blur-sm rounded-lg border border-primary/20 py-2 min-w-[120px] z-50"
+                                  >
+                                    <div className="px-3 py-1 text-xs text-gray-400 border-b border-gray-600 mb-1">
+                                      Playback Speed
+                                    </div>
+                                    {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                                      <button
+                                        key={speed}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          changePlaybackSpeed(speed);
+                                        }}
+                                        className={`w-full px-3 py-2 text-left text-sm hover:bg-primary/20 ${playbackSpeed === speed ? 'text-primary bg-primary/10' : 'text-white'
+                                          }`}
+                                      >
+                                        {speed}x {speed === 1 ? '(Normal)' : ''}
+                                      </button>
+                                    ))}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
 
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleMute();
                               }}
-                              className="control-btn p-2"
+                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
                             >
                               {isMuted ? (
                                 <VolumeX className="w-5 h-5" />
@@ -750,7 +914,7 @@ const VideoPlayer = () => {
                                 e.stopPropagation();
                                 toggleFullscreen();
                               }}
-                              className="control-btn p-2"
+                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
                             >
                               {isFullscreen ? (
                                 <Minimize className="w-5 h-5" />
@@ -775,7 +939,7 @@ const VideoPlayer = () => {
                               previousEpisode();
                             }}
                             disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
-                            className="control-btn p-2 disabled:opacity-30"
+                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
                           >
                             <SkipBack className="w-5 h-5" />
                           </button>
@@ -785,7 +949,7 @@ const VideoPlayer = () => {
                               e.stopPropagation();
                               skipBackward();
                             }}
-                            className="control-btn p-2"
+                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
                           >
                             <ChevronLeft className="w-6 h-6" />
                           </button>
@@ -795,7 +959,7 @@ const VideoPlayer = () => {
                               e.stopPropagation();
                               togglePlay();
                             }}
-                            className="control-btn p-3 bg-red-600 rounded-full"
+                            className="control-btn p-3 bg-primary hover:bg-primary-dark rounded-full"
                           >
                             {isPlaying ? (
                               <Pause className="w-6 h-6" />
@@ -809,7 +973,7 @@ const VideoPlayer = () => {
                               e.stopPropagation();
                               skipForward();
                             }}
-                            className="control-btn p-2"
+                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
                           >
                             <ChevronRight className="w-6 h-6" />
                           </button>
@@ -820,7 +984,7 @@ const VideoPlayer = () => {
                               nextEpisode();
                             }}
                             disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
-                            className="control-btn p-2 disabled:opacity-30"
+                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
                           >
                             <SkipForward className="w-5 h-5" />
                           </button>
@@ -830,23 +994,54 @@ const VideoPlayer = () => {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowSpeedMenu(!showSpeedMenu);
-                            }}
-                            className="control-btn p-2"
-                          >
-                            <Settings className="w-5 h-5" />
-                          </button>
+                        <div className="flex items-center gap-3 relative">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowSpeedMenu(!showSpeedMenu);
+                              }}
+                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                            >
+                              <Settings className="w-5 h-5" />
+                            </button>
+
+                            {/* Speed Menu */}
+                            <AnimatePresence>
+                              {showSpeedMenu && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: 10 }}
+                                  className="absolute bottom-full right-0 mb-2 bg-dark/95 backdrop-blur-sm rounded-lg border border-primary/20 py-2 min-w-[120px] z-50"
+                                >
+                                  <div className="px-3 py-1 text-xs text-gray-400 border-b border-gray-600 mb-1">
+                                    Playback Speed
+                                  </div>
+                                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                                    <button
+                                      key={speed}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        changePlaybackSpeed(speed);
+                                      }}
+                                      className={`w-full px-3 py-2 text-left text-sm hover:bg-primary/20 ${playbackSpeed === speed ? 'text-primary bg-primary/10' : 'text-white'
+                                        }`}
+                                    >
+                                      {speed}x {speed === 1 ? '(Normal)' : ''}
+                                    </button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
 
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleMute();
                             }}
-                            className="control-btn p-2"
+                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
                           >
                             {isMuted ? (
                               <VolumeX className="w-5 h-5" />
@@ -860,7 +1055,7 @@ const VideoPlayer = () => {
                               e.stopPropagation();
                               toggleFullscreen();
                             }}
-                            className="control-btn p-2"
+                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
                           >
                             {isFullscreen ? (
                               <Minimize className="w-5 h-5" />
@@ -886,7 +1081,7 @@ const VideoPlayer = () => {
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            className="absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter z-50 lg:hidden"
+            className={`absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter z-50 ${isFullscreen ? 'block' : 'lg:hidden'}`}
           >
             <div className="p-4 border-b border-dark-lighter">
               <div className="flex items-center justify-between">
@@ -904,11 +1099,10 @@ const VideoPlayer = () => {
                 <button
                   key={episode.id}
                   onClick={() => goToEpisode(episode.episodeNumber)}
-                  className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${
-                    episode.episodeNumber === currentEpisode?.episodeNumber
-                      ? 'bg-primary/20 border-primary/30'
-                      : ''
-                  }`}
+                  className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episodeNumber === currentEpisode?.episodeNumber
+                    ? 'bg-primary/20 border-primary/30'
+                    : ''
+                    }`}
                 >
                   <div className="flex gap-3">
                     <img
@@ -936,43 +1130,44 @@ const VideoPlayer = () => {
       </AnimatePresence>
 
       {/* Desktop Episode List */}
-      <div className="hidden lg:block absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter">
-        <div className="p-4 border-b border-dark-lighter">
-          <h3 className="text-lg font-semibold text-white">Episodes</h3>
-        </div>
-        <div className="overflow-y-auto h-full pb-4">
-          {anime?.episodes?.map((episode: any) => (
-            <button
-              key={episode.id}
-              onClick={() => goToEpisode(episode.episodeNumber)}
-              className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${
-                episode.episodeNumber === currentEpisode?.episodeNumber
+      {!isFullscreen && (
+        <div className="hidden lg:block absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter">
+          <div className="p-4 border-b border-dark-lighter">
+            <h3 className="text-lg font-semibold text-white">Episodes</h3>
+          </div>
+          <div className="overflow-y-auto h-full pb-4">
+            {anime?.episodes?.map((episode: any) => (
+              <button
+                key={episode.id}
+                onClick={() => goToEpisode(episode.episodeNumber)}
+                className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episodeNumber === currentEpisode?.episodeNumber
                   ? 'bg-primary/20 border-primary/30'
                   : ''
-              }`}
-            >
-              <div className="flex gap-3">
-                <img
-                  src={episode.thumbnail}
-                  alt={episode.title}
-                  className="w-16 h-9 object-cover rounded"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">
-                    Episode {episode.episodeNumber}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    {episode.title}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {episode.duration}
-                  </p>
+                  }`}
+              >
+                <div className="flex gap-3">
+                  <img
+                    src={episode.thumbnail}
+                    alt={episode.title}
+                    className="w-16 h-9 object-cover rounded"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">
+                      Episode {episode.episodeNumber}
+                    </p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {episode.title}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {episode.duration}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Next Episode Countdown */}
       <AnimatePresence>
