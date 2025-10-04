@@ -46,6 +46,7 @@ const VideoPlayer = () => {
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [isVimeoVideo, setIsVimeoVideo] = useState(false);
 
   // UI states
   const [showEpisodeList, setShowEpisodeList] = useState(false);
@@ -170,14 +171,18 @@ const VideoPlayer = () => {
         }
 
         setVideoUrl(videoUrl);
+        setIsVimeoVideo(videoUrl.includes('player.vimeo.com'));
         console.log('Video URL set successfully:', videoUrl);
+
+        // For Vimeo videos, hide loading immediately since iframe handles its own loading
+        if (videoUrl.includes('player.vimeo.com')) {
+          setIsLoadingVideo(false);
+        }
       } catch (error) {
         console.error('Error loading video:', error);
         setVideoError(true);
         setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
-      } finally {
         setIsLoadingVideo(false);
-        console.log('Video loading finished');
       }
     };
 
@@ -407,8 +412,8 @@ const VideoPlayer = () => {
 
 
 
-  // Loading state - only show if we don't have basic data
-  if ((!anime || !currentEpisode) && isLoadingVideo) {
+  // Loading state - only show if we don't have basic data and not a Vimeo video
+  if ((!anime || !currentEpisode) && isLoadingVideo && !isVimeoVideo) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">
@@ -618,15 +623,19 @@ const VideoPlayer = () => {
       >
         {videoUrl && (
           <div className="relative h-full w-full bg-black">
-            {videoUrl.includes('player.vimeo.com') ? (
+            {isVimeoVideo ? (
               // Vimeo iframe player
               <iframe
-                src={`${videoUrl}?autoplay=1&title=0&byline=0&portrait=0`}
+                src={`${videoUrl}?autoplay=1&title=0&byline=0&portrait=0&controls=1`}
                 className="h-full w-full"
                 frameBorder="0"
                 allow="autoplay; fullscreen; picture-in-picture"
                 allowFullScreen
                 title="Video Player"
+                onLoad={() => {
+                  setIsLoadingVideo(false);
+                  setIsBuffering(false);
+                }}
               />
             ) : (
               // Regular HTML5 video player
@@ -647,8 +656,8 @@ const VideoPlayer = () => {
               />
             )}
 
-            {/* Loading Spinner */}
-            {(isLoadingVideo || isBuffering) && (
+            {/* Loading Spinner - Hide for Vimeo */}
+            {(isLoadingVideo || isBuffering) && !isVimeoVideo && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <div className="relative">
                   <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
@@ -660,7 +669,7 @@ const VideoPlayer = () => {
             )}
 
             {/* Professional Video Controls - Hide for Vimeo */}
-            {!videoUrl.includes('player.vimeo.com') && (
+            {!isVimeoVideo && (
               <div className={`absolute bottom-0 left-0 right-0 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               {/* Progress Bar */}
               <div className="px-4 pb-2">
