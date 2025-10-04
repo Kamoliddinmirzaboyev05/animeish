@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import AnimeSlider from '../components/AnimeSlider';
+import SEO from '../components/SEO';
+import StructuredData from '../components/StructuredData';
 import { fetchAnimeById, fetchAnimeList } from '../services/api';
 import { translateStatus, translateGenres } from '../utils/translations';
 
@@ -15,7 +17,7 @@ const AnimeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
 
-  const isLoggedIn = sessionStorage.getItem('access_token');
+  const isLoggedIn = localStorage.getItem('access_token');
 
   useEffect(() => {
     const loadAnimeData = async () => {
@@ -39,7 +41,7 @@ const AnimeDetail = () => {
 
     loadAnimeData();
 
-    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
     setIsSaved(myList.includes(Number(id)));
   }, [id]);
 
@@ -65,15 +67,15 @@ const AnimeDetail = () => {
       return;
     }
 
-    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
 
     if (isSaved) {
       const updated = myList.filter((animeId: number) => animeId !== Number(id));
-      sessionStorage.setItem('myList', JSON.stringify(updated));
+      localStorage.setItem('myList', JSON.stringify(updated));
       setIsSaved(false);
     } else {
       myList.push(Number(id));
-      sessionStorage.setItem('myList', JSON.stringify(myList));
+      localStorage.setItem('myList', JSON.stringify(myList));
       setIsSaved(true);
     }
   };
@@ -110,6 +112,49 @@ const AnimeDetail = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO 
+        title={`${anime.title} - Anime Tomosha Qiling | Aniki`}
+        description={`${anime.title} anime serialini yuqori sifatda va bepul tomosha qiling. ${anime.description || 'Eng yaxshi anime streaming platformasi Aniki da.'}`}
+        keywords={`${anime.title}, anime, anime uzbek, ${anime.genres?.join(', ') || 'anime serial'}, anime tomosha, aniki`}
+        image={anime.banner || anime.thumbnail}
+        url={`https://aniki.uz/anime/${anime.id}`}
+        type="video.tv_show"
+      />
+      <StructuredData 
+        data={{
+          "@context": "https://schema.org",
+          "@type": "TVSeries",
+          "name": anime.title,
+          "description": anime.description || `${anime.title} anime seriali`,
+          "image": anime.banner || anime.thumbnail,
+          "url": `https://aniki.uz/anime/${anime.id}`,
+          "genre": anime.genres || [],
+          "datePublished": anime.year,
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": anime.rating || 8.5,
+            "ratingCount": 1000,
+            "bestRating": 10,
+            "worstRating": 1
+          },
+          "numberOfEpisodes": anime.totalEpisodes || anime.episodes?.length || 0,
+          "numberOfSeasons": 1,
+          "productionCompany": {
+            "@type": "Organization",
+            "name": anime.studio || "Unknown Studio"
+          },
+          "creator": {
+            "@type": "Organization",
+            "name": "Aniki",
+            "url": "https://aniki.uz"
+          },
+          "provider": {
+            "@type": "Organization",
+            "name": "Aniki",
+            "url": "https://aniki.uz"
+          }
+        }}
+      />
       <Navbar />
 
       <div className="pt-16">

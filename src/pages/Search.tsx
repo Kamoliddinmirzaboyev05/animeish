@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
+import SEO from '../components/SEO';
 import { fetchAnimeList } from '../services/api';
 import { translateGenres } from '../utils/translations';
 
@@ -113,6 +114,12 @@ const Search = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO 
+        title={debouncedQuery ? `"${debouncedQuery}" uchun qidiruv natijalari | Aniki` : 'Anime Qidiruv | Aniki'}
+        description={debouncedQuery ? `"${debouncedQuery}" uchun anime qidiruv natijalari. Eng yaxshi anime seriallar va filmlarni toping.` : 'Minglab anime seriallar va filmlar orasidan o\'zingizga yoqqanini toping. Aniki - eng yaxshi anime streaming platformasi.'}
+        keywords={`anime qidiruv, ${debouncedQuery || 'anime'}, anime serial, anime film, aniki, anime streaming, anime uzbek`}
+        url={`https://aniki.uz/search${debouncedQuery ? `?q=${encodeURIComponent(debouncedQuery)}` : ''}`}
+      />
       <Navbar />
 
       <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">

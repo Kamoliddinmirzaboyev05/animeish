@@ -13,10 +13,10 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
-  const isLoggedIn = sessionStorage.getItem('access_token');
+  const isLoggedIn = localStorage.getItem('access_token');
 
   useEffect(() => {
-    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
     setIsSaved(myList.includes(anime.id));
   }, [anime.id]);
 
@@ -29,15 +29,15 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
       return;
     }
     
-    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
     
     if (isSaved) {
       const updated = myList.filter((id: number) => id !== anime.id);
-      sessionStorage.setItem('myList', JSON.stringify(updated));
+      localStorage.setItem('myList', JSON.stringify(updated));
       setIsSaved(false);
     } else {
       myList.push(anime.id);
-      sessionStorage.setItem('myList', JSON.stringify(myList));
+      localStorage.setItem('myList', JSON.stringify(myList));
       setIsSaved(true);
     }
   };

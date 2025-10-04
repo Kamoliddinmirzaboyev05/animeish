@@ -1,0 +1,85 @@
+{
+  "name": "Aniki - Anime Streaming Platform",
+  "short_name": "Aniki",
+  "description": "O'zbekistondagi eng yaxshi anime streaming platformasi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#18181B",
+  "theme_color": "#740775",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "uz",
+  "dir": "ltr",
+  "categories": ["entertainment", "video", "streaming"],
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Aniki Desktop View"
+    },
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Aniki Mobile View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Qidiruv",
+      "short_name": "Search",
+      "description": "Anime qidirish",
+      "url": "/search",
+      "icons": [
+        {
+          "src": "/search-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Mening Ro'yxatim",
+      "short_name": "My List",
+      "description": "Saqlangan anime ro'yxati",
+      "url": "/my-list",
+      "icons": [
+        {
+          "src": "/list-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

@@ -18,7 +18,7 @@ const MyList = () => {
 
   const loadMyList = async () => {
     try {
-      const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+      const myList = JSON.parse(localStorage.getItem('myList') || '[]');
       const allAnime = await fetchAnimeList();
       const anime = allAnime.filter((a: any) => myList.includes(a.id));
       setMyListAnime(anime);
@@ -32,9 +32,9 @@ const MyList = () => {
   const removeFromList = (animeId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
     const updated = myList.filter((id: number) => id !== animeId);
-    sessionStorage.setItem('myList', JSON.stringify(updated));
+    localStorage.setItem('myList', JSON.stringify(updated));
     loadMyList();
   };
 
@@ -46,7 +46,7 @@ const MyList = () => {
         return (b.rating || 0) - (a.rating || 0);
       case 'recent':
       default:
-        const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+        const myList = JSON.parse(localStorage.getItem('myList') || '[]');
         return myList.indexOf(b.id) - myList.indexOf(a.id);
     }
   });

@@ -103,23 +103,23 @@ export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => 
 
 // Helper function to store auth data
 export const storeAuthData = (authData: AuthResponse) => {
-    sessionStorage.setItem('access_token', authData.access);
-    sessionStorage.setItem('refresh_token', authData.refresh);
+    localStorage.setItem('access_token', authData.access);
+    localStorage.setItem('refresh_token', authData.refresh);
     if (authData.user) {
-        sessionStorage.setItem('user', JSON.stringify(authData.user));
+        localStorage.setItem('user', JSON.stringify(authData.user));
     }
 };
 
 // Helper function to get stored auth data
 export const getAuthToken = (): string | null => {
-    return sessionStorage.getItem('access_token');
+    return localStorage.getItem('access_token');
 };
 
 // Helper function to clear auth data
 export const clearAuthData = () => {
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
 };
 
 // User profile functions

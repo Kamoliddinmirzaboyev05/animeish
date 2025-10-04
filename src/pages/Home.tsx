@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSlider from '../components/HeroSlider';
 import AnimeSlider from '../components/AnimeSlider';
+import SEO from '../components/SEO';
 import { getFeaturedAnime } from '../data/mockData';
 import {
   getTrendingAnime,
@@ -63,6 +64,12 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
+      <SEO 
+        title="Aniki - Eng Yaxshi Anime Seriallar va Filmlar | Bepul Tomosha Qiling"
+        description="O'zbekistondagi eng yaxshi anime streaming platformasi. Minglab anime seriallar va filmlarni yuqori sifatda, bepul va reklamasiz tomosha qiling. Yangi chiqarilganlar, mashhur anime va klassiklar."
+        keywords="anime, anime uzbek, anime serial, anime film, naruto, one piece, attack on titan, demon slayer, aniki, anime streaming, bepul anime, anime online, anime tomosha, anime uzbekcha"
+        url="https://aniki.uz"
+      />
       <Navbar />
       
       <div className="pt-16">

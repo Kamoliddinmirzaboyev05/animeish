@@ -1,0 +1,14 @@
+# Netlify redirects file
+# Handle client-side routing
+/*    /index.html   200
+
+# Force HTTPS
+http://aniki.uz/*    https://aniki.uz/:splat    301!
+http://www.aniki.uz/*    https://aniki.uz/:splat    301!
+https://www.aniki.uz/*    https://aniki.uz/:splat    301!
+
+# API redirects (if needed)
+/api/*    https://your-api-domain.com/api/:splat    200
+
+# Old URLs redirect (if migrating)
+/old-path/*    /new-path/:splat    301

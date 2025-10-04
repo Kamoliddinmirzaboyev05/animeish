@@ -27,13 +27,13 @@ const Navbar = () => {
 
   const handleLogout = () => {
     // Clear all auth data
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
-    sessionStorage.removeItem('user');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user');
     navigate('/');
   };
 
-  const isLoggedIn = sessionStorage.getItem('access_token');
+  const isLoggedIn = localStorage.getItem('access_token');
 
   return (
     <nav

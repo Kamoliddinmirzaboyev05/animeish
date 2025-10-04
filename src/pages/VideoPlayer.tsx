@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import SEO from '../components/SEO';
 import {
   List,
   Play,
@@ -27,7 +28,7 @@ const VideoPlayer = () => {
   const progressBarRef = useRef<HTMLDivElement>(null);
   const hideControlsTimerRef = useRef<number | undefined>(undefined);
 
-  const isLoggedIn = sessionStorage.getItem('access_token');
+  const isLoggedIn = localStorage.getItem('access_token');
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -114,7 +115,7 @@ const VideoPlayer = () => {
 
   const markAsWatched = useCallback(() => {
     if (!anime || !currentEpisode) return;
-    const watched = JSON.parse(sessionStorage.getItem('watchHistory') || '[]');
+    const watched = JSON.parse(localStorage.getItem('watchHistory') || '[]');
     const entry = {
       animeId: anime.id,
       episodeId: currentEpisode.id,
@@ -123,7 +124,7 @@ const VideoPlayer = () => {
     const filtered = watched.filter(
       (w: any) => !(w.animeId === anime.id && w.episodeId === currentEpisode.id)
     );
-    sessionStorage.setItem('watchHistory', JSON.stringify([entry, ...filtered]));
+    localStorage.setItem('watchHistory', JSON.stringify([entry, ...filtered]));
   }, [anime, currentEpisode]);
 
   // Load video URL
@@ -252,8 +253,9 @@ const VideoPlayer = () => {
     if (!videoRef.current) return;
     setDuration(videoRef.current.duration);
     setIsLoadingVideo(false);
+    setIsBuffering(false);
 
-    const savedPosition = sessionStorage.getItem(`video-${animeId}-${episodeNumber}`);
+    const savedPosition = localStorage.getItem(`video-${animeId}-${episodeNumber}`);
     if (savedPosition) {
       videoRef.current.currentTime = Number(savedPosition);
     }
@@ -279,7 +281,7 @@ const VideoPlayer = () => {
     }
 
     if (current > 0 && animeId && episodeNumber) {
-      sessionStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
+      localStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
     }
 
     if (duration > 0 && current / duration > 0.9) {
@@ -299,11 +301,37 @@ const VideoPlayer = () => {
   const handlePlay = () => {
     setIsPlaying(true);
     setIsBuffering(false);
+    setIsLoadingVideo(false);
   };
 
-  const handlePause = () => setIsPlaying(false);
-  const handleWaiting = () => setIsBuffering(true);
-  const handleCanPlay = () => setIsBuffering(false);
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+
+  const handleWaiting = () => {
+    if (videoRef.current && videoRef.current.readyState < 3) {
+      setIsBuffering(true);
+    }
+  };
+
+  const handleCanPlay = () => {
+    setIsBuffering(false);
+    setIsLoadingVideo(false);
+  };
+
+  const handleCanPlayThrough = () => {
+    setIsBuffering(false);
+    setIsLoadingVideo(false);
+  };
+
+  const handleLoadStart = () => {
+    setIsLoadingVideo(true);
+    setIsBuffering(true);
+  };
+
+  const handleLoadedData = () => {
+    setIsLoadingVideo(false);
+  };
 
   // Progress bar interaction
   const handleProgressBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -537,12 +565,22 @@ const VideoPlayer = () => {
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative h-screen bg-black overflow-hidden ${isFullscreen && isMobile ? 'landscape-fullscreen' : ''}`}
-      style={{ WebkitTapHighlightColor: 'transparent' }}
-    >
-      <style>{`
+    <>
+      <SEO
+        title={`${anime?.title} - Episode ${currentEpisode?.episodeNumber} | Aniki`}
+        description={`${anime?.title} anime serialining ${currentEpisode?.episodeNumber}-qismini tomosha qiling. ${currentEpisode?.title || 'Eng yaxshi anime streaming platformasi Aniki da.'}`}
+        keywords={`${anime?.title}, episode ${currentEpisode?.episodeNumber}, anime, anime uzbek, anime tomosha, aniki, ${anime?.genres?.join(', ') || 'anime serial'}`}
+        image={currentEpisode?.thumbnail || anime?.banner}
+        url={`https://aniki.uz/watch/${animeId}/${episodeNumber}`}
+        type="video.episode"
+        noIndex={true}
+      />
+      <div
+        ref={containerRef}
+        className={`relative h-screen bg-black overflow-hidden ${isFullscreen && isMobile ? 'landscape-fullscreen' : ''}`}
+        style={{ WebkitTapHighlightColor: 'transparent' }}
+      >
+        <style>{`
         * {
           -webkit-tap-highlight-color: transparent;
           -webkit-touch-callout: none;
@@ -622,185 +660,338 @@ const VideoPlayer = () => {
         }
       `}</style>
 
-      {/* Video Container */}
-      <div className={`absolute inset-0 ${!isFullscreen ? 'lg:right-80' : ''}`}>
-        {videoUrl && (
-          <div
-            className="relative h-full w-full bg-black"
-            onClick={handleVideoClick}
-            onDoubleClick={handleVideoDoubleClick}
-            onMouseMove={handleMouseMove}
-            onMouseEnter={() => setShowControls(true)}
-          >
-            {isVimeoVideo ? (
-              <iframe
-                src={`${videoUrl}?autoplay=1&title=0&byline=0&portrait=0&controls=1`}
-                className="h-full w-full"
-                style={{ border: 'none' }}
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-                title="Video Player"
-                onLoad={() => {
-                  setIsLoadingVideo(false);
-                  setIsBuffering(false);
-                }}
-              />
-            ) : (
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                poster={currentEpisode?.thumbnail}
-                className="h-full w-full object-contain"
-                onLoadedMetadata={handleLoadedMetadata}
-                onTimeUpdate={handleTimeUpdate}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onWaiting={handleWaiting}
-                onCanPlay={handleCanPlay}
-                playsInline
-                preload="metadata"
-              />
-            )}
-
-            {/* Loading/Buffering */}
-            {(isLoadingVideo || isBuffering) && !isVimeoVideo && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
-                <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
-              </div>
-            )}
-
-            {/* Skip Labels */}
-            <AnimatePresence>
-              {showSkipLabel && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className={`absolute top-1/2 ${showSkipLabel === 'backward' ? 'left-8' : 'right-8'} transform -translate-y-1/2 bg-black/80 backdrop-blur-sm rounded-lg p-4 pointer-events-none`}
-                >
-                  <div className="flex items-center gap-2 text-white">
-                    {showSkipLabel === 'backward' ? (
-                      <RotateCcw className="w-6 h-6" />
-                    ) : (
-                      <RotateCw className="w-6 h-6" />
-                    )}
-                    <span className="text-sm font-medium">10s</span>
-                  </div>
-                </motion.div>
+        {/* Video Container */}
+        <div className={`absolute inset-0 ${!isFullscreen ? 'lg:right-80' : ''}`}>
+          {videoUrl && (
+            <div
+              className="relative h-full w-full bg-black"
+              onClick={handleVideoClick}
+              onDoubleClick={handleVideoDoubleClick}
+              onMouseMove={handleMouseMove}
+              onMouseEnter={() => setShowControls(true)}
+            >
+              {isVimeoVideo ? (
+                <iframe
+                  src={`${videoUrl}?autoplay=1&title=0&byline=0&portrait=0&controls=1`}
+                  className="h-full w-full"
+                  style={{ border: 'none' }}
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                  title="Video Player"
+                  onLoad={() => {
+                    setIsLoadingVideo(false);
+                    setIsBuffering(false);
+                  }}
+                />
+              ) : (
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  poster={currentEpisode?.thumbnail}
+                  className="h-full w-full object-contain"
+                  onLoadedMetadata={handleLoadedMetadata}
+                  onTimeUpdate={handleTimeUpdate}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onWaiting={handleWaiting}
+                  onCanPlay={handleCanPlay}
+                  onCanPlayThrough={handleCanPlayThrough}
+                  onLoadStart={handleLoadStart}
+                  onLoadedData={handleLoadedData}
+                  playsInline
+                  preload="metadata"
+                />
               )}
-            </AnimatePresence>
 
-            {/* Center Play/Pause Button */}
-            <AnimatePresence>
-              {!isVimeoVideo && showControls && !isPlaying && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                >
-                  <div className="bg-black/60 rounded-full p-4 backdrop-blur-sm">
-                    <Play className="w-12 h-12 md:w-16 md:h-16 text-white ml-1" />
-                  </div>
-                </motion.div>
+              {/* Loading/Buffering */}
+              {((isLoadingVideo || isBuffering) && !isPlaying) && !isVimeoVideo && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
+                  <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+                </div>
               )}
-            </AnimatePresence>
 
-            {/* Top Gradient & Header */}
-            <AnimatePresence>
-              {!isVimeoVideo && showControls && (
-                <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={`absolute top-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 md:p-4`}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isFullscreen) {
-                          toggleFullscreen();
-                        } else {
-                          navigate(`/anime/${animeId}`);
-                        }
-                      }}
-                      className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                    >
-                      <ChevronLeft className="w-6 h-6 text-white" />
-                    </button>
-
-                    <div className="flex-1 mx-3 text-center">
-                      <h1 className="text-sm md:text-lg font-semibold text-white truncate">
-                        {anime?.title}
-                      </h1>
-                      <p className="text-xs md:text-sm text-gray-300 truncate">
-                        Episode {currentEpisode?.episodeNumber}: {currentEpisode?.title}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowEpisodeList(!showEpisodeList);
-                      }}
-                      className={`${isFullscreen ? 'block' : 'lg:hidden'} control-btn p-2 hover:bg-primary/20 rounded-full`}
-                    >
-                      <List className="w-6 h-6 text-white" />
-                    </button>
-                  </div>
-                </motion.div>
+              {/* Buffering during playback */}
+              {isBuffering && isPlaying && !isVimeoVideo && (
+                <div className="absolute top-4 right-4 pointer-events-none">
+                  <div className="w-8 h-8 border-2 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+                </div>
               )}
-            </AnimatePresence>
 
-            {/* Bottom Controls */}
-            {!isVimeoVideo && (
+              {/* Skip Labels */}
               <AnimatePresence>
-                {showControls && (
+                {showSkipLabel && (
                   <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    className={`absolute bottom-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-t from-black/90 via-black/60 to-transparent`}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className={`absolute top-1/2 ${showSkipLabel === 'backward' ? 'left-8' : 'right-8'} transform -translate-y-1/2 bg-black/80 backdrop-blur-sm rounded-lg p-4 pointer-events-none`}
                   >
-                    {/* Progress Bar */}
-                    <div className="px-4 pb-2">
-                      <div
-                        ref={progressBarRef}
-                        className="progress-bar"
-                        onClick={handleProgressBarClick}
-                        onTouchStart={handleProgressBarTouchStart}
-                        onTouchMove={handleProgressBarTouchMove}
-                        onTouchEnd={handleProgressBarTouchEnd}
-                      >
-                        <div
-                          className="progress-bar-buffered"
-                          style={{ width: `${(bufferedTime / duration) * 100}%` }}
-                        />
-                        <div
-                          className="progress-bar-fill"
-                          style={{ width: `${(currentTime / duration) * 100}%` }}
-                        />
-                      </div>
+                    <div className="flex items-center gap-2 text-white">
+                      {showSkipLabel === 'backward' ? (
+                        <RotateCcw className="w-6 h-6" />
+                      ) : (
+                        <RotateCw className="w-6 h-6" />
+                      )}
+                      <span className="text-sm font-medium">10s</span>
                     </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                    {/* Controls */}
-                    <div className="px-4 pb-4">
-                      {/* Mobile Controls */}
-                      <div className="md:hidden space-y-3">
-                        <div className="flex items-center justify-between">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              previousEpisode();
-                            }}
-                            disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
-                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                          >
-                            <SkipBack className="w-6 h-6 text-white" />
-                          </button>
+              {/* Center Play/Pause Button */}
+              <AnimatePresence>
+                {!isVimeoVideo && showControls && !isPlaying && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
+                    <div className="bg-black/60 rounded-full p-4 backdrop-blur-sm">
+                      <Play className="w-12 h-12 md:w-16 md:h-16 text-white ml-1" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                          <div className="flex items-center gap-6">
+              {/* Top Gradient & Header */}
+              <AnimatePresence>
+                {!isVimeoVideo && showControls && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`absolute top-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 md:p-4`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isFullscreen) {
+                            toggleFullscreen();
+                          } else {
+                            navigate(`/anime/${animeId}`);
+                          }
+                        }}
+                        className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                      >
+                        <ChevronLeft className="w-6 h-6 text-white" />
+                      </button>
+
+                      <div className="flex-1 mx-3 text-center">
+                        <h1 className="text-sm md:text-lg font-semibold text-white truncate">
+                          {anime?.title}
+                        </h1>
+                        <p className="text-xs md:text-sm text-gray-300 truncate">
+                          Episode {currentEpisode?.episodeNumber}: {currentEpisode?.title}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowEpisodeList(!showEpisodeList);
+                        }}
+                        className={`${isFullscreen ? 'block' : 'lg:hidden'} control-btn p-2 hover:bg-primary/20 rounded-full`}
+                      >
+                        <List className="w-6 h-6 text-white" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Bottom Controls */}
+              {!isVimeoVideo && (
+                <AnimatePresence>
+                  {showControls && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      className={`absolute bottom-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-t from-black/90 via-black/60 to-transparent`}
+                    >
+                      {/* Progress Bar */}
+                      <div className="px-4 pb-2">
+                        <div
+                          ref={progressBarRef}
+                          className="progress-bar"
+                          onClick={handleProgressBarClick}
+                          onTouchStart={handleProgressBarTouchStart}
+                          onTouchMove={handleProgressBarTouchMove}
+                          onTouchEnd={handleProgressBarTouchEnd}
+                        >
+                          <div
+                            className="progress-bar-buffered"
+                            style={{ width: `${(bufferedTime / duration) * 100}%` }}
+                          />
+                          <div
+                            className="progress-bar-fill"
+                            style={{ width: `${(currentTime / duration) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Controls */}
+                      <div className="px-4 pb-4">
+                        {/* Mobile Controls */}
+                        <div className="md:hidden space-y-3">
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                previousEpisode();
+                              }}
+                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
+                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                            >
+                              <SkipBack className="w-6 h-6 text-white" />
+                            </button>
+
+                            <div className="flex items-center gap-6">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  skipBackward();
+                                }}
+                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                              >
+                                <ChevronLeft className="w-8 h-8 text-white" />
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePlay();
+                                }}
+                                className="control-btn p-3 bg-primary hover:bg-primary-dark rounded-full"
+                              >
+                                {isPlaying ? (
+                                  <Pause className="w-7 h-7 text-white" />
+                                ) : (
+                                  <Play className="w-7 h-7 text-white ml-0.5" />
+                                )}
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  skipForward();
+                                }}
+                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                              >
+                                <ChevronRight className="w-8 h-8 text-white" />
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nextEpisode();
+                              }}
+                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
+                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                            >
+                              <SkipForward className="w-6 h-6 text-white" />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center justify-between text-white">
+                            <span className="text-sm font-medium">
+                              {formatTime(currentTime)}
+                            </span>
+
+                            <div className="flex items-center gap-3 relative">
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowSpeedMenu(!showSpeedMenu);
+                                  }}
+                                  className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                                >
+                                  <Settings className="w-5 h-5" />
+                                </button>
+
+                                {/* Speed Menu */}
+                                <AnimatePresence>
+                                  {showSpeedMenu && (
+                                    <motion.div
+                                      initial={{ opacity: 0, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      exit={{ opacity: 0, y: 10 }}
+                                      className="absolute bottom-full right-0 mb-2 bg-dark/95 backdrop-blur-sm rounded-lg border border-primary/20 py-2 min-w-[120px] z-50"
+                                    >
+                                      <div className="px-3 py-1 text-xs text-gray-400 border-b border-gray-600 mb-1">
+                                        Playback Speed
+                                      </div>
+                                      {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                                        <button
+                                          key={speed}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            changePlaybackSpeed(speed);
+                                          }}
+                                          className={`w-full px-3 py-2 text-left text-sm hover:bg-primary/20 ${playbackSpeed === speed ? 'text-primary bg-primary/10' : 'text-white'
+                                            }`}
+                                        >
+                                          {speed}x {speed === 1 ? '(Normal)' : ''}
+                                        </button>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleMute();
+                                }}
+                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                              >
+                                {isMuted ? (
+                                  <VolumeX className="w-5 h-5" />
+                                ) : (
+                                  <Volume2 className="w-5 h-5" />
+                                )}
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFullscreen();
+                                }}
+                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                              >
+                                {isFullscreen ? (
+                                  <Minimize className="w-5 h-5" />
+                                ) : (
+                                  <Maximize className="w-5 h-5" />
+                                )}
+                              </button>
+                            </div>
+
+                            <span className="text-sm font-medium">
+                              {formatTime(duration)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Desktop Controls */}
+                        <div className="hidden md:flex items-center justify-between text-white">
+                          <div className="flex items-center gap-4">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                previousEpisode();
+                              }}
+                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
+                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                            >
+                              <SkipBack className="w-5 h-5" />
+                            </button>
+
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -808,7 +999,7 @@ const VideoPlayer = () => {
                               }}
                               className="control-btn p-2 hover:bg-primary/20 rounded-full"
                             >
-                              <ChevronLeft className="w-8 h-8 text-white" />
+                              <ChevronLeft className="w-6 h-6" />
                             </button>
 
                             <button
@@ -819,9 +1010,9 @@ const VideoPlayer = () => {
                               className="control-btn p-3 bg-primary hover:bg-primary-dark rounded-full"
                             >
                               {isPlaying ? (
-                                <Pause className="w-7 h-7 text-white" />
+                                <Pause className="w-6 h-6" />
                               ) : (
-                                <Play className="w-7 h-7 text-white ml-0.5" />
+                                <Play className="w-6 h-6 ml-0.5" />
                               )}
                             </button>
 
@@ -832,26 +1023,24 @@ const VideoPlayer = () => {
                               }}
                               className="control-btn p-2 hover:bg-primary/20 rounded-full"
                             >
-                              <ChevronRight className="w-8 h-8 text-white" />
+                              <ChevronRight className="w-6 h-6" />
                             </button>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nextEpisode();
+                              }}
+                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
+                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                            >
+                              <SkipForward className="w-5 h-5" />
+                            </button>
+
+                            <span className="text-sm font-medium ml-4">
+                              {formatTime(currentTime)} / {formatTime(duration)}
+                            </span>
                           </div>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              nextEpisode();
-                            }}
-                            disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
-                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                          >
-                            <SkipForward className="w-6 h-6 text-white" />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center justify-between text-white">
-                          <span className="text-sm font-medium">
-                            {formatTime(currentTime)}
-                          </span>
 
                           <div className="flex items-center gap-3 relative">
                             <div className="relative">
@@ -923,178 +1112,78 @@ const VideoPlayer = () => {
                               )}
                             </button>
                           </div>
-
-                          <span className="text-sm font-medium">
-                            {formatTime(duration)}
-                          </span>
                         </div>
                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+            </div>
+          )}
+        </div>
 
-                      {/* Desktop Controls */}
-                      <div className="hidden md:flex items-center justify-between text-white">
-                        <div className="flex items-center gap-4">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              previousEpisode();
-                            }}
-                            disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
-                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                          >
-                            <SkipBack className="w-5 h-5" />
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              skipBackward();
-                            }}
-                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                          >
-                            <ChevronLeft className="w-6 h-6" />
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePlay();
-                            }}
-                            className="control-btn p-3 bg-primary hover:bg-primary-dark rounded-full"
-                          >
-                            {isPlaying ? (
-                              <Pause className="w-6 h-6" />
-                            ) : (
-                              <Play className="w-6 h-6 ml-0.5" />
-                            )}
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              skipForward();
-                            }}
-                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                          >
-                            <ChevronRight className="w-6 h-6" />
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              nextEpisode();
-                            }}
-                            disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
-                            className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                          >
-                            <SkipForward className="w-5 h-5" />
-                          </button>
-
-                          <span className="text-sm font-medium ml-4">
-                            {formatTime(currentTime)} / {formatTime(duration)}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3 relative">
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowSpeedMenu(!showSpeedMenu);
-                              }}
-                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                            >
-                              <Settings className="w-5 h-5" />
-                            </button>
-
-                            {/* Speed Menu */}
-                            <AnimatePresence>
-                              {showSpeedMenu && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: 10 }}
-                                  className="absolute bottom-full right-0 mb-2 bg-dark/95 backdrop-blur-sm rounded-lg border border-primary/20 py-2 min-w-[120px] z-50"
-                                >
-                                  <div className="px-3 py-1 text-xs text-gray-400 border-b border-gray-600 mb-1">
-                                    Playback Speed
-                                  </div>
-                                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                                    <button
-                                      key={speed}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        changePlaybackSpeed(speed);
-                                      }}
-                                      className={`w-full px-3 py-2 text-left text-sm hover:bg-primary/20 ${playbackSpeed === speed ? 'text-primary bg-primary/10' : 'text-white'
-                                        }`}
-                                    >
-                                      {speed}x {speed === 1 ? '(Normal)' : ''}
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleMute();
-                            }}
-                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                          >
-                            {isMuted ? (
-                              <VolumeX className="w-5 h-5" />
-                            ) : (
-                              <Volume2 className="w-5 h-5" />
-                            )}
-                          </button>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFullscreen();
-                            }}
-                            className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                          >
-                            {isFullscreen ? (
-                              <Minimize className="w-5 h-5" />
-                            ) : (
-                              <Maximize className="w-5 h-5" />
-                            )}
-                          </button>
-                        </div>
+        {/* Episode List Sidebar */}
+        <AnimatePresence>
+          {showEpisodeList && (
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              className={`absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter z-50 ${isFullscreen ? 'block' : 'lg:hidden'}`}
+            >
+              <div className="p-4 border-b border-dark-lighter">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">Episodes</h3>
+                  <button
+                    onClick={() => setShowEpisodeList(false)}
+                    className="p-2 hover:bg-white/10 rounded-full"
+                  >
+                    <ChevronRight className="w-5 h-5 text-white" />
+                  </button>
+                </div>
+              </div>
+              <div className="overflow-y-auto h-full pb-20">
+                {anime?.episodes?.map((episode: any) => (
+                  <button
+                    key={episode.id}
+                    onClick={() => goToEpisode(episode.episodeNumber)}
+                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episodeNumber === currentEpisode?.episodeNumber
+                      ? 'bg-primary/20 border-primary/30'
+                      : ''
+                      }`}
+                  >
+                    <div className="flex gap-3">
+                      <img
+                        src={episode.thumbnail}
+                        alt={episode.title}
+                        className="w-16 h-9 object-cover rounded"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          Episode {episode.episodeNumber}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {episode.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {episode.duration}
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Episode List Sidebar */}
-      <AnimatePresence>
-        {showEpisodeList && (
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            className={`absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter z-50 ${isFullscreen ? 'block' : 'lg:hidden'}`}
-          >
-            <div className="p-4 border-b border-dark-lighter">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Episodes</h3>
-                <button
-                  onClick={() => setShowEpisodeList(false)}
-                  className="p-2 hover:bg-white/10 rounded-full"
-                >
-                  <ChevronRight className="w-5 h-5 text-white" />
-                </button>
+                  </button>
+                ))}
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Desktop Episode List */}
+        {!isFullscreen && (
+          <div className="hidden lg:block absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter">
+            <div className="p-4 border-b border-dark-lighter">
+              <h3 className="text-lg font-semibold text-white">Episodes</h3>
             </div>
-            <div className="overflow-y-auto h-full pb-20">
+            <div className="overflow-y-auto h-full pb-4">
               {anime?.episodes?.map((episode: any) => (
                 <button
                   key={episode.id}
@@ -1125,75 +1214,35 @@ const VideoPlayer = () => {
                 </button>
               ))}
             </div>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
 
-      {/* Desktop Episode List */}
-      {!isFullscreen && (
-        <div className="hidden lg:block absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter">
-          <div className="p-4 border-b border-dark-lighter">
-            <h3 className="text-lg font-semibold text-white">Episodes</h3>
-          </div>
-          <div className="overflow-y-auto h-full pb-4">
-            {anime?.episodes?.map((episode: any) => (
-              <button
-                key={episode.id}
-                onClick={() => goToEpisode(episode.episodeNumber)}
-                className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episodeNumber === currentEpisode?.episodeNumber
-                  ? 'bg-primary/20 border-primary/30'
-                  : ''
-                  }`}
-              >
-                <div className="flex gap-3">
-                  <img
-                    src={episode.thumbnail}
-                    alt={episode.title}
-                    className="w-16 h-9 object-cover rounded"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
-                      Episode {episode.episodeNumber}
-                    </p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {episode.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {episode.duration}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Next Episode Countdown */}
-      <AnimatePresence>
-        {showNextEpisodeCountdown && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-dark/90 backdrop-blur-sm rounded-lg p-6 text-center z-50"
-          >
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Next Episode Starting In
-            </h3>
-            <div className="text-4xl font-bold text-primary mb-4">
-              {countdown}
-            </div>
-            <button
-              onClick={() => setShowNextEpisodeCountdown(false)}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white text-sm"
+        {/* Next Episode Countdown */}
+        <AnimatePresence>
+          {showNextEpisodeCountdown && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-dark/90 backdrop-blur-sm rounded-lg p-6 text-center z-50"
             >
-              Cancel
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Next Episode Starting In
+              </h3>
+              <div className="text-4xl font-bold text-primary mb-4">
+                {countdown}
+              </div>
+              <button
+                onClick={() => setShowNextEpisodeCountdown(false)}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-full text-white text-sm"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 };
 

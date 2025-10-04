@@ -28,8 +28,8 @@ const Profile = () => {
         const profileData = await getUserProfile();
         setUser(profileData);
         
-        // Also update sessionStorage with fresh data
-        sessionStorage.setItem('user', JSON.stringify(profileData));
+        // Also update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(profileData));
 
         // Fetch anime list for stats calculation
         const allAnime = await fetchAnimeList();
@@ -40,8 +40,8 @@ const Profile = () => {
         setError(apiError.message || 'Profil ma\'lumotlarini yuklashda xatolik');
         console.error('Profile fetch error:', err);
         
-        // Fallback to sessionStorage data if API fails
-        const userData = sessionStorage.getItem('user');
+        // Fallback to localStorage data if API fails
+        const userData = localStorage.getItem('user');
         if (userData) {
           try {
             setUser(JSON.parse(userData));
@@ -54,7 +54,7 @@ const Profile = () => {
       }
     };
 
-    const history = JSON.parse(sessionStorage.getItem('watchHistory') || '[]');
+    const history = JSON.parse(localStorage.getItem('watchHistory') || '[]');
     setWatchHistory(history);
     
     fetchUserData();
