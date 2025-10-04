@@ -220,9 +220,11 @@ const transformAnimeData = (apiData: any) => {
             title: ep.title,
             thumbnail: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&h=170&fit=crop',
             duration: ep.duration || '24:00',
-            videoUrl: ep.video_url || '/video.mp4',
+            video_url: ep.video_url, // Keep original field name for API compatibility
+            videoUrl: ep.video_url || '/video.mp4', // Also keep transformed name for backward compatibility
             watched: false
         })) || [],
+        videos: apiData.videos || [],
         trailerUrl: apiData.videos?.[0]?.url
     };
 };
