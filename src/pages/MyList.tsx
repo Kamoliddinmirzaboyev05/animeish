@@ -3,23 +3,30 @@ import { motion } from 'framer-motion';
 import { Trash2, Heart } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
-import { mockAnime } from '../data/mockData';
-import type { Anime } from '../data/mockData';
+import { fetchAnimeList } from '../services/api';
 
 type SortOption = 'recent' | 'alphabetical' | 'rating';
 
 const MyList = () => {
-  const [myListAnime, setMyListAnime] = useState<Anime[]>([]);
+  const [myListAnime, setMyListAnime] = useState<any[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadMyList();
   }, []);
 
-  const loadMyList = () => {
-    const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
-    const anime = mockAnime.filter((a) => myList.includes(a.id));
-    setMyListAnime(anime);
+  const loadMyList = async () => {
+    try {
+      const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
+      const allAnime = await fetchAnimeList();
+      const anime = allAnime.filter((a: any) => myList.includes(a.id));
+      setMyListAnime(anime);
+    } catch (error) {
+      console.error('Error loading my list:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const removeFromList = (animeId: number, e: React.MouseEvent) => {
@@ -34,15 +41,26 @@ const MyList = () => {
   const sortedAnime = [...myListAnime].sort((a, b) => {
     switch (sortBy) {
       case 'alphabetical':
-        return a.title.localeCompare(b.title);
+        return (a.title || '').localeCompare(b.title || '');
       case 'rating':
-        return b.rating - a.rating;
+        return (b.rating || 0) - (a.rating || 0);
       case 'recent':
       default:
         const myList = JSON.parse(sessionStorage.getItem('myList') || '[]');
         return myList.indexOf(b.id) - myList.indexOf(a.id);
     }
   });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="pt-24 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

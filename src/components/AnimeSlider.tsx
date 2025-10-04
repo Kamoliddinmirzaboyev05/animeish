@@ -1,11 +1,9 @@
 import { useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import AnimeCard from './AnimeCard';
-import type { Anime } from '../data/mockData';
-
 interface AnimeSliderProps {
   title: string;
-  anime: Anime[];
+  anime: any[];
   showProgress?: boolean;
 }
 

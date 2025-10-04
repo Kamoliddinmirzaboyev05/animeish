@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
-import { mockAnime } from '../data/mockData';
+import { fetchAnimeList } from '../services/api';
 import { translateGenres } from '../utils/translations';
 
 const Search = () => {
@@ -17,12 +17,33 @@ const Search = () => {
   const [yearRange, setYearRange] = useState({ min: 2000, max: 2024 });
   const [minRating, setMinRating] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [animeList, setAnimeList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAnimeData = async () => {
+      try {
+        const data = await fetchAnimeList();
+        setAnimeList(data);
+      } catch (error) {
+        console.error('Error loading anime data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnimeData();
+  }, []);
 
   const allGenres = useMemo(() => {
     const genres = new Set<string>();
-    mockAnime.forEach((anime) => anime.genres.forEach((g) => genres.add(g)));
+    animeList.forEach((anime) => {
+      if (anime.genres && Array.isArray(anime.genres)) {
+        anime.genres.forEach((g: string) => genres.add(g));
+      }
+    });
     return Array.from(genres).sort();
-  }, []);
+  }, [animeList]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -38,19 +59,19 @@ const Search = () => {
   };
 
   const filteredAnime = useMemo(() => {
-    return mockAnime.filter((anime) => {
+    return animeList.filter((anime) => {
       const matchesSearch = anime.title
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(debouncedQuery.toLowerCase());
       
       const matchesGenre =
         selectedGenres.length === 0 ||
-        selectedGenres.some((g) => anime.genres.includes(g));
+        (anime.genres && Array.isArray(anime.genres) && selectedGenres.some((g) => anime.genres.includes(g)));
       
       const matchesYear =
         anime.year >= yearRange.min && anime.year <= yearRange.max;
       
-      const matchesRating = anime.rating >= minRating;
+      const matchesRating = (anime.rating || 0) >= minRating;
       
       const matchesStatus =
         !selectedStatus || anime.status === selectedStatus;
@@ -63,7 +84,7 @@ const Search = () => {
         matchesStatus
       );
     });
-  }, [debouncedQuery, selectedGenres, yearRange, minRating, selectedStatus]);
+  }, [animeList, debouncedQuery, selectedGenres, yearRange, minRating, selectedStatus]);
 
   const resetFilters = () => {
     setSelectedGenres([]);
@@ -78,6 +99,17 @@ const Search = () => {
     yearRange.max !== 2024 ||
     minRating > 0 ||
     selectedStatus !== '';
+
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <div className="pt-24 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">

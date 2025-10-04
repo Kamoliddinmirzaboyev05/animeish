@@ -1,11 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Star, Heart, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Anime } from '../data/mockData';
 import { useState, useEffect } from 'react';
 
 interface AnimeCardProps {
-  anime: Anime;
+  anime: any;
   showProgress?: boolean;
 }
 
@@ -43,8 +42,8 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
     }
   };
 
-  const watchedEpisodes = anime.episodes.filter(e => e.watched).length;
-  const progress = (watchedEpisodes / anime.totalEpisodes) * 100;
+  const watchedEpisodes = anime.episodes?.filter((e: any) => e.watched).length || 0;
+  const progress = anime.totalEpisodes > 0 ? (watchedEpisodes / anime.totalEpisodes) * 100 : 0;
 
   return (
     <Link to={`/anime/${anime.id}`}>
@@ -76,7 +75,7 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
           <div className="absolute top-2 right-2 flex gap-2">
             <div className="bg-dark/90 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1">
               <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-semibold">{anime.rating}</span>
+              <span className="text-xs font-semibold">{anime.rating || 'N/A'}</span>
             </div>
           </div>
 
@@ -93,7 +92,7 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
             <div className="absolute bottom-0 left-0 right-0">
               <div className="bg-dark/90 backdrop-blur-sm px-2 py-1">
                 <div className="text-xs mb-1">
-                  {watchedEpisodes} / {anime.totalEpisodes} episodes
+                  {watchedEpisodes} / {anime.totalEpisodes || 0} episodes
                 </div>
                 <div className="h-1 bg-dark-lighter rounded-full overflow-hidden">
                   <div
@@ -111,14 +110,14 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
             {anime.title}
           </h3>
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>{anime.year}</span>
+            <span>{anime.year || 'N/A'}</span>
             <span>•</span>
-            <span>{anime.totalEpisodes} eps</span>
+            <span>{anime.totalEpisodes || 0} eps</span>
           </div>
           <div className="flex flex-wrap gap-1">
-            {anime.genres.slice(0, 2).map((genre) => (
+            {anime.genres?.slice(0, 2).map((genre: string, index: number) => (
               <span
-                key={genre}
+                key={`${genre}-${index}`}
                 className="text-xs bg-dark-light px-2 py-0.5 rounded-full text-gray-300"
               >
                 {genre}

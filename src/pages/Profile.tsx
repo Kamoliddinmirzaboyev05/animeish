@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { User, Clock, Star, TrendingUp, Play, Crown, Calendar, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { mockAnime } from '../data/mockData';
+import { fetchAnimeList } from '../services/api';
 import { getUserProfile, type UserProfile, type ApiError } from '../services/api';
 
 interface WatchHistoryEntry {
@@ -16,6 +16,7 @@ const Profile = () => {
   const [watchHistory, setWatchHistory] = useState<WatchHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [animeList, setAnimeList] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -29,6 +30,10 @@ const Profile = () => {
         
         // Also update sessionStorage with fresh data
         sessionStorage.setItem('user', JSON.stringify(profileData));
+
+        // Fetch anime list for stats calculation
+        const allAnime = await fetchAnimeList();
+        setAnimeList(allAnime);
         
       } catch (err) {
         const apiError = err as ApiError;
@@ -62,9 +67,9 @@ const Profile = () => {
 
     const genreCounts: Record<string, number> = {};
     watchHistory.forEach((entry) => {
-      const anime = mockAnime.find((a) => a.id === entry.animeId);
+      const anime = animeList.find((a: any) => a.id === entry.animeId);
       if (anime) {
-        anime.genres.forEach((genre) => {
+        anime.genres?.forEach((genre: string) => {
           genreCounts[genre] = (genreCounts[genre] || 0) + 1;
         });
       }
@@ -79,14 +84,14 @@ const Profile = () => {
       hoursSpent,
       favoriteGenre,
     };
-  }, [watchHistory]);
+  }, [watchHistory, animeList]);
 
   const recentHistory = useMemo(() => {
     return watchHistory
       .slice(0, 10)
       .map((entry) => {
-        const anime = mockAnime.find((a) => a.id === entry.animeId);
-        const episode = anime?.episodes.find((e) => e.id === entry.episodeId);
+        const anime = animeList.find((a: any) => a.id === entry.animeId);
+        const episode = anime?.episodes?.find((e: any) => e.id === entry.episodeId);
         return {
           ...entry,
           anime,
@@ -94,7 +99,7 @@ const Profile = () => {
         };
       })
       .filter((entry) => entry.anime && entry.episode);
-  }, [watchHistory]);
+  }, [watchHistory, animeList]);
 
   if (isLoading) {
     return (

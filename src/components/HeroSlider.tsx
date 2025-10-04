@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Play, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { Anime } from '../data/mockData';
-
 interface HeroSliderProps {
-  anime: Anime[];
+  anime: any[];
 }
 
 const HeroSlider = ({ anime }: HeroSliderProps) => {
@@ -69,7 +67,7 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
               <span className="text-gray-400">•</span>
               <span>{current.year}</span>
               <span className="text-gray-400">•</span>
-              <span>{current.totalEpisodes} Episodes</span>
+              <span>{current.totalEpisodes || 0} Episodes</span>
               <span className="text-gray-400">•</span>
               <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded">
                 {current.status}

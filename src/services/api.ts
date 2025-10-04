@@ -199,3 +199,96 @@ export const getVideoUrlById = async (animeId: string | number): Promise<string>
         return '/video.mp4'; // Fallback to local video
     }
 };
+
+// Data transformation function
+const transformAnimeData = (apiData: any) => {
+    return {
+        id: apiData.id,
+        title: apiData.title,
+        slug: apiData.slug,
+        description: apiData.description,
+        thumbnail: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=600&fit=crop',
+        banner: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1920&h=600&fit=crop',
+        rating: apiData.rating_avg || 0,
+        year: apiData.release_year || 2022,
+        totalEpisodes: apiData.episodes?.length || 0,
+        genres: apiData.genres?.map((g: any) => g.name) || [],
+        status: apiData.type === 'series' ? 'Ongoing' : 'Completed',
+        episodes: apiData.episodes?.map((ep: any) => ({
+            id: ep.id,
+            episodeNumber: ep.episode_number,
+            title: ep.title,
+            thumbnail: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&h=170&fit=crop',
+            duration: ep.duration || '24:00',
+            videoUrl: ep.video_url || '/video.mp4',
+            watched: false
+        })) || [],
+        trailerUrl: apiData.videos?.[0]?.url
+    };
+};
+
+// Anime API functions
+export const fetchAnimeList = async (): Promise<any[]> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/movies/`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch anime list');
+        }
+        const data = await response.json();
+        return data.map(transformAnimeData);
+    } catch (error) {
+        console.error('Error fetching anime list:', error);
+        return [];
+    }
+};
+
+export const fetchAnimeById = async (id: number): Promise<any | null> => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/movies/`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch anime list');
+        }
+        const data = await response.json();
+        const anime = data.find((item: any) => item.id === id);
+        return anime ? transformAnimeData(anime) : null;
+    } catch (error) {
+        console.error('Error fetching anime by ID:', error);
+        return null;
+    }
+};
+
+// Helper functions for different anime categories
+export const getTrendingAnime = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.slice(0, 10);
+};
+
+export const getPopularAnime = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.slice(5, 15);
+};
+
+export const getNewReleases = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.filter((anime: any) => anime.year >= 2020);
+};
+
+export const getActionAnime = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.filter((anime: any) => anime.genres?.includes('Action'));
+};
+
+export const getRomanceAnime = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.filter((anime: any) => anime.genres?.includes('Romance'));
+};
+
+export const getFantasyAnime = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.filter((anime: any) => anime.genres?.includes('Fantasy'));
+};
+
+export const getContinueWatching = async () => {
+    const animeList = await fetchAnimeList();
+    return animeList.filter((anime: any) => anime.episodes?.some((e: any) => e.watched));
+};

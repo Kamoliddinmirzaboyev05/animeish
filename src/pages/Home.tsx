@@ -1,8 +1,9 @@
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import HeroSlider from '../components/HeroSlider';
 import AnimeSlider from '../components/AnimeSlider';
+import { getFeaturedAnime } from '../data/mockData';
 import {
-  getFeaturedAnime,
   getTrendingAnime,
   getPopularAnime,
   getNewReleases,
@@ -10,9 +11,56 @@ import {
   getRomanceAnime,
   getFantasyAnime,
   getContinueWatching,
-} from '../data/mockData';
+} from '../services/api';
 
 const Home = () => {
+  const [trendingAnime, setTrendingAnime] = useState<any[]>([]);
+  const [popularAnime, setPopularAnime] = useState<any[]>([]);
+  const [newReleases, setNewReleases] = useState<any[]>([]);
+  const [actionAnime, setActionAnime] = useState<any[]>([]);
+  const [romanceAnime, setRomanceAnime] = useState<any[]>([]);
+  const [fantasyAnime, setFantasyAnime] = useState<any[]>([]);
+  const [continueWatching, setContinueWatching] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAnimeData = async () => {
+      try {
+        const [trending, popular, newRel, action, romance, fantasy, continueWatch] = await Promise.all([
+          getTrendingAnime(),
+          getPopularAnime(),
+          getNewReleases(),
+          getActionAnime(),
+          getRomanceAnime(),
+          getFantasyAnime(),
+          getContinueWatching(),
+        ]);
+
+        setTrendingAnime(trending);
+        setPopularAnime(popular);
+        setNewReleases(newRel);
+        setActionAnime(action);
+        setRomanceAnime(romance);
+        setFantasyAnime(fantasy);
+        setContinueWatching(continueWatch);
+      } catch (error) {
+        console.error('Error loading anime data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAnimeData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -21,13 +69,15 @@ const Home = () => {
         <HeroSlider anime={getFeaturedAnime()} />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-          <AnimeSlider title="Tomosha Davom Etish" anime={getContinueWatching()} showProgress />
-          <AnimeSlider title="Hozir Mashhur" anime={getTrendingAnime()} />
-          <AnimeSlider title="Bu Hafta Ommabop" anime={getPopularAnime()} />
-          <AnimeSlider title="Yangi Chiqarilganlar" anime={getNewReleases()} />
-          <AnimeSlider title="Jangari" anime={getActionAnime()} />
-          <AnimeSlider title="Romantik" anime={getRomanceAnime()} />
-          <AnimeSlider title="Fantastik" anime={getFantasyAnime()} />
+          {continueWatching.length > 0 && (
+            <AnimeSlider title="Tomosha Davom Etish" anime={continueWatching} showProgress />
+          )}
+          <AnimeSlider title="Hozir Mashhur" anime={trendingAnime} />
+          <AnimeSlider title="Bu Hafta Ommabop" anime={popularAnime} />
+          <AnimeSlider title="Yangi Chiqarilganlar" anime={newReleases} />
+          <AnimeSlider title="Jangari" anime={actionAnime} />
+          <AnimeSlider title="Romantik" anime={romanceAnime} />
+          <AnimeSlider title="Fantastik" anime={fantasyAnime} />
         </div>
         
         {/* Footer */}

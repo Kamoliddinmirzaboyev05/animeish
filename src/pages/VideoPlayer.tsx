@@ -4,16 +4,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   List,
-  ChevronLeft,
-  ChevronRight,
   Play,
   Pause,
   Volume2,
   VolumeX,
   Maximize,
+  SkipBack,
+  SkipForward,
 } from 'lucide-react';
-import { mockAnime } from '../data/mockData';
-import type { Anime, Episode } from '../data/mockData';
+import { fetchAnimeById } from '../services/api';
 
 const VideoPlayer = () => {
   const { animeId, episodeNumber } = useParams();
@@ -32,8 +31,8 @@ const VideoPlayer = () => {
   }, [isLoggedIn, navigate]);
 
   // Core states
-  const [anime, setAnime] = useState<Anime | null>(null);
-  const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
+  const [anime, setAnime] = useState<any | null>(null);
+  const [currentEpisode, setCurrentEpisode] = useState<any | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [isLoadingVideo, setIsLoadingVideo] = useState(true);
   const [videoError, setVideoError] = useState(false);
@@ -54,13 +53,23 @@ const VideoPlayer = () => {
 
   // Load anime data
   useEffect(() => {
-    const foundAnime = mockAnime.find((a) => a.id === Number(animeId));
-    if (foundAnime) {
-      setAnime(foundAnime);
-      const episode = foundAnime.episodes.find(
-        (e) => e.episodeNumber === Number(episodeNumber)
-      );
-      setCurrentEpisode(episode || foundAnime.episodes[0]);
+    const loadAnimeData = async () => {
+      try {
+        const foundAnime = await fetchAnimeById(Number(animeId));
+        if (foundAnime) {
+          setAnime(foundAnime);
+          const episode = foundAnime.episodes?.find(
+            (e: any) => e.episodeNumber === Number(episodeNumber)
+          );
+          setCurrentEpisode(episode || foundAnime.episodes?.[0]);
+        }
+      } catch (error) {
+        console.error('Error loading anime data:', error);
+      }
+    };
+
+    if (animeId) {
+      loadAnimeData();
     }
   }, [animeId, episodeNumber]);
 
@@ -149,6 +158,16 @@ const VideoPlayer = () => {
     }
   };
 
+  const skipForward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.min(videoRef.current.currentTime + 10, duration);
+  };
+
+  const skipBackward = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+  };
+
   // Video event handlers
   const handleLoadedMetadata = () => {
     if (!videoRef.current) return;
@@ -177,7 +196,7 @@ const VideoPlayer = () => {
       markAsWatched();
       if (anime && currentEpisode && !showNextEpisodeCountdown) {
         const nextEp = anime.episodes.find(
-          (e) => e.episodeNumber === currentEpisode.episodeNumber + 1
+          (e: any) => e.episodeNumber === currentEpisode.episodeNumber + 1
         );
         if (nextEp) {
           setShowNextEpisodeCountdown(true);
@@ -208,23 +227,80 @@ const VideoPlayer = () => {
       timer = window.setTimeout(() => setShowControls(false), 3000);
     };
 
+    const handleMouseMove = () => resetTimer();
+    const handleMouseLeave = () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(() => setShowControls(false), 1000);
+    };
+
+    const videoContainer = document.getElementById('video-container');
+    if (videoContainer) {
+      videoContainer.addEventListener('mousemove', handleMouseMove);
+      videoContainer.addEventListener('mouseleave', handleMouseLeave);
+    }
+
     resetTimer();
 
-    return () => clearTimeout(timer);
-  }, [currentTime]);
+    return () => {
+      clearTimeout(timer);
+      if (videoContainer) {
+        videoContainer.removeEventListener('mousemove', handleMouseMove);
+        videoContainer.removeEventListener('mouseleave', handleMouseLeave);
+      }
+    };
+  }, []);
 
   // Keyboard controls
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        togglePlay();
+      // Prevent default behavior when video player is focused
+      if (e.target === videoRef.current || (e.target as Element)?.closest('#video-container')) {
+        switch (e.code) {
+          case 'Space':
+            e.preventDefault();
+            togglePlay();
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            skipBackward();
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            skipForward();
+            break;
+          case 'ArrowUp':
+            e.preventDefault();
+            if (videoRef.current) {
+              const newVolume = Math.min(volume + 0.1, 1);
+              videoRef.current.volume = newVolume;
+              setVolume(newVolume);
+              setIsMuted(false);
+            }
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            if (videoRef.current) {
+              const newVolume = Math.max(volume - 0.1, 0);
+              videoRef.current.volume = newVolume;
+              setVolume(newVolume);
+              setIsMuted(newVolume === 0);
+            }
+            break;
+          case 'KeyF':
+            e.preventDefault();
+            toggleFullscreen();
+            break;
+          case 'KeyM':
+            e.preventDefault();
+            toggleMute();
+            break;
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [volume]);
 
   // Format time helper
   const formatTime = (time: number) => {
@@ -259,7 +335,7 @@ const VideoPlayer = () => {
   const nextEpisode = useCallback(() => {
     if (!anime || !currentEpisode) return;
     const nextEp = anime.episodes.find(
-      (e) => e.episodeNumber === currentEpisode.episodeNumber + 1
+      (e: any) => e.episodeNumber === currentEpisode.episodeNumber + 1
     );
     if (nextEp) {
       goToEpisode(nextEp.episodeNumber);
@@ -269,7 +345,7 @@ const VideoPlayer = () => {
   const previousEpisode = useCallback(() => {
     if (!anime || !currentEpisode) return;
     const prevEp = anime.episodes.find(
-      (e) => e.episodeNumber === currentEpisode.episodeNumber - 1
+      (e: any) => e.episodeNumber === currentEpisode.episodeNumber - 1
     );
     if (prevEp) {
       goToEpisode(prevEp.episodeNumber);
@@ -317,6 +393,98 @@ const VideoPlayer = () => {
 
   return (
     <div className="relative h-screen bg-black overflow-hidden">
+      {/* Custom Styles for Video Player */}
+      <style>{`
+        .video-progress-bar {
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+          cursor: pointer;
+        }
+        
+        .video-progress-bar::-webkit-slider-track {
+          background: rgba(255, 255, 255, 0.2);
+          height: 4px;
+          border-radius: 2px;
+        }
+        
+        .video-progress-bar::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #740775;
+          cursor: pointer;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        
+        .video-progress-bar:hover::-webkit-slider-thumb {
+          opacity: 1;
+        }
+        
+        .video-progress-bar::-moz-range-track {
+          background: rgba(255, 255, 255, 0.2);
+          height: 4px;
+          border-radius: 2px;
+          border: none;
+        }
+        
+        .video-progress-bar::-moz-range-thumb {
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #740775;
+          cursor: pointer;
+          border: none;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+        
+        .video-progress-bar:hover::-moz-range-thumb {
+          opacity: 1;
+        }
+        
+        .volume-slider {
+          -webkit-appearance: none;
+          appearance: none;
+          background: transparent;
+          cursor: pointer;
+        }
+        
+        .volume-slider::-webkit-slider-track {
+          background: rgba(255, 255, 255, 0.2);
+          height: 3px;
+          border-radius: 1.5px;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          height: 12px;
+          width: 12px;
+          border-radius: 50%;
+          background: #740775;
+          cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-track {
+          background: rgba(255, 255, 255, 0.2);
+          height: 3px;
+          border-radius: 1.5px;
+          border: none;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+          height: 12px;
+          width: 12px;
+          border-radius: 50%;
+          background: #740775;
+          cursor: pointer;
+          border: none;
+        }
+      `}</style>
       {/* Top Bar */}
       <div className="absolute top-0 left-0 right-0 lg:right-80 z-50 bg-gradient-to-b from-black/80 to-transparent p-2 sm:p-4">
         <div className="flex items-center justify-between">
@@ -346,14 +514,14 @@ const VideoPlayer = () => {
       </div>
 
       {/* Video Player Container */}
-      <div className="absolute inset-0 lg:right-80">
+      <div className="absolute inset-0 lg:right-80" id="video-container">
         {videoUrl && (
           <div className="relative h-full w-full bg-black">
             <video
               ref={videoRef}
               src={videoUrl}
               poster={currentEpisode?.thumbnail}
-              className="h-full w-full object-contain"
+              className="h-full w-full object-contain cursor-pointer"
               onLoadedMetadata={handleLoadedMetadata}
               onTimeUpdate={handleTimeUpdate}
               onPlay={handlePlay}
@@ -364,7 +532,7 @@ const VideoPlayer = () => {
               onClick={togglePlay}
             />
 
-            {/* YouTube-style Loading Spinner */}
+            {/* Loading Spinner */}
             {(isLoadingVideo || isBuffering) && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                 <div className="relative">
@@ -376,52 +544,87 @@ const VideoPlayer = () => {
               </div>
             )}
 
-            {/* Custom Video Controls */}
-            {showControls && (
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                {/* Progress Bar */}
-                <div className="mb-4">
+            {/* Professional Video Controls */}
+            <div className={`absolute bottom-0 left-0 right-0 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Progress Bar */}
+              <div className="px-4 pb-2">
+                <div className="relative group">
                   <input
                     type="range"
                     min="0"
                     max={duration || 0}
                     value={currentTime}
                     onChange={handleSeek}
-                    className="w-full slider-progress"
+                    className="w-full video-progress-bar"
                     style={{
-                      background: `linear-gradient(to right, #740775 0%, #740775 ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) ${(currentTime / duration) * 100}%, rgba(75, 85, 99, 0.5) 100%)`
+                      background: `linear-gradient(to right, #740775 0%, #740775 ${(currentTime / duration) * 100}%, rgba(255, 255, 255, 0.2) ${(currentTime / duration) * 100}%, rgba(255, 255, 255, 0.2) 100%)`
                     }}
                   />
-                </div>
 
-                {/* Control Buttons */}
+                </div>
+              </div>
+
+              {/* Control Bar */}
+              <div className="bg-gradient-to-t from-black/90 via-black/70 to-transparent px-4 pb-4 pt-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                  {/* Left Controls */}
+                  <div className="flex items-center gap-2">
+                    {/* Previous Episode */}
+                    <button
+                      onClick={previousEpisode}
+                      disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === currentEpisode.episodeNumber - 1)}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Oldingi epizod"
+                    >
+                      <SkipBack className="w-5 h-5 text-white" />
+                    </button>
+
+                    {/* Play/Pause */}
                     <button
                       onClick={togglePlay}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                      className="p-3 hover:bg-white/10 rounded-full transition-colors"
+                      title={isPlaying ? 'Pauza' : 'Ijro'}
                     >
                       {isPlaying ? (
                         <Pause className="w-6 h-6 text-white" />
                       ) : (
-                        <Play className="w-6 h-6 text-white" />
+                        <Play className="w-6 h-6 text-white ml-1" />
                       )}
                     </button>
 
+                    {/* Next Episode */}
+                    <button
+                      onClick={nextEpisode}
+                      disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === currentEpisode.episodeNumber + 1)}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Keyingi epizod"
+                    >
+                      <SkipForward className="w-5 h-5 text-white" />
+                    </button>
+
+                    {/* Time Display */}
+                    <div className="text-white text-sm font-medium ml-2">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </div>
+                  </div>
+
+                  {/* Right Controls */}
+                  <div className="flex items-center gap-2">
+                    {/* Volume Control */}
                     <div className="flex items-center gap-2 group">
                       <button
                         onClick={toggleMute}
                         className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        title={isMuted ? 'Ovozni yoqish' : 'Ovozni o\'chirish'}
                       >
                         {isMuted || volume === 0 ? (
                           <VolumeX className="w-5 h-5 text-white" />
-                        ) : volume < 0.5 ? (
-                          <Volume2 className="w-5 h-5 text-white" />
                         ) : (
                           <Volume2 className="w-5 h-5 text-white" />
                         )}
                       </button>
                       
+                      {/* Volume Slider */}
                       <div className="relative w-0 group-hover:w-20 transition-all duration-200 overflow-hidden">
                         <input
                           type="range"
@@ -432,50 +635,29 @@ const VideoPlayer = () => {
                           onChange={handleVolumeChange}
                           className="w-20 volume-slider"
                           style={{
-                            background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(75, 85, 99, 0.5) ${(isMuted ? 0 : volume) * 100}%, rgba(75, 85, 99, 0.5) 100%)`
+                            background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255, 255, 255, 0.2) ${(isMuted ? 0 : volume) * 100}%, rgba(255, 255, 255, 0.2) 100%)`
                           }}
                         />
                       </div>
                     </div>
 
-                    <div className="text-white text-sm">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </div>
+                    {/* Fullscreen */}
+                    <button
+                      onClick={toggleFullscreen}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                      title="To'liq ekran"
+                    >
+                      <Maximize className="w-5 h-5 text-white" />
+                    </button>
                   </div>
-
-                  <button
-                    onClick={toggleFullscreen}
-                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                  >
-                    <Maximize className="w-5 h-5 text-white" />
-                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Episode Navigation Arrows - Hidden on mobile for better UX */}
-      <div className="hidden sm:block absolute top-1/2 left-4 z-40 -translate-y-1/2">
-        <button
-          onClick={previousEpisode}
-          disabled={!anime.episodes.find(e => e.episodeNumber === currentEpisode.episodeNumber - 1)}
-          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
-      </div>
 
-      <div className="hidden sm:block absolute top-1/2 right-4 z-40 -translate-y-1/2 lg:right-[340px]">
-        <button
-          onClick={nextEpisode}
-          disabled={!anime.episodes.find(e => e.episodeNumber === currentEpisode.episodeNumber + 1)}
-          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
-      </div>
 
       {/* Next Episode Countdown */}
       {showNextEpisodeCountdown && (
@@ -526,7 +708,7 @@ const VideoPlayer = () => {
               </button>
             </div>
             <div className="p-2">
-              {anime.episodes.map((episode) => (
+              {anime.episodes.map((episode: any) => (
                 <button
                   key={episode.id}
                   onClick={() => goToEpisode(episode.episodeNumber)}
@@ -564,7 +746,7 @@ const VideoPlayer = () => {
           <h3 className="font-semibold text-white">Epizodlar</h3>
         </div>
         <div className="p-2">
-          {anime.episodes.map((episode) => (
+          {anime.episodes.map((episode: any) => (
             <button
               key={episode.id}
               onClick={() => goToEpisode(episode.episodeNumber)}
