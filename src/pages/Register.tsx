@@ -25,9 +25,8 @@ const Register = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const [step, setStep] = useState<'email' | 'register'>('email');
   const [verifiedEmail, setVerifiedEmail] = useState(location.state?.email || '');
-  const [isEmailVerified, setIsEmailVerified] = useState(location.state?.verified || false);
+  const [isEmailVerified] = useState(location.state?.verified || false);
 
   // Check if user is already logged in
   useEffect(() => {
