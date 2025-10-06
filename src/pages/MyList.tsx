@@ -79,7 +79,7 @@ const MyList = () => {
               {myListAnime.length} ta anime
             </p>
           </div>
-
+{/* Kamoliddin Mirzaboyev Product */}
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-400 hidden sm:inline">Saralash:</span>
             <select
