@@ -1,6 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import RegisterEmail from './pages/RegisterEmail';
+import RegisterOTP from './pages/RegisterOTP';
+import RegisterDetails from './pages/RegisterDetails';
+import VerifyOTP from './pages/VerifyOTP';
+import ForgotPasswordEmail from './pages/ForgotPasswordEmail';
+import ForgotPasswordReset from './pages/ForgotPasswordReset';
 import Home from './pages/Home';
 import AnimeDetail from './pages/AnimeDetail';
 import VideoPlayer from './pages/VideoPlayer';
@@ -16,7 +22,19 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        
+        {/* New Registration Flow */}
+        <Route path="/register" element={<RegisterEmail />} />
+        <Route path="/register/verify-otp" element={<RegisterOTP />} />
+        <Route path="/register/details" element={<RegisterDetails />} />
+        
+        {/* Forgot Password Flow */}
+        <Route path="/forgot-password" element={<ForgotPasswordEmail />} />
+        <Route path="/forgot-password/verify" element={<ForgotPasswordReset />} />
+        
+        {/* Old routes for backward compatibility */}
+        <Route path="/old-register" element={<Register />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
         
         <Route path="/home" element={<Home />} />
         

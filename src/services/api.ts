@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://animeish.pythonanywhere.com/api';
+const API_BASE_URL = 'https://animeish.pythonanywhere.com';
 
 export interface VideoData {
     id: string;
@@ -11,6 +11,60 @@ export interface RegisterData {
     password: string;
     confirm_password: string;
 }
+
+export interface OTPData {
+    email: string;
+}
+
+export interface VerifyOTPData {
+    email: string;
+    code: string;
+}
+
+export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse> => {
+    try {
+        console.log('Verifying OTP:', verifyData);
+        
+        const response = await fetch(`${API_BASE_URL}/verify-otp/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(verifyData),
+        });
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            // If response is not JSON (like HTML error page), handle it
+            console.error('Failed to parse response as JSON:', parseError);
+            throw {
+                message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
+                errors: {},
+            } as ApiError;
+        }
+
+        console.log('OTP verification response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: data.message || data.error || 'OTP verification failed',
+                errors: data,
+            } as ApiError;
+        }
+
+        // If verification successful and token is returned, store it
+        if (data.access) {
+            storeAuthData(data);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('OTP verification error:', error);
+        throw error;
+    }
+};
 
 export interface LoginData {
     username: string;
@@ -36,13 +90,70 @@ export interface UserProfile {
     id: number;
     first_name: string;
     username: string;
+    email: string;
     avatar: string | null;
     bio: string | null;
     is_premium: boolean;
     created_at: string;
 }
 
+export interface Bookmark {
+    id: number;
+    movie: {
+        id: number;
+        title: string;
+        slug: string;
+        poster: string;
+        description: string;
+        rating_avg: number;
+        release_year: number;
+        genres: Array<{ id: number; name: string }>;
+        type: string;
+        episodes: any[];
+    };
+    created_at: string;
+}
+
 // Authentication functions
+export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> => {
+    try {
+        console.log('Sending OTP to email:', otpData.email);
+        
+        const response = await fetch(`${API_BASE_URL}/send-otp/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(otpData),
+        });
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            console.error('Failed to parse OTP response as JSON:', parseError);
+            throw {
+                message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
+                errors: {},
+            } as ApiError;
+        }
+
+        console.log('OTP response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: data.message || data.error || 'Failed to send OTP',
+                errors: data,
+            } as ApiError;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('OTP sending error:', error);
+        throw error;
+    }
+};
+
 export const registerUser = async (userData: RegisterData): Promise<AuthResponse> => {
     try {
         console.log('Registering user with data:', userData);
@@ -159,7 +270,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
 export const fetchVideoData = async (): Promise<VideoData[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/anime`);
+        const response = await fetch(`${API_BASE_URL}/movies/`);
         if (!response.ok) {
             throw new Error('Failed to fetch video data');
         }
@@ -293,4 +404,119 @@ export const getFantasyAnime = async () => {
 export const getContinueWatching = async () => {
     const animeList = await fetchAnimeList();
     return animeList.filter((anime: any) => anime.episodes?.some((e: any) => e.watched));
+};
+
+// Bookmarks API functions
+export const getBookmarks = async (): Promise<any[]> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('No access token found');
+        }
+
+        console.log('Fetching bookmarks...');
+        
+        const response = await fetch(`${API_BASE_URL}/bookmarks/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        const data = await response.json();
+        console.log('Bookmarks response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: 'Failed to fetch bookmarks',
+                errors: data,
+            } as ApiError;
+        }
+
+        // Transform bookmark data to match our anime format
+        return data.map((bookmark: Bookmark) => transformAnimeData(bookmark.movie));
+    } catch (error) {
+        console.error('Bookmarks fetch error:', error);
+        return [];
+    }
+};
+
+export const addBookmark = async (movieId: number): Promise<{ message: string }> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('No access token found');
+        }
+
+        console.log('Adding bookmark for movie:', movieId);
+        
+        const response = await fetch(`${API_BASE_URL}/bookmarks/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ movie_id: movieId }),
+        });
+
+        const data = await response.json();
+        console.log('Add bookmark response:', { status: response.status, data });
+
+        if (!response.ok) {
+            throw {
+                message: 'Failed to add bookmark',
+                errors: data,
+            } as ApiError;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Add bookmark error:', error);
+        throw error;
+    }
+};
+
+export const removeBookmark = async (movieId: number): Promise<{ message: string }> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('No access token found');
+        }
+
+        console.log('Removing bookmark for movie:', movieId);
+        
+        const response = await fetch(`${API_BASE_URL}/bookmarks/${movieId}/`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        console.log('Remove bookmark response:', { status: response.status });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw {
+                message: 'Failed to remove bookmark',
+                errors: data,
+            } as ApiError;
+        }
+
+        return { message: 'Bookmark removed successfully' };
+    } catch (error) {
+        console.error('Remove bookmark error:', error);
+        throw error;
+    }
+};
+
+export const checkBookmarkStatus = async (movieId: number): Promise<boolean> => {
+    try {
+        const bookmarks = await getBookmarks();
+        return bookmarks.some((bookmark: any) => bookmark.id === movieId);
+    } catch (error) {
+        console.error('Check bookmark status error:', error);
+        return false;
+    }
 };

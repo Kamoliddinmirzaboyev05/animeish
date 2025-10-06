@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Loader2 } from 'lucide-react';
-import { registerUser, loginUser, storeAuthData, type ApiError } from '../services/api';
+import { Mail, Lock, User, Loader2, CheckCircle } from 'lucide-react';
+import { registerUser, loginUser, storeAuthData, sendOTP, type ApiError } from '../services/api';
 
 const registerSchema = z.object({
   first_name: z.string().min(2, 'Ism kamida 2 ta belgidan iborat bo\'lishi kerak'),
@@ -21,9 +21,21 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 const Register = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState('');
+  const [step, setStep] = useState<'email' | 'register'>('email');
+  const [verifiedEmail, setVerifiedEmail] = useState(location.state?.email || '');
+  const [isEmailVerified, setIsEmailVerified] = useState(location.state?.verified || false);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      navigate('/');
+    }
+  }, [navigate]);
   
   const {
     register,
@@ -33,19 +45,45 @@ const Register = () => {
     resolver: zodResolver(registerSchema),
   });
 
+  const handleEmailSubmit = async (email: string) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      await sendOTP({ email });
+      setVerifiedEmail(email);
+      navigate('/verify-otp', { state: { email } });
+    } catch (err) {
+      const apiError = err as ApiError;
+      console.error('Send OTP error:', err);
+      setError(apiError.message || 'Email yuborishda xatolik yuz berdi');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const onSubmit = async (data: RegisterFormData) => {
+    // If email is not verified, send OTP first
+    if (!isEmailVerified) {
+      await handleEmailSubmit(data.email);
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setSuccess('');
 
     try {
-      // Register user
-      await registerUser(data);
+      // Register user with verified email
+      await registerUser({
+        ...data,
+        email: verifiedEmail || data.email
+      });
       setSuccess('Ro\'yxatdan muvaffaqiyatli o\'tdingiz! Tizimga kirmoqda...');
       
       // Automatically login after successful registration
       const loginResponse = await loginUser({
-        username: data.email,
+        username: verifiedEmail || data.email,
         password: data.password,
       });
 
@@ -135,16 +173,26 @@ const Register = () => {
               <label className="block text-sm font-medium mb-2">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                {isEmailVerified ? (
+                  <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                ) : null}
                 <input
                   {...register('email')}
                   type="email"
-                  className="w-full pl-10 pr-4 py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors"
+                  className={`w-full pl-10 ${isEmailVerified ? 'pr-10' : 'pr-4'} py-3 bg-dark border border-dark-lighter rounded-lg focus:outline-none focus:border-primary transition-colors ${isEmailVerified ? 'border-green-500/50 bg-green-500/5' : ''}`}
                   placeholder="sizning@email.com"
-                  disabled={isLoading}
+                  disabled={isLoading || isEmailVerified}
+                  defaultValue={verifiedEmail}
                 />
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+              )}
+              {isEmailVerified && (
+                <p className="mt-1 text-sm text-green-500 flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Email tasdiqlandi
+                </p>
               )}
             </div>
 
@@ -190,10 +238,10 @@ const Register = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Ro'yxatdan o'tmoqda...
+                  {isEmailVerified ? 'Ro\'yxatdan o\'tmoqda...' : 'Email tasdiqlash kodi yuborilmoqda...'}
                 </>
               ) : (
-                'Hisob Yaratish'
+                isEmailVerified ? 'Hisob Yaratish' : 'Email Tasdiqlash'
               )}
             </button>
           </form>

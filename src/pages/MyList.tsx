@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Trash2, Heart } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
-import { fetchAnimeList } from '../services/api';
+import { getBookmarks, removeBookmark } from '../services/api';
 
 type SortOption = 'recent' | 'alphabetical' | 'rating';
 
@@ -18,10 +18,8 @@ const MyList = () => {
 
   const loadMyList = async () => {
     try {
-      const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-      const allAnime = await fetchAnimeList();
-      const anime = allAnime.filter((a: any) => myList.includes(a.id));
-      setMyListAnime(anime);
+      const bookmarks = await getBookmarks();
+      setMyListAnime(bookmarks);
     } catch (error) {
       console.error('Error loading my list:', error);
     } finally {
@@ -29,13 +27,15 @@ const MyList = () => {
     }
   };
 
-  const removeFromList = (animeId: number, e: React.MouseEvent) => {
+  const removeFromList = async (animeId: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-    const updated = myList.filter((id: number) => id !== animeId);
-    localStorage.setItem('myList', JSON.stringify(updated));
-    loadMyList();
+    try {
+      await removeBookmark(animeId);
+      loadMyList(); // Reload the list after removal
+    } catch (error) {
+      console.error('Error removing from list:', error);
+    }
   };
 
   const sortedAnime = [...myListAnime].sort((a, b) => {
@@ -46,8 +46,7 @@ const MyList = () => {
         return (b.rating || 0) - (a.rating || 0);
       case 'recent':
       default:
-        const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-        return myList.indexOf(b.id) - myList.indexOf(a.id);
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
     }
   });
 

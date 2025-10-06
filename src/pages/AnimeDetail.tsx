@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar';
 import AnimeSlider from '../components/AnimeSlider';
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
-import { fetchAnimeById, fetchAnimeList } from '../services/api';
+import { fetchAnimeById, fetchAnimeList, addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
 import { translateStatus, translateGenres } from '../utils/translations';
 
 const AnimeDetail = () => {
@@ -41,8 +41,18 @@ const AnimeDetail = () => {
 
     loadAnimeData();
 
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-    setIsSaved(myList.includes(Number(id)));
+    const checkSavedStatus = async () => {
+      if (isLoggedIn) {
+        try {
+          const saved = await checkBookmarkStatus(Number(id));
+          setIsSaved(saved);
+        } catch (error) {
+          console.error('Error checking bookmark status:', error);
+        }
+      }
+    };
+
+    checkSavedStatus();
   }, [id]);
 
   const handleWatch = () => {
@@ -61,22 +71,22 @@ const AnimeDetail = () => {
     navigate(`/watch/${anime?.id}/${episodeNumber}`);
   };
 
-  const toggleSaved = () => {
+  const toggleSaved = async () => {
     if (!isLoggedIn) {
       navigate('/login');
       return;
     }
 
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-
-    if (isSaved) {
-      const updated = myList.filter((animeId: number) => animeId !== Number(id));
-      localStorage.setItem('myList', JSON.stringify(updated));
-      setIsSaved(false);
-    } else {
-      myList.push(Number(id));
-      localStorage.setItem('myList', JSON.stringify(myList));
-      setIsSaved(true);
+    try {
+      if (isSaved) {
+        await removeBookmark(Number(id));
+        setIsSaved(false);
+      } else {
+        await addBookmark(Number(id));
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
     }
   };
 

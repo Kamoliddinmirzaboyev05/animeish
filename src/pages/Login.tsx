@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Loader2 } from 'lucide-react';
-import { loginUser, storeAuthData, type ApiError } from '../services/api';
+import { loginUser, storeAuthData, sendOTP, type ApiError } from '../services/api';
 
 const loginSchema = z.object({
-  username: z.string().email('Noto\'g\'ri email manzil'),
+  username: z.string().min(1, 'Email manzil kiritilishi shart').email('Noto\'g\'ri email manzil'),
   password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
 });
 
@@ -16,8 +16,10 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || '');
   
   const {
     register,
@@ -30,6 +32,7 @@ const Login = () => {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       const response = await loginUser(data);
@@ -37,6 +40,19 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       const apiError = err as ApiError;
+      
+      // Check if error is related to email verification
+      if (apiError.message?.includes('verify') || apiError.message?.includes('confirm')) {
+        try {
+          // Send OTP for email verification
+          await sendOTP({ email: data.username });
+          navigate('/verify-otp', { state: { email: data.username } });
+          return;
+        } catch (otpError) {
+          setError('Email tasdiqlash kodini yuborishda xatolik');
+          return;
+        }
+      }
       
       if (apiError.errors) {
         const errorMessages = Object.entries(apiError.errors)
@@ -79,6 +95,16 @@ const Login = () => {
 
           <h2 className="text-2xl font-bold text-center mb-8">Xush Kelibsiz</h2>
 
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-6"
+            >
+              <p className="text-green-400 text-sm text-center">{successMessage}</p>
+            </motion.div>
+          )}
+
           {error && (
             <div className="bg-red-500/10 border border-red-500 text-red-500 rounded-lg p-3 mb-6">
               <div className="whitespace-pre-line text-sm">{error}</div>
@@ -104,7 +130,15 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Parol</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium">Parol</label>
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-primary hover:text-primary-light transition-colors"
+                >
+                  Parolni unutdingizmi?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input

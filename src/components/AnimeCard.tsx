@@ -2,6 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Star, Heart, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
 
 interface AnimeCardProps {
   anime: any;
@@ -16,11 +17,21 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
   const isLoggedIn = localStorage.getItem('access_token');
 
   useEffect(() => {
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-    setIsSaved(myList.includes(anime.id));
-  }, [anime.id]);
+    const checkSavedStatus = async () => {
+      if (isLoggedIn) {
+        try {
+          const saved = await checkBookmarkStatus(anime.id);
+          setIsSaved(saved);
+        } catch (error) {
+          console.error('Error checking bookmark status:', error);
+        }
+      }
+    };
+    
+    checkSavedStatus();
+  }, [anime.id, isLoggedIn]);
 
-  const toggleSaved = (e: React.MouseEvent) => {
+  const toggleSaved = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -29,16 +40,16 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
       return;
     }
     
-    const myList = JSON.parse(localStorage.getItem('myList') || '[]');
-    
-    if (isSaved) {
-      const updated = myList.filter((id: number) => id !== anime.id);
-      localStorage.setItem('myList', JSON.stringify(updated));
-      setIsSaved(false);
-    } else {
-      myList.push(anime.id);
-      localStorage.setItem('myList', JSON.stringify(myList));
-      setIsSaved(true);
+    try {
+      if (isSaved) {
+        await removeBookmark(anime.id);
+        setIsSaved(false);
+      } else {
+        await addBookmark(anime.id);
+        setIsSaved(true);
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
     }
   };
 
