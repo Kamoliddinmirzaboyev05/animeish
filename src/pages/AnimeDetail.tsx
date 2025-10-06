@@ -1,11 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Play, Heart, Calendar, Film } from 'lucide-react';
+import { Star, Play, Heart, Calendar, Film, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import AnimeSlider from '../components/AnimeSlider';
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
+import Toast from '../components/Toast';
+import RatingModal from '../components/RatingModal';
 import { fetchAnimeById, fetchAnimeList, addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
 import { translateStatus, translateGenres } from '../utils/translations';
 
@@ -16,6 +18,8 @@ const AnimeDetail = () => {
   const [relatedAnime, setRelatedAnime] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const isLoggedIn = localStorage.getItem('access_token');
 
@@ -88,6 +92,18 @@ const AnimeDetail = () => {
     } catch (error) {
       console.error('Error toggling bookmark:', error);
     }
+  };
+
+  const handleRatingClick = () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    setShowRatingModal(true);
+  };
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ message, type });
   };
 
   if (loading) {
@@ -222,6 +238,16 @@ const AnimeDetail = () => {
                     <span className="hidden sm:inline">{isSaved ? 'Ro\'yxatimda' : 'Ro\'yxatga Qo\'shish'}</span>
                     <span className="sm:hidden">{isSaved ? 'Saqlangan' : 'Saqlash'}</span>
                   </button>
+                  {isLoggedIn && (
+                    <button
+                      onClick={handleRatingClick}
+                      className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500/30 hover:bg-yellow-500/30 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
+                    >
+                      <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="hidden sm:inline">Reyting Berish</span>
+                      <span className="sm:hidden">Baholash</span>
+                    </button>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -312,10 +338,29 @@ const AnimeDetail = () => {
           )}
 
           {relatedAnime.length > 0 && (
-            <AnimeSlider title="Sizga Yoqishi Mumkin" anime={relatedAnime} />
+            <AnimeSlider title="Sizga Yoqishi Mumkin" anime={relatedAnime} onShowToast={showToast} />
           )}
         </div>
       </div>
+      
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        animeId={Number(id)}
+        animeTitle={anime?.title || ''}
+        onShowToast={showToast}
+        onRatingSubmitted={() => {
+          console.log('Rating submitted successfully');
+        }}
+      />
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

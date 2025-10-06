@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, SlidersHorizontal, X } from 'lucide-react';
+import { Search as SearchIcon, SlidersHorizontal, X, Sparkles } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import SEO from '../components/SEO';
-import { fetchAnimeList } from '../services/api';
+import Toast from '../components/Toast';
+import { fetchAnimeList, searchAnime } from '../services/api';
 import { translateGenres } from '../utils/translations';
 
 const Search = () => {
@@ -19,13 +20,18 @@ const Search = () => {
   const [minRating, setMinRating] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [animeList, setAnimeList] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     const loadAnimeData = async () => {
       try {
         const data = await fetchAnimeList();
         setAnimeList(data);
+        setSearchResults(data);
       } catch (error) {
         console.error('Error loading anime data:', error);
       } finally {
@@ -53,6 +59,33 @@ const Search = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!debouncedQuery.trim()) {
+        setSearchResults(animeList);
+        setShowSuggestions(false);
+        setSearching(false);
+        return;
+      }
+
+      setSearching(true);
+      try {
+        const results = await searchAnime(debouncedQuery);
+        setSearchResults(results);
+        setShowSuggestions(results.some((anime: any) => anime.isSuggestion));
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    };
+
+    if (animeList.length > 0) {
+      performSearch();
+    }
+  }, [debouncedQuery, animeList]);
+
   const toggleGenre = (genre: string) => {
     setSelectedGenres((prev) =>
       prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
@@ -60,11 +93,7 @@ const Search = () => {
   };
 
   const filteredAnime = useMemo(() => {
-    return animeList.filter((anime) => {
-      const matchesSearch = anime.title
-        ?.toLowerCase()
-        .includes(debouncedQuery.toLowerCase());
-      
+    return searchResults.filter((anime) => {
       const matchesGenre =
         selectedGenres.length === 0 ||
         (anime.genres && Array.isArray(anime.genres) && selectedGenres.some((g) => anime.genres.includes(g)));
@@ -78,14 +107,13 @@ const Search = () => {
         !selectedStatus || anime.status === selectedStatus;
 
       return (
-        matchesSearch &&
         matchesGenre &&
         matchesYear &&
         matchesRating &&
         matchesStatus
       );
     });
-  }, [animeList, debouncedQuery, selectedGenres, yearRange, minRating, selectedStatus]);
+  }, [searchResults, selectedGenres, yearRange, minRating, selectedStatus]);
 
   const resetFilters = () => {
     setSelectedGenres([]);
@@ -100,6 +128,10 @@ const Search = () => {
     yearRange.max !== 2024 ||
     minRating > 0 ||
     selectedStatus !== '';
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ message, type });
+  };
 
   if (loading) {
     return (
@@ -145,8 +177,14 @@ const Search = () => {
 
           <div className="flex items-center gap-4 text-sm text-gray-400">
             <span>
-              {filteredAnime.length} ta natija
+              {searching ? 'Qidirilmoqda...' : `${filteredAnime.length} ta natija`}
             </span>
+            {showSuggestions && !searching && (
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles className="w-4 h-4" />
+                <span>Sizga yoqishi mumkin</span>
+              </div>
+            )}
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
@@ -301,7 +339,11 @@ const Search = () => {
           )}
 
           <div className="flex-1">
-            {filteredAnime.length === 0 ? (
+            {searching ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredAnime.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -316,22 +358,49 @@ const Search = () => {
                 </p>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {filteredAnime.map((anime, index) => (
-                  <motion.div
-                    key={anime.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <AnimeCard anime={anime} />
-                  </motion.div>
-                ))}
-              </div>
+              <>
+                {showSuggestions && (
+                  <div className="mb-6 p-4 bg-gradient-to-r from-primary/10 to-purple-500/10 rounded-lg border border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-primary">Sizga yoqishi mumkin bo'lgan animelar</h3>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      Qidiruv bo'yicha aniq natija topilmadi, lekin bu animelar sizni qiziqtirishi mumkin
+                    </p>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {filteredAnime.map((anime, index) => (
+                    <motion.div
+                      key={anime.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className={anime.isSuggestion ? 'relative' : ''}
+                    >
+                      {anime.isSuggestion && (
+                        <div className="absolute -top-2 -right-2 z-10 bg-gradient-to-r from-primary to-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                          Tavsiya
+                        </div>
+                      )}
+                      <AnimeCard anime={anime} onShowToast={showToast} />
+                    </motion.div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
       </div>
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

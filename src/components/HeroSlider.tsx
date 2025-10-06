@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Info, ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { addBookmark, removeBookmark, checkBookmarkStatus, getAuthToken } from '../services/api';
 interface HeroSliderProps {
   anime: any[];
 }
 
 const HeroSlider = ({ anime }: HeroSliderProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [bookmarkStates, setBookmarkStates] = useState<Record<number, boolean>>({});
+  const [bookmarkLoading, setBookmarkLoading] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -15,6 +18,29 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
     }, 5000);
     return () => clearInterval(interval);
   }, [anime.length]);
+
+  // Check bookmark status for all anime
+  useEffect(() => {
+    const checkBookmarks = async () => {
+      if (!getAuthToken()) return;
+      
+      const states: Record<number, boolean> = {};
+      for (const item of anime) {
+        if (item.movieId) {
+          try {
+            states[item.movieId] = await checkBookmarkStatus(item.movieId);
+          } catch (error) {
+            states[item.movieId] = false;
+          }
+        }
+      }
+      setBookmarkStates(states);
+    };
+
+    if (anime.length > 0) {
+      checkBookmarks();
+    }
+  }, [anime]);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev - 1 + anime.length) % anime.length);
@@ -24,7 +50,38 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
     setCurrentIndex((prev) => (prev + 1) % anime.length);
   };
 
+  const handleBookmark = async (movieId: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!getAuthToken()) {
+      // Redirect to login if not authenticated
+      window.location.href = '/login';
+      return;
+    }
+
+    setBookmarkLoading(prev => ({ ...prev, [movieId]: true }));
+
+    try {
+      const isBookmarked = bookmarkStates[movieId];
+      
+      if (isBookmarked) {
+        await removeBookmark(movieId);
+        setBookmarkStates(prev => ({ ...prev, [movieId]: false }));
+      } else {
+        await addBookmark(movieId);
+        setBookmarkStates(prev => ({ ...prev, [movieId]: true }));
+      }
+    } catch (error) {
+      console.error('Bookmark error:', error);
+    } finally {
+      setBookmarkLoading(prev => ({ ...prev, [movieId]: false }));
+    }
+  };
+
   const current = anime[currentIndex];
+
+  if (!current) return null;
 
   return (
     <div className="relative h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden">
@@ -75,19 +132,37 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Link
-                to={`/watch/${current.id}/1`}
+                to={`/watch/${current.movieId || current.id}/1`}
                 className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-primary hover:bg-primary-dark rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
               >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
-                Watch Now
+                Tomosha Qilish
               </Link>
-              <Link
-                to={`/anime/${current.id}`}
-                className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-              >
-                <Info className="w-4 h-4 sm:w-5 sm:h-5" />
-                More Info
-              </Link>
+              <div className="flex gap-2 sm:gap-3">
+                <Link
+                  to={`/anime/${current.movieId || current.id}`}
+                  className="flex-1 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
+                >
+                  <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Batafsil
+                </Link>
+                {current.movieId && getAuthToken() && (
+                  <button
+                    onClick={(e) => handleBookmark(current.movieId, e)}
+                    disabled={bookmarkLoading[current.movieId]}
+                    className="px-3 sm:px-4 py-2 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base disabled:opacity-50"
+                    title={bookmarkStates[current.movieId] ? "Ro'yxatdan o'chirish" : "Ro'yxatga qo'shish"}
+                  >
+                    {bookmarkLoading[current.movieId] ? (
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : bookmarkStates[current.movieId] ? (
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                    ) : (
+                      <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </motion.div>
         </div>

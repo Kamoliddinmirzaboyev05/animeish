@@ -1,18 +1,22 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Heart, Play } from 'lucide-react';
+import { Star, Heart, Play, MessageSquare } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
+import RatingModal from './RatingModal';
 
 interface AnimeCardProps {
   anime: any;
   showProgress?: boolean;
+  showRating?: boolean;
+  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
+const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: AnimeCardProps) => {
   const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   
   const isLoggedIn = localStorage.getItem('access_token');
 
@@ -53,6 +57,18 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
     }
   };
 
+  const handleRatingClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    
+    setShowRatingModal(true);
+  };
+
   const watchedEpisodes = anime.episodes?.filter((e: any) => e.watched).length || 0;
   const progress = anime.totalEpisodes > 0 ? (watchedEpisodes / anime.totalEpisodes) * 100 : 0;
 
@@ -90,14 +106,26 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
             </div>
           </div>
 
-          <button
-            onClick={toggleSaved}
-            className="absolute top-1 sm:top-2 left-1 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary transition-colors opacity-0 group-hover:opacity-100"
-          >
-            <Heart
-              className={`w-3 h-3 sm:w-4 sm:h-4 ${isSaved ? 'fill-primary text-primary' : 'text-white'}`}
-            />
-          </button>
+          <div className="absolute top-1 sm:top-2 left-1 sm:left-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={toggleSaved}
+              className="w-6 h-6 sm:w-8 sm:h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary transition-colors"
+            >
+              <Heart
+                className={`w-3 h-3 sm:w-4 sm:h-4 ${isSaved ? 'fill-primary text-primary' : 'text-white'}`}
+              />
+            </button>
+            
+            {showRating && isLoggedIn && (
+              <button
+                onClick={handleRatingClick}
+                className="w-6 h-6 sm:w-8 sm:h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-yellow-500 transition-colors"
+                title="Reyting va izoh berish"
+              >
+                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+              </button>
+            )}
+          </div>
 
           {showProgress && watchedEpisodes > 0 && (
             <div className="absolute bottom-0 left-0 right-0">
@@ -137,6 +165,18 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
           </div>
         </div>
       </motion.div>
+      
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        animeId={anime.id}
+        animeTitle={anime.title}
+        onShowToast={onShowToast}
+        onRatingSubmitted={() => {
+          // Optionally refresh data or show success message
+          console.log('Rating submitted successfully');
+        }}
+      />
     </Link>
   );
 };

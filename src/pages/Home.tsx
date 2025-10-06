@@ -3,8 +3,9 @@ import Navbar from '../components/Navbar';
 import HeroSlider from '../components/HeroSlider';
 import AnimeSlider from '../components/AnimeSlider';
 import SEO from '../components/SEO';
-import { getFeaturedAnime } from '../data/mockData';
+import Toast from '../components/Toast';
 import {
+  getBanners,
   getTrendingAnime,
   getPopularAnime,
   getNewReleases,
@@ -15,6 +16,7 @@ import {
 } from '../services/api';
 
 const Home = () => {
+  const [banners, setBanners] = useState<any[]>([]);
   const [trendingAnime, setTrendingAnime] = useState<any[]>([]);
   const [popularAnime, setPopularAnime] = useState<any[]>([]);
   const [newReleases, setNewReleases] = useState<any[]>([]);
@@ -23,11 +25,13 @@ const Home = () => {
   const [fantasyAnime, setFantasyAnime] = useState<any[]>([]);
   const [continueWatching, setContinueWatching] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     const loadAnimeData = async () => {
       try {
-        const [trending, popular, newRel, action, romance, fantasy, continueWatch] = await Promise.all([
+        const [bannersData, trending, popular, newRel, action, romance, fantasy, continueWatch] = await Promise.all([
+          getBanners(),
           getTrendingAnime(),
           getPopularAnime(),
           getNewReleases(),
@@ -37,6 +41,7 @@ const Home = () => {
           getContinueWatching(),
         ]);
 
+        setBanners(bannersData);
         setTrendingAnime(trending);
         setPopularAnime(popular);
         setNewReleases(newRel);
@@ -53,6 +58,10 @@ const Home = () => {
 
     loadAnimeData();
   }, []);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
+    setToast({ message, type });
+  };
 
   if (loading) {
     return (
@@ -73,18 +82,18 @@ const Home = () => {
       <Navbar />
       
       <div className="pt-16">
-        <HeroSlider anime={getFeaturedAnime()} />
+        <HeroSlider anime={banners} />
         
         <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
           {continueWatching.length > 0 && (
-            <AnimeSlider title="Tomosha Davom Etish" anime={continueWatching} showProgress />
+            <AnimeSlider title="Tomosha Davom Etish" anime={continueWatching} showProgress onShowToast={showToast} />
           )}
-          <AnimeSlider title="Hozir Mashhur" anime={trendingAnime} />
-          <AnimeSlider title="Bu Hafta Ommabop" anime={popularAnime} />
-          <AnimeSlider title="Yangi Chiqarilganlar" anime={newReleases} />
-          <AnimeSlider title="Jangari" anime={actionAnime} />
-          <AnimeSlider title="Romantik" anime={romanceAnime} />
-          <AnimeSlider title="Fantastik" anime={fantasyAnime} />
+          <AnimeSlider title="Hozir Mashhur" anime={trendingAnime} onShowToast={showToast} />
+          <AnimeSlider title="Bu Hafta Ommabop" anime={popularAnime} onShowToast={showToast} />
+          <AnimeSlider title="Yangi Chiqarilganlar" anime={newReleases} onShowToast={showToast} />
+          <AnimeSlider title="Jangari" anime={actionAnime} onShowToast={showToast} />
+          <AnimeSlider title="Romantik" anime={romanceAnime} onShowToast={showToast} />
+          <AnimeSlider title="Fantastik" anime={fantasyAnime} onShowToast={showToast} />
         </div>
         
         {/* Footer */}
@@ -165,6 +174,14 @@ const Home = () => {
           </div>
         </footer>
       </div>
+      
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
