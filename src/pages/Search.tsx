@@ -16,7 +16,7 @@ const Search = () => {
   const [showFilters, setShowFilters] = useState(false);
   
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [yearRange, setYearRange] = useState({ min: 2000, max: 2024 });
+  const [yearRange, setYearRange] = useState({ min: 2000, max: new Date().getFullYear() });
   const [minRating, setMinRating] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [animeList, setAnimeList] = useState<any[]>([]);
@@ -25,6 +25,7 @@ const Search = () => {
   const [searching, setSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [actualYearRange, setActualYearRange] = useState({ min: 2000, max: new Date().getFullYear() });
 
   useEffect(() => {
     const loadAnimeData = async () => {
@@ -51,6 +52,31 @@ const Search = () => {
     });
     return Array.from(genres).sort();
   }, [animeList]);
+
+  // Dinamik yil oralig'ini hisoblash
+  const yearBounds = useMemo(() => {
+    if (animeList.length === 0) {
+      return { min: 2000, max: new Date().getFullYear() };
+    }
+    
+    const years = animeList
+      .map(anime => anime.year)
+      .filter(year => year && year > 1900) // Noto'g'ri yillarni filtrlash
+      .sort((a, b) => a - b);
+    
+    const minYear = years.length > 0 ? years[0] : 2000;
+    const maxYear = new Date().getFullYear();
+    
+    console.log('📅 Year bounds calculated:', { minYear, maxYear, totalAnime: animeList.length });
+    
+    return { min: minYear, max: maxYear };
+  }, [animeList]);
+
+  // Yil oralig'ini yangilash
+  useEffect(() => {
+    setActualYearRange(yearBounds);
+    setYearRange(yearBounds);
+  }, [yearBounds]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -117,15 +143,15 @@ const Search = () => {
 
   const resetFilters = () => {
     setSelectedGenres([]);
-    setYearRange({ min: 2000, max: 2024 });
+    setYearRange(actualYearRange);
     setMinRating(0);
     setSelectedStatus('');
   };
 
   const hasActiveFilters =
     selectedGenres.length > 0 ||
-    yearRange.min !== 2000 ||
-    yearRange.max !== 2024 ||
+    yearRange.min !== actualYearRange.min ||
+    yearRange.max !== actualYearRange.max ||
     minRating > 0 ||
     selectedStatus !== '';
 
@@ -175,9 +201,12 @@ const Search = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-gray-400">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
             <span>
               {searching ? 'Qidirilmoqda...' : `${filteredAnime.length} ta natija`}
+              {animeList.length > 0 && !searching && (
+                <span className="text-gray-500"> / {animeList.length} ta jami</span>
+              )}
             </span>
             {showSuggestions && !searching && (
               <div className="flex items-center gap-2 text-primary">
@@ -186,12 +215,17 @@ const Search = () => {
               </div>
             )}
             {hasActiveFilters && (
-              <button
-                onClick={resetFilters}
-                className="text-primary hover:text-primary-light transition-colors"
-              >
-                Filtrlarni tozalash
-              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
+                  {selectedGenres.length + (minRating > 0 ? 1 : 0) + (yearRange.min !== actualYearRange.min || yearRange.max !== actualYearRange.max ? 1 : 0) + (selectedStatus ? 1 : 0)} ta filtr
+                </span>
+                <button
+                  onClick={resetFilters}
+                  className="text-primary hover:text-primary-light transition-colors"
+                >
+                  Tozalash
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -242,51 +276,104 @@ const Search = () => {
                     <div>
                       <h3 className="font-semibold mb-3">Yil</h3>
                       <div className="space-y-3">
-                        <div>
-                          <label className="text-sm text-gray-400">Dan</label>
-                          <input
-                            type="number"
-                            min="2000"
-                            max="2024"
-                            value={yearRange.min}
-                            onChange={(e) =>
-                              setYearRange((prev) => ({ ...prev, min: Number(e.target.value) }))
-                            }
-                            className="w-full bg-dark-light border border-dark-lighter rounded-lg px-3 py-2 mt-1 focus:outline-none focus:border-primary"
-                          />
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-400">{actualYearRange.min}</span>
+                          <span className="text-primary font-semibold">{yearRange.min} - {yearRange.max}</span>
+                          <span className="text-gray-400">{actualYearRange.max}</span>
                         </div>
-                        <div>
-                          <label className="text-sm text-gray-400">Gacha</label>
-                          <input
-                            type="number"
-                            min="2000"
-                            max="2024"
-                            value={yearRange.max}
-                            onChange={(e) =>
-                              setYearRange((prev) => ({ ...prev, max: Number(e.target.value) }))
-                            }
-                            className="w-full bg-dark-light border border-dark-lighter rounded-lg px-3 py-2 mt-1 focus:outline-none focus:border-primary"
-                          />
+                        
+                        {/* Sodda yil slider */}
+                        <input
+                          type="range"
+                          min={actualYearRange.min}
+                          max={actualYearRange.max}
+                          value={yearRange.min}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            setYearRange({ min: value, max: Math.max(value, actualYearRange.max) });
+                          }}
+                          className="w-full rating-slider"
+                          style={{
+                            background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${((yearRange.min - actualYearRange.min) / (actualYearRange.max - actualYearRange.min)) * 100}%, #374151 ${((yearRange.min - actualYearRange.min) / (actualYearRange.max - actualYearRange.min)) * 100}%, #374151 100%)`
+                          }}
+                        />
+                        
+                        <div className="text-xs text-gray-500 text-center">
+                          {yearRange.min === actualYearRange.min ? 'Barcha yillar' : `${yearRange.min} yildan boshlab`}
+                        </div>
+                        
+                        {/* Tezkor tanlash */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => setYearRange({ min: actualYearRange.min, max: actualYearRange.max })}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              yearRange.min === actualYearRange.min
+                                ? 'bg-primary text-white' 
+                                : 'bg-dark-light hover:bg-primary/20'
+                            }`}
+                          >
+                            Barchasi
+                          </button>
+                          <button
+                            onClick={() => setYearRange({ min: actualYearRange.max - 2, max: actualYearRange.max })}
+                            className="px-2 py-1 text-xs bg-dark-light hover:bg-primary/20 rounded transition-colors"
+                          >
+                            2 yil
+                          </button>
+                          <button
+                            onClick={() => setYearRange({ min: actualYearRange.max - 5, max: actualYearRange.max })}
+                            className="px-2 py-1 text-xs bg-dark-light hover:bg-primary/20 rounded transition-colors"
+                          >
+                            5 yil
+                          </button>
                         </div>
                       </div>
                     </div>
 
                     <div>
                       <h3 className="font-semibold mb-3">Minimal Reyting</h3>
-                      <div className="space-y-2">
-                        <input
-                          type="range"
-                          min="0"
-                          max="10"
-                          step="0.5"
-                          value={minRating}
-                          onChange={(e) => setMinRating(Number(e.target.value))}
-                          className="w-full h-2 bg-dark-light rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full"
-                        />
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <input
+                            type="range"
+                            min="0"
+                            max="5"
+                            step="0.1"
+                            value={minRating}
+                            onChange={(e) => setMinRating(Number(e.target.value))}
+                            className="w-full rating-slider"
+                            style={{
+                              background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${(minRating / 5) * 100}%, #374151 ${(minRating / 5) * 100}%, #374151 100%)`
+                            }}
+                          />
+                        </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">0</span>
-                          <span className="text-primary font-semibold">{minRating}</span>
-                          <span className="text-gray-400">10</span>
+                          <span className="text-gray-400">0.0</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-yellow-400">★</span>
+                            <span className="text-primary font-semibold">{minRating.toFixed(1)}</span>
+                          </div>
+                          <span className="text-gray-400">5.0</span>
+                        </div>
+                        <div className="text-xs text-gray-500 text-center">
+                          {minRating === 0 ? 'Barcha reytinglar' : `${minRating.toFixed(1)} va undan yuqori`}
+                        </div>
+                        
+                        {/* Tezkor reyting tanlash */}
+                        <div className="grid grid-cols-3 gap-1 mt-2">
+                          {[0, 3, 4].map((rating) => (
+                            <button
+                              key={rating}
+                              onClick={() => setMinRating(rating)}
+                              className={`px-2 py-1 text-xs rounded transition-colors ${
+                                minRating === rating 
+                                  ? 'bg-primary text-white' 
+                                  : 'bg-dark-light hover:bg-primary/20'
+                              }`}
+                            >
+                              {rating === 0 ? 'Barchasi' : `${rating}+ ★`}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>

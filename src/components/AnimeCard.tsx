@@ -81,11 +81,24 @@ const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: Anim
         className="relative group cursor-pointer"
       >
         <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-dark-light">
-          <img
-            src={anime.thumbnail}
-            alt={anime.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-          />
+          {anime.thumbnail ? (
+            <img
+              src={anime.thumbnail}
+              alt={anime.title}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              onError={(e) => {
+                // Hide image if it fails to load
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-dark-light to-dark">
+              <div className="text-center p-4">
+                <div className="text-4xl mb-2">🎬</div>
+                <div className="text-xs text-gray-400 line-clamp-2">{anime.title}</div>
+              </div>
+            </div>
+          )}
           
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <div className="absolute inset-0 flex items-center justify-center">

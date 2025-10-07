@@ -58,11 +58,6 @@ const Navbar = () => {
               <Link to="/search" className="text-sm hover:text-primary transition-colors">
                 Qidirish
               </Link>
-              {isLoggedIn && (
-                <Link to="/my-list" className="text-sm hover:text-primary transition-colors">
-                  Mening Ro'yxatim
-                </Link>
-              )}
             </div>
           </div>
 
@@ -184,13 +179,6 @@ const Navbar = () => {
               
               {isLoggedIn ? (
                 <>
-                  <Link
-                    to="/my-list"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-3 hover:text-primary transition-colors border-b border-dark-lighter"
-                  >
-                    Mening Ro'yxatim
-                  </Link>
                   <Link
                     to="/notifications"
                     onClick={() => setMobileMenuOpen(false)}

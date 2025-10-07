@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { User, Clock, Star, TrendingUp, Play, Crown, Calendar, Loader2 } from 'lucide-react';
+import { User, Clock, Heart, TrendingUp, Play, Crown, Calendar, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
-import { fetchAnimeList } from '../services/api';
+import { fetchAnimeList, getBookmarks } from '../services/api';
 import { getUserProfile, type UserProfile, type ApiError } from '../services/api';
 
 interface WatchHistoryEntry {
@@ -17,6 +17,7 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [animeList, setAnimeList] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -34,6 +35,15 @@ const Profile = () => {
         // Fetch anime list for stats calculation
         const allAnime = await fetchAnimeList();
         setAnimeList(allAnime);
+
+        // Fetch user bookmarks
+        try {
+          const userBookmarks = await getBookmarks();
+          setBookmarks(userBookmarks);
+        } catch (bookmarkError) {
+          console.error('Error fetching bookmarks:', bookmarkError);
+          setBookmarks([]);
+        }
         
       } catch (err) {
         const apiError = err as ApiError;
@@ -61,30 +71,17 @@ const Profile = () => {
   }, []);
 
   const stats = useMemo(() => {
-    const totalEpisodesWatched = watchHistory.length;
-    
-    const hoursSpent = Math.round((totalEpisodesWatched * 24) / 60 * 10) / 10;
-
-    const genreCounts: Record<string, number> = {};
-    watchHistory.forEach((entry) => {
-      const anime = animeList.find((a: any) => a.id === entry.animeId);
-      if (anime) {
-        anime.genres?.forEach((genre: string) => {
-          genreCounts[genre] = (genreCounts[genre] || 0) + 1;
-        });
-      }
-    });
-
-    const favoriteGenre = Object.entries(genreCounts).sort(
-      ([, a], [, b]) => b - a
-    )[0]?.[0] || 'N/A';
+    // Use API data if available, otherwise fallback to localStorage
+    const totalEpisodesWatched = user?.progress?.watched_episodes_count || watchHistory.length;
+    const hoursSpent = user?.progress?.total_watched_hours || Math.round((totalEpisodesWatched * 24) / 60 * 10) / 10;
+    const savedAnimeCount = bookmarks.length;
 
     return {
       totalEpisodesWatched,
       hoursSpent,
-      favoriteGenre,
+      savedAnimeCount,
     };
-  }, [watchHistory, animeList]);
+  }, [user, watchHistory, bookmarks]);
 
   const recentHistory = useMemo(() => {
     return watchHistory
@@ -168,17 +165,9 @@ const Profile = () => {
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8">
             <div className="relative">
-              {user.avatar ? (
-                <img
-                  src={user.avatar}
-                  alt={user.first_name}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-primary/20"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center">
-                  <User className="w-12 h-12" />
-                </div>
-              )}
+              <div className="w-24 h-24 bg-gradient-to-br from-primary to-primary-dark rounded-full flex items-center justify-center">
+                <User className="w-12 h-12" />
+              </div>
               {user.is_premium && (
                 <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
                   <Crown className="w-4 h-4 text-white" />
@@ -195,10 +184,7 @@ const Profile = () => {
                   </span>
                 )}
               </div>
-              <p className="text-gray-400 mb-2">{user.username}</p>
-              {user.bio && (
-                <p className="text-gray-300 text-sm mb-2">{user.bio}</p>
-              )}
+              <p className="text-gray-400 mb-2">{user.email}</p>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <Calendar className="w-4 h-4" />
                 <span>
@@ -255,20 +241,78 @@ const Profile = () => {
             >
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-lg flex items-center justify-center">
-                  <Star className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                  <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </div>
                 <div>
-                  <div className="text-xl sm:text-2xl font-bold">{stats.favoriteGenre}</div>
-                  <div className="text-xs sm:text-sm text-gray-400">Sevimli Janr</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stats.savedAnimeCount}</div>
+                  <div className="text-xs sm:text-sm text-gray-400">Saqlangan Animelar</div>
                 </div>
               </div>
             </motion.div>
           </div>
 
+          {/* Saqlangan Animelar */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
+            className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6 mb-6"
+          >
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center gap-3">
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+                <h2 className="text-lg sm:text-xl font-bold">Saqlangan Animelar</h2>
+              </div>
+              {bookmarks.length > 0 && (
+                <a
+                  href="/my-list"
+                  className="text-primary hover:text-primary-light text-sm transition-colors"
+                >
+                  Barchasini ko'rish
+                </a>
+              )}
+            </div>
+
+            {bookmarks.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <Heart className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Hali saqlangan animelar yo'q</p>
+                <p className="text-sm mt-2">Yoqgan animeleringizni saqlash uchun ♥ tugmasini bosing</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                {bookmarks.slice(0, 6).map((anime, index) => (
+                  <motion.a
+                    key={anime.id}
+                    href={`/anime/${anime.id}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 + index * 0.05 }}
+                    className="group block"
+                  >
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-dark">
+                      <img
+                        src={anime.thumbnail}
+                        alt={anime.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-2 left-2 right-2">
+                          <h3 className="text-xs font-semibold line-clamp-2">{anime.title}</h3>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.a>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Tomosha Tarixi */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
             className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6"
           >
             <div className="flex items-center gap-3 mb-4 sm:mb-6">

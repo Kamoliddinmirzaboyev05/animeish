@@ -1,4 +1,5 @@
 const API_BASE_URL = 'https://animeish.pythonanywhere.com';
+console.log('🔧 API_BASE_URL configured as:', API_BASE_URL);
 
 export interface VideoData {
     id: string;
@@ -91,10 +92,12 @@ export interface UserProfile {
     first_name: string;
     username: string;
     email: string;
-    avatar: string | null;
-    bio: string | null;
     is_premium: boolean;
     created_at: string;
+    progress: {
+        watched_episodes_count: number;
+        total_watched_hours: number;
+    };
 }
 
 export interface Bookmark {
@@ -257,7 +260,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
         console.log('Fetching user profile...');
         
-        const response = await fetch(`${API_BASE_URL}/users/me/`, {
+        const response = await fetch(`${API_BASE_URL}/user/me`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -284,12 +287,19 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
 export const fetchVideoData = async (): Promise<VideoData[]> => {
     try {
+        console.log('Fetching video data from API...');
         const response = await fetch(`${API_BASE_URL}/movies/`);
         if (!response.ok) {
-            throw new Error('Failed to fetch video data');
+            throw new Error(`Failed to fetch video data: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        return data;
+        console.log('Video data fetched:', { count: data.length });
+        
+        // Transform to VideoData format
+        return data.map((movie: any) => ({
+            id: movie.id.toString(),
+            videoUrl: movie.episodes?.[0]?.video_url || ''
+        }));
     } catch (error) {
         console.error('Error fetching video data:', error);
         return [];
@@ -298,44 +308,45 @@ export const fetchVideoData = async (): Promise<VideoData[]> => {
 
 export const getVideoUrlById = async (animeId: string | number): Promise<string> => {
     try {
-        const videoData = await fetchVideoData();
-        console.log('Fetched video data:', videoData);
-        console.log('Looking for animeId:', animeId);
+        console.log('Getting video URL for anime ID:', animeId);
         
-        // Convert animeId to string for comparison
+        // First try to get specific anime data
+        const anime = await fetchAnimeById(Number(animeId));
+        if (anime?.episodes?.[0]?.video_url) {
+            console.log('Found video URL in anime data:', anime.episodes[0].video_url);
+            return anime.episodes[0].video_url;
+        }
+        
+        // Fallback to video data list
+        const videoData = await fetchVideoData();
         const targetId = String(animeId);
         const video = videoData.find(v => v.id === targetId);
         
-        console.log('Found video:', video);
-        
         if (video?.videoUrl) {
+            console.log('Found video URL in video data:', video.videoUrl);
             return video.videoUrl;
         }
         
-        // If exact match not found, try to get any video from the list
-        if (videoData.length > 0) {
-            console.log('Using first available video as fallback');
-            return videoData[0].videoUrl;
-        }
-        
-        return '/video.mp4'; // Final fallback to local video
+        console.log('No video URL found, using fallback');
+        return ''; // Return empty string instead of local video
     } catch (error) {
         console.error('Error getting video URL:', error);
-        return '/video.mp4'; // Fallback to local video
+        return ''; // Return empty string on error
     }
 };
 
-// Data transformation function
+// Data transformation function - using only real API data
 const transformAnimeData = (apiData: any) => {
     return {
         id: apiData.id,
         title: apiData.title,
         slug: apiData.slug,
         description: apiData.description,
-        thumbnail: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=600&fit=crop',
-        banner: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1920&h=600&fit=crop',
+        // Use only real poster from API, no fallbacks
+        thumbnail: apiData.poster,
+        banner: apiData.poster,
         rating: apiData.rating_avg || 0,
-        year: apiData.release_year || 2022,
+        year: apiData.release_year,
         totalEpisodes: apiData.episodes?.length || 0,
         genres: apiData.genres?.map((g: any) => g.name) || [],
         status: apiData.type === 'series' ? 'Ongoing' : 'Completed',
@@ -343,14 +354,36 @@ const transformAnimeData = (apiData: any) => {
             id: ep.id,
             episodeNumber: ep.episode_number,
             title: ep.title,
-            thumbnail: apiData.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&h=170&fit=crop',
-            duration: ep.duration || '24:00',
-            video_url: ep.video_url, // Keep original field name for API compatibility
-            videoUrl: ep.video_url || '/video.mp4', // Also keep transformed name for backward compatibility
-            watched: false
+            thumbnail: apiData.poster, // Use anime poster for episodes
+            duration: ep.duration,
+            video_url: ep.video_url,
+            videoUrl: ep.video_url,
+            watched: false // This should come from user's watch history
         })) || [],
         videos: apiData.videos || [],
-        trailerUrl: apiData.videos?.[0]?.url
+        trailerUrl: apiData.videos?.[0]?.url,
+        ratings: apiData.ratings?.map((rating: any) => ({
+            id: rating.id,
+            score: rating.score,
+            comment: rating.comment,
+            created_at: rating.created_at,
+            user: {
+                id: rating.user?.id,
+                first_name: rating.user?.first_name || 'Anonim',
+                username: rating.user?.username || 'user'
+            }
+        })) || [],
+        ratingsCount: apiData.ratings?.length || 0,
+        averageRating: apiData.rating_avg || 0,
+        // Additional API fields
+        type: apiData.type,
+        studio: apiData.studio,
+        source: apiData.source,
+        duration: apiData.duration,
+        aired_from: apiData.aired_from,
+        aired_to: apiData.aired_to,
+        created_at: apiData.created_at,
+        updated_at: apiData.updated_at
     };
 };
 
@@ -514,40 +547,115 @@ export const fetchAnimeById = async (id: number): Promise<any | null> => {
     }
 };
 
-// Helper functions for different anime categories
+// Helper functions for different anime categories - all based on real API data
 export const getTrendingAnime = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.slice(0, 10);
+    try {
+        const animeList = await fetchAnimeList();
+        // Sort by rating and return top 10
+        return animeList
+            .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching trending anime:', error);
+        return [];
+    }
 };
 
 export const getPopularAnime = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.slice(5, 15);
+    try {
+        const animeList = await fetchAnimeList();
+        // Sort by ratings count and rating, return top 10
+        return animeList
+            .sort((a: any, b: any) => {
+                const aScore = (a.ratingsCount || 0) * (a.rating || 0);
+                const bScore = (b.ratingsCount || 0) * (b.rating || 0);
+                return bScore - aScore;
+            })
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching popular anime:', error);
+        return [];
+    }
 };
 
 export const getNewReleases = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.filter((anime: any) => anime.year >= 2020);
+    try {
+        const animeList = await fetchAnimeList();
+        const currentYear = new Date().getFullYear();
+        // Filter by recent years and sort by year descending
+        return animeList
+            .filter((anime: any) => anime.year >= currentYear - 2)
+            .sort((a: any, b: any) => (b.year || 0) - (a.year || 0))
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching new releases:', error);
+        return [];
+    }
 };
 
 export const getActionAnime = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.filter((anime: any) => anime.genres?.includes('Action'));
+    try {
+        const animeList = await fetchAnimeList();
+        return animeList
+            .filter((anime: any) => anime.genres?.some((genre: string) => 
+                genre.toLowerCase().includes('action') || 
+                genre.toLowerCase().includes('jang')
+            ))
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching action anime:', error);
+        return [];
+    }
 };
 
 export const getRomanceAnime = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.filter((anime: any) => anime.genres?.includes('Romance'));
+    try {
+        const animeList = await fetchAnimeList();
+        return animeList
+            .filter((anime: any) => anime.genres?.some((genre: string) => 
+                genre.toLowerCase().includes('romance') || 
+                genre.toLowerCase().includes('romantic') ||
+                genre.toLowerCase().includes('muhabbat')
+            ))
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching romance anime:', error);
+        return [];
+    }
 };
 
 export const getFantasyAnime = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.filter((anime: any) => anime.genres?.includes('Fantasy'));
+    try {
+        const animeList = await fetchAnimeList();
+        return animeList
+            .filter((anime: any) => anime.genres?.some((genre: string) => 
+                genre.toLowerCase().includes('fantasy') || 
+                genre.toLowerCase().includes('fantastik') ||
+                genre.toLowerCase().includes('magic')
+            ))
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching fantasy anime:', error);
+        return [];
+    }
 };
 
 export const getContinueWatching = async () => {
-    const animeList = await fetchAnimeList();
-    return animeList.filter((anime: any) => anime.episodes?.some((e: any) => e.watched));
+    try {
+        // This should be based on user's watch history from localStorage or API
+        const watchHistory = JSON.parse(localStorage.getItem('watchHistory') || '[]');
+        if (watchHistory.length === 0) return [];
+        
+        const animeList = await fetchAnimeList();
+        const continueWatchingIds = [...new Set(watchHistory.map((h: any) => h.animeId))];
+        
+        return animeList
+            .filter((anime: any) => continueWatchingIds.includes(anime.id))
+            .slice(0, 10);
+    } catch (error) {
+        console.error('Error fetching continue watching:', error);
+        return [];
+    }
 };
 
 // Bookmarks API functions
@@ -825,51 +933,101 @@ export const getUserRatings = async (): Promise<RatingResponse[]> => {
     }
 };
 
-// Banners API function
+// Banners API function - using real API structure
 export const getBanners = async (): Promise<any[]> => {
     try {
-        console.log('Fetching banners...');
+        console.log('🔄 Fetching banners from:', `${API_BASE_URL}/banners/`);
+        console.log('🌐 Full URL:', `${API_BASE_URL}/banners/`);
         
         const response = await fetch(`${API_BASE_URL}/banners/`);
+        console.log('📡 Response status:', response.status, response.statusText);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
-            throw new Error('Failed to fetch banners');
+            console.error('❌ Response not OK:', response.status, response.statusText);
+            throw new Error(`Failed to fetch banners: ${response.status} ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('Banners response:', { status: response.status, data });
+        console.log('📦 Raw API data:', data);
+        console.log('📊 Data type:', typeof data, 'Is array:', Array.isArray(data), 'Length:', data?.length);
+        console.log('🔍 First item structure:', data?.[0]);
         
-        // Transform banner data to match our hero slider format
-        return data.map((banner: any) => ({
-            id: banner.id,
-            title: banner.title || banner.movie?.title || 'Featured Anime',
-            description: banner.description || banner.movie?.description || 'Watch the latest episodes now!',
-            banner: banner.image || banner.movie?.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1920&h=600&fit=crop',
-            thumbnail: banner.image || banner.movie?.poster || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=600&fit=crop',
-            rating: banner.movie?.rating_avg || 8.5,
-            year: banner.movie?.release_year || 2024,
-            totalEpisodes: banner.movie?.episodes?.length || 12,
-            status: banner.movie?.type === 'series' ? 'Ongoing' : 'Completed',
-            movieId: banner.movie?.id || banner.id, // For bookmarking
-            genres: banner.movie?.genres?.map((g: any) => g.name) || ['Action', 'Adventure']
-        }));
+        if (!Array.isArray(data)) {
+            console.error('❌ API did not return an array');
+            return [];
+        }
+        
+        if (data.length === 0) {
+            console.log('⚠️ No banners in API response');
+            return [];
+        }
+        
+        // Transform banner data using the exact API structure
+        const transformedBanners = data.map((banner: any, index: number) => {
+            console.log(`🔄 Processing banner ${index + 1}:`, banner);
+            console.log(`📋 Banner details:`, {
+                id: banner.id,
+                hasMovie: !!banner.movie,
+                hasPhoto: !!banner.photo,
+                movieId: banner.movie?.id,
+                movieTitle: banner.movie?.title,
+                photo: banner.photo,
+                poster: banner.movie?.poster
+            });
+            
+            const transformed = {
+                id: banner.id,
+                title: banner.movie?.title || 'Anime Banner',
+                description: banner.movie?.description || 'Eng yaxshi anime seriallarni tomosha qiling',
+                // Use photo field for hero slider background
+                banner: banner.photo,
+                thumbnail: banner.movie?.poster,
+                // Movie details
+                rating: banner.movie?.rating_avg || 0,
+                year: banner.movie?.release_year,
+                totalEpisodes: banner.movie?.episodes?.length || 0,
+                status: banner.movie?.type === 'series' ? 'Davom etmoqda' : 'Tugallangan',
+                movieId: banner.movie?.id,
+                genres: banner.movie?.genres?.map((g: any) => g.name) || [],
+                // Additional movie info
+                slug: banner.movie?.slug,
+                type: banner.movie?.type,
+                duration: banner.movie?.duration,
+                ratingCount: banner.movie?.rating_count || 0,
+                // Episodes and ratings info
+                episodes: banner.movie?.episodes || [],
+                videos: banner.movie?.videos || [],
+                ratings: banner.movie?.ratings || [],
+                // Banner specific
+                bannerId: banner.id,
+                bannerPhoto: banner.photo
+            };
+            
+            console.log(`✅ Transformed banner ${index + 1}:`, transformed);
+            return transformed;
+        });
+        
+        console.log('🔄 Transformed banners:', transformedBanners);
+        
+        // Filter valid banners (must have movie and photo)
+        const validBanners = transformedBanners.filter((banner: any) => {
+            const isValid = banner.movieId && banner.banner;
+            console.log(`✅ Banner ${banner.id} validation:`, {
+                movieId: banner.movieId,
+                hasPhoto: !!banner.banner,
+                isValid
+            });
+            return isValid;
+        });
+        
+        console.log('✅ Valid banners count:', validBanners.length);
+        console.log('🎯 Final banners:', validBanners);
+        
+        return validBanners.slice(0, 5); // Limit to 5 banners
+        
     } catch (error) {
-        console.error('Banners fetch error:', error);
-        // Return fallback banners if API fails
-        return [
-            {
-                id: 1,
-                title: 'Featured Anime',
-                description: 'Watch the latest episodes now!',
-                banner: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1920&h=600&fit=crop',
-                thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=600&fit=crop',
-                rating: 8.5,
-                year: 2024,
-                totalEpisodes: 12,
-                status: 'Ongoing',
-                movieId: 1,
-                genres: ['Action', 'Adventure']
-            }
-        ];
+        console.error('❌ Banners fetch error:', error);
+        return [];
     }
 };

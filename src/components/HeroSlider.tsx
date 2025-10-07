@@ -8,9 +8,15 @@ interface HeroSliderProps {
 }
 
 const HeroSlider = ({ anime }: HeroSliderProps) => {
+  console.log('🎬 HeroSlider received anime:', anime);
+  console.log('📊 Anime count:', anime?.length);
+  console.log('🔍 First anime item:', anime?.[0]);
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [bookmarkStates, setBookmarkStates] = useState<Record<number, boolean>>({});
   const [bookmarkLoading, setBookmarkLoading] = useState<Record<number, boolean>>({});
+
+
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -80,8 +86,16 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
   };
 
   const current = anime[currentIndex];
+  
+  console.log('🎯 Current anime:', current);
+  console.log('📍 Current index:', currentIndex);
+  console.log('🖼️ Current banner:', current?.banner);
+  console.log('📝 Current title:', current?.title);
 
-  if (!current) return null;
+  if (!current) {
+    console.log('❌ No current anime found');
+    return null;
+  }
 
   return (
     <div className="relative h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden">
@@ -94,11 +108,19 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          <img
-            src={current.banner}
-            alt={current.title}
-            className="w-full h-full object-cover"
-          />
+          {current.banner ? (
+            <img
+              src={current.banner}
+              alt={current.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Replace with gradient background if image fails
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-primary/20 via-dark to-primary/20" />
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/60 to-transparent" />
         </motion.div>
       </AnimatePresence>
@@ -119,13 +141,29 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
             <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6 text-sm sm:text-base flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-yellow-400">★</span>
-                <span className="font-semibold">{current.rating}</span>
+                <span className="font-semibold">{current.rating ? current.rating.toFixed(1) : 'N/A'}</span>
+                {current.ratingCount && (
+                  <span className="text-gray-400 text-xs">({current.ratingCount})</span>
+                )}
               </div>
-              <span className="text-gray-400 hidden sm:inline">•</span>
-              <span>{current.year}</span>
-              <span className="text-gray-400 hidden sm:inline">•</span>
-              <span className="hidden sm:inline">{current.totalEpisodes || 0} Episodes</span>
-              <span className="text-gray-400 hidden sm:inline">•</span>
+              {current.year && (
+                <>
+                  <span className="text-gray-400 hidden sm:inline">•</span>
+                  <span>{current.year}</span>
+                </>
+              )}
+              {current.totalEpisodes > 0 && (
+                <>
+                  <span className="text-gray-400 hidden sm:inline">•</span>
+                  <span className="hidden sm:inline">{current.totalEpisodes} Epizod</span>
+                </>
+              )}
+              {current.genres && current.genres.length > 0 && (
+                <>
+                  <span className="text-gray-400 hidden sm:inline">•</span>
+                  <span className="hidden md:inline">{current.genres.slice(0, 2).join(', ')}</span>
+                </>
+              )}
               <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded">
                 {current.status}
               </span>
@@ -164,6 +202,48 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
                 )}
               </div>
             </div>
+            
+            {/* Additional anime info - only show on larger screens */}
+            {(current.episodes?.length > 0 || current.ratings?.length > 0) && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="hidden lg:block mt-6 p-4 bg-dark/60 backdrop-blur-sm rounded-lg border border-white/10"
+              >
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {current.episodes?.length > 0 && (
+                    <div>
+                      <span className="text-gray-400">Oxirgi epizod:</span>
+                      <div className="font-medium">
+                        {current.episodes[current.episodes.length - 1]?.title || 
+                         `${current.episodes.length}-qism`}
+                      </div>
+                    </div>
+                  )}
+                  {current.ratings?.length > 0 && (
+                    <div>
+                      <span className="text-gray-400">Izohlar:</span>
+                      <div className="font-medium">{current.ratings.length} ta reyting</div>
+                    </div>
+                  )}
+                  {current.duration && (
+                    <div>
+                      <span className="text-gray-400">Davomiyligi:</span>
+                      <div className="font-medium">
+                        {Math.round(parseFloat(current.duration) / 60)} daqiqa
+                      </div>
+                    </div>
+                  )}
+                  {current.type && (
+                    <div>
+                      <span className="text-gray-400">Turi:</span>
+                      <div className="font-medium capitalize">{current.type}</div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </div>
@@ -181,6 +261,23 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
       >
         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
       </button>
+
+      {/* Dots Navigation */}
+      {anime.length > 1 && (
+        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+          {anime.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+                index === currentIndex
+                  ? 'bg-primary scale-125'
+                  : 'bg-white/30 hover:bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="absolute bottom-4 sm:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-2">
         {anime.map((_, index) => (

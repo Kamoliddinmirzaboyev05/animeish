@@ -8,6 +8,7 @@ import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import Toast from '../components/Toast';
 import RatingModal from '../components/RatingModal';
+import RatingsSection from '../components/RatingsSection';
 import { fetchAnimeById, fetchAnimeList, addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
 import { translateStatus, translateGenres } from '../utils/translations';
 
@@ -337,6 +338,15 @@ const AnimeDetail = () => {
             </div>
           )}
 
+          {/* Ratings and Comments Section */}
+          <RatingsSection
+            ratings={anime?.ratings || []}
+            averageRating={anime?.averageRating || 0}
+            ratingsCount={anime?.ratingsCount || 0}
+            onAddRating={handleRatingClick}
+            loading={loading}
+          />
+
           {relatedAnime.length > 0 && (
             <AnimeSlider title="Sizga Yoqishi Mumkin" anime={relatedAnime} onShowToast={showToast} />
           )}
@@ -349,8 +359,15 @@ const AnimeDetail = () => {
         animeId={Number(id)}
         animeTitle={anime?.title || ''}
         onShowToast={showToast}
-        onRatingSubmitted={() => {
+        onRatingSubmitted={async () => {
           console.log('Rating submitted successfully');
+          // Reload anime data to show new rating
+          try {
+            const updatedAnime = await fetchAnimeById(Number(id));
+            setAnime(updatedAnime);
+          } catch (error) {
+            console.error('Error reloading anime data:', error);
+          }
         }}
       />
       
