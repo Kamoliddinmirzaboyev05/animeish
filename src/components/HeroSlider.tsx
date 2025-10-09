@@ -264,32 +264,20 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
 
       {/* Dots Navigation */}
       {anime.length > 1 && (
-        <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute bottom-4 sm:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-2">
           {anime.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                index === currentIndex
-                  ? 'bg-primary scale-125'
-                  : 'bg-white/30 hover:bg-white/50'
+              className={`h-1 rounded-full transition-all duration-300 ${
+                index === currentIndex 
+                  ? 'w-6 sm:w-8 bg-primary' 
+                  : 'w-3 sm:w-4 bg-white/50 hover:bg-white/70'
               }`}
             />
           ))}
         </div>
       )}
-
-      <div className="absolute bottom-4 sm:bottom-6 lg:bottom-8 left-1/2 -translate-x-1/2 flex gap-1 sm:gap-2">
-        {anime.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`h-1 rounded-full transition-all ${
-              index === currentIndex ? 'w-6 sm:w-8 bg-primary' : 'w-3 sm:w-4 bg-white/50'
-            }`}
-          />
-        ))}
-      </div>
     </div>
   );
 };
