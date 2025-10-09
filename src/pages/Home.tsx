@@ -133,25 +133,8 @@ const Home = () => {
             return <HeroSlider anime={banners} />;
           }
 
-          console.log('❌ No banners found, showing fallback');
-          return (
-            <div className="h-[50vh] sm:h-[60vh] lg:h-[70vh] bg-gradient-to-r from-dark via-dark-light to-dark flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Aniki</h1>
-                <p className="text-gray-400 text-lg">Bannerlar topilmadi</p>
-                <p className="text-gray-500 text-sm mt-2">API dan ma'lumot kelmayapti</p>
-                <button
-                  onClick={() => {
-                    console.log('🔄 Reloading page...');
-                    window.location.reload();
-                  }}
-                  className="mt-4 px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors"
-                >
-                  Qayta yuklash
-                </button>
-              </div>
-            </div>
-          );
+          console.log('❌ No banners found');
+          return null;
         })()}
 
         <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">

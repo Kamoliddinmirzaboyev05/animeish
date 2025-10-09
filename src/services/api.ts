@@ -131,6 +131,17 @@ export interface RatingResponse {
     created_at: string;
 }
 
+export interface Notification {
+    id: number;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    is_read: boolean;
+    created_at: string;
+    anime_id?: number;
+    episode_number?: number;
+}
+
 // Authentication functions
 export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> => {
     try {
@@ -297,7 +308,7 @@ export const fetchVideoData = async (): Promise<VideoData[]> => {
         return data.map((item: any) => ({
             id: item.id.toString(),
             videoUrl: item.type === 'movie' 
-                ? item.videos?.[0]?.url || ''
+                ? item.episodes?.[0]?.video_url || ''
                 : item.episodes?.[0]?.video_url || ''
         }));
     } catch (error) {
@@ -873,7 +884,8 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
             user: Number(userId),
             movie_id: Number(ratingData.movie_id),
             score: Number(ratingData.score),
-            comment: ratingData.comment.trim()
+            comment: ratingData.comment.trim(),
+            is_comment: true
         };
 
         console.log('Adding rating with payload:', payload);
@@ -1091,16 +1103,6 @@ export const getBanners = async (): Promise<any[]> => {
 };
 
 // Notifications API functions
-export interface Notification {
-    id: number;
-    title: string;
-    message: string;
-    type: 'info' | 'success' | 'warning' | 'error';
-    is_read: boolean;
-    created_at: string;
-    anime_id?: number;
-    episode_number?: number;
-}
 
 export const getNotifications = async (): Promise<Notification[]> => {
     try {
@@ -1154,6 +1156,37 @@ export const markNotificationAsRead = async (notificationId: number): Promise<bo
         return response.ok;
     } catch (error) {
         console.error('Error marking notification as read:', error);
+        return false;
+    }
+};
+
+export const markAllNotificationsAsRead = async (): Promise<boolean> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.error('No auth token for marking all notifications as read');
+            return false;
+        }
+
+        console.log('🔔 Marking all notifications as read...');
+        
+        const response = await fetch(`${API_BASE_URL}/notification/all/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            console.error('Failed to mark all notifications as read:', response.status);
+            return false;
+        }
+
+        console.log('✅ All notifications marked as read');
+        return true;
+    } catch (error) {
+        console.error('❌ Error marking all notifications as read:', error);
         return false;
     }
 };

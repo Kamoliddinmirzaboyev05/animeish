@@ -1,139 +1,107 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, PlayCircle, Sparkles, AlertCircle, Check } from 'lucide-react';
+import { Bell, PlayCircle, AlertCircle, Check, RefreshCw } from 'lucide-react';
 import Navbar from '../components/Navbar';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, type Notification } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
-type NotificationType = 'new-episode' | 'recommendation' | 'system';
-
-interface Notification {
-  id: number;
-  type: NotificationType;
-  title: string;
-  message: string;
-  timestamp: number;
-  read: boolean;
-  animeId?: number;
-  episodeNumber?: number;
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: 1,
-    type: 'new-episode',
-    title: 'Yangi Epizod Mavjud',
-    message: 'Attack on Titan - 26-epizod tomosha qilish uchun tayyor!',
-    timestamp: Date.now() - 1000 * 60 * 30,
-    read: false,
-    animeId: 2,
-    episodeNumber: 26,
-  },
-  {
-    id: 2,
-    type: 'new-episode',
-    title: 'Yangi Epizod Mavjud',
-    message: 'My Hero Academia - 26-epizod tomosha qilish uchun tayyor!',
-    timestamp: Date.now() - 1000 * 60 * 60 * 2,
-    read: false,
-    animeId: 3,
-    episodeNumber: 26,
-  },
-  {
-    id: 3,
-    type: 'recommendation',
-    title: 'Siz Uchun Tavsiya',
-    message: 'Tomosha tarixingizga asoslanib, sizga "Hunter x Hunter" yoqishi mumkin',
-    timestamp: Date.now() - 1000 * 60 * 60 * 5,
-    read: true,
-    animeId: 12,
-  },
-  {
-    id: 4,
-    type: 'system',
-    title: 'Yangi Xususiyatlar',
-    message: 'Biz yangi video sifat tanlovlari va tomosha tezligi boshqaruvini qo\'shdik!',
-    timestamp: Date.now() - 1000 * 60 * 60 * 12,
-    read: true,
-  },
-  {
-    id: 5,
-    type: 'new-episode',
-    title: 'Yangi Epizod Mavjud',
-    message: 'Jujutsu Kaisen - 25-epizod tomosha qilish uchun tayyor!',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24,
-    read: true,
-    animeId: 4,
-    episodeNumber: 25,
-  },
-  {
-    id: 6,
-    type: 'recommendation',
-    title: 'Siz Uchun Tavsiya',
-    message: 'Afzalliklaringizga asoslanib, sizga "Steins;Gate" yoqishi mumkin',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 2,
-    read: true,
-    animeId: 11,
-  },
-  {
-    id: 7,
-    type: 'system',
-    title: 'Texnik Ishlar Rejalashtirilgan',
-    message: 'Platforma 15-yanvar 2024 yil soat 2:00-4:00 da texnik ishlar olib boriladi',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 3,
-    read: true,
-  },
-  {
-    id: 8,
-    type: 'new-episode',
-    title: 'Yangi Epizod Mavjud',
-    message: 'Demon Slayer - 27-epizod tomosha qilish uchun tayyor!',
-    timestamp: Date.now() - 1000 * 60 * 60 * 24 * 4,
-    read: true,
-    animeId: 1,
-    episodeNumber: 27,
-  },
-];
+type NotificationType = 'info' | 'success' | 'warning' | 'error';
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<NotificationType | 'all'>('all');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isMarkingAllRead, setIsMarkingAllRead] = useState(false);
 
-  const markAsRead = (id: number) => {
-    setNotifications((prev) =>
-      prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif))
-    );
+  // Load notifications on component mount
+  useEffect(() => {
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      setIsLoading(true);
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, read: true })));
+  const markAsRead = async (id: number) => {
+    try {
+      const success = await markNotificationAsRead(id);
+      if (success) {
+        setNotifications((prev) =>
+          prev.map((notif) => (notif.id === id ? { ...notif, is_read: true } : notif))
+        );
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      setIsMarkingAllRead(true);
+      const success = await markAllNotificationsAsRead();
+      if (success) {
+        setNotifications((prev) => prev.map((notif) => ({ ...notif, is_read: true })));
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    } finally {
+      setIsMarkingAllRead(false);
+    }
   };
 
   const getIcon = (type: NotificationType) => {
     switch (type) {
-      case 'new-episode':
-        return <PlayCircle className="w-5 h-5 text-primary" />;
-      case 'recommendation':
-        return <Sparkles className="w-5 h-5 text-yellow-500" />;
-      case 'system':
+      case 'info':
         return <AlertCircle className="w-5 h-5 text-blue-500" />;
+      case 'success':
+        return <PlayCircle className="w-5 h-5 text-green-500" />;
+      case 'warning':
+        return <AlertCircle className="w-5 h-5 text-yellow-500" />;
+      case 'error':
+        return <AlertCircle className="w-5 h-5 text-red-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-primary" />;
     }
   };
 
-  const formatTimestamp = (timestamp: number) => {
-    const diff = Date.now() - timestamp;
-    const minutes = Math.floor(diff / 1000 / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+  const formatTimestamp = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diff = now.getTime() - date.getTime();
+      const minutes = Math.floor(diff / 1000 / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
 
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
+      if (minutes < 1) return 'Hozir';
+      if (minutes < 60) return `${minutes} daqiqa oldin`;
+      if (hours < 24) return `${hours} soat oldin`;
+      if (days < 7) return `${days} kun oldin`;
+      
+      return date.toLocaleDateString('uz-UZ', {
+        day: 'numeric',
+        month: 'short',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    } catch (error) {
+      return 'Noma\'lum vaqt';
+    }
   };
 
   const filteredNotifications = notifications.filter(
     (notif) => filter === 'all' || notif.type === filter
   );
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
     <div className="min-h-screen">
@@ -152,16 +120,31 @@ const Notifications = () => {
                 {unreadCount > 0 ? `${unreadCount} ta o'qilmagan bildirishnoma` : 'Hammasi o\'qilgan!'}
               </p>
             </div>
-            {unreadCount > 0 && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={markAllAsRead}
-                className="px-3 sm:px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                onClick={loadNotifications}
+                disabled={isLoading}
+                className="px-3 py-2 bg-dark-light rounded-lg hover:bg-dark-lighter transition-colors flex items-center justify-center gap-2 text-sm"
               >
-                <Check className="w-4 h-4" />
-                <span className="hidden sm:inline">Barchasini O'qilgan Deb Belgilash</span>
-                <span className="sm:hidden">Hammasi O'qilgan</span>
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Yangilash</span>
               </button>
-            )}
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  disabled={isMarkingAllRead}
+                  className="px-3 sm:px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors flex items-center justify-center gap-2 text-sm sm:text-base disabled:opacity-50"
+                >
+                  {isMarkingAllRead ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span className="hidden sm:inline">Barchasini O'qilgan Deb Belgilash</span>
+                  <span className="sm:hidden">Hammasi O'qilgan</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 mb-4 sm:mb-6 overflow-x-auto pb-2 scrollbar-hide">
@@ -176,83 +159,98 @@ const Notifications = () => {
               Barchasi
             </button>
             <button
-              onClick={() => setFilter('new-episode')}
+              onClick={() => setFilter('info')}
               className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
-                filter === 'new-episode'
+                filter === 'info'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              Yangi Epizodlar
+              Ma'lumot
             </button>
             <button
-              onClick={() => setFilter('recommendation')}
+              onClick={() => setFilter('success')}
               className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
-                filter === 'recommendation'
+                filter === 'success'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              Tavsiyalar
+              Muvaffaqiyat
             </button>
             <button
-              onClick={() => setFilter('system')}
+              onClick={() => setFilter('warning')}
               className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
-                filter === 'system'
+                filter === 'warning'
                   ? 'bg-primary text-white'
                   : 'bg-dark-light hover:bg-dark-lighter'
               }`}
             >
-              Tizim Yangiliklari
+              Ogohlantirish
+            </button>
+            <button
+              onClick={() => setFilter('error')}
+              className={`px-3 sm:px-4 py-2 rounded-lg whitespace-nowrap transition-colors text-sm sm:text-base ${
+                filter === 'error'
+                  ? 'bg-primary text-white'
+                  : 'bg-dark-light hover:bg-dark-lighter'
+              }`}
+            >
+              Xatolik
             </button>
           </div>
         </motion.div>
 
-        <div className="space-y-2 sm:space-y-3">
-          <AnimatePresence mode="popLayout">
-            {filteredNotifications.map((notification, index) => (
-              <motion.div
-                key={notification.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -100 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => {
-                  markAsRead(notification.id);
-                  if (notification.animeId && notification.episodeNumber) {
-                    window.location.href = `/watch/${notification.animeId}/${notification.episodeNumber}`;
-                  } else if (notification.animeId) {
-                    window.location.href = `/anime/${notification.animeId}`;
-                  }
-                }}
-                className={`relative p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${
-                  notification.read
-                    ? 'bg-dark-light border-dark-lighter hover:bg-dark-lighter'
-                    : 'bg-primary/10 border-primary/30 hover:bg-primary/15'
-                }`}
-              >
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-dark-light rounded-full flex items-center justify-center">
-                    {getIcon(notification.type)}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="font-semibold text-sm sm:text-base">{notification.title}</h3>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">
-                        {formatTimestamp(notification.timestamp)}
-                      </span>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="w-8 h-8 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <div className="space-y-2 sm:space-y-3">
+            <AnimatePresence mode="popLayout">
+              {filteredNotifications.map((notification, index) => (
+                <motion.div
+                  key={notification.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ delay: index * 0.05 }}
+                  onClick={() => {
+                    markAsRead(notification.id);
+                    if (notification.anime_id && notification.episode_number) {
+                      navigate(`/watch/${notification.anime_id}/${notification.episode_number}`);
+                    } else if (notification.anime_id) {
+                      navigate(`/anime/${notification.anime_id}`);
+                    }
+                  }}
+                  className={`relative p-3 sm:p-4 rounded-lg border transition-all cursor-pointer ${
+                    notification.is_read
+                      ? 'bg-dark-light border-dark-lighter hover:bg-dark-lighter'
+                      : 'bg-primary/10 border-primary/30 hover:bg-primary/15'
+                  }`}
+                >
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-dark-light rounded-full flex items-center justify-center">
+                      {getIcon(notification.type)}
                     </div>
-                    <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">{notification.message}</p>
-                  </div>
 
-                  {!notification.read && (
-                    <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-1"></div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-semibold text-sm sm:text-base">{notification.title}</h3>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                          {formatTimestamp(notification.created_at)}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">{notification.message}</p>
+                    </div>
+
+                    {!notification.is_read && (
+                      <div className="flex-shrink-0 w-2 h-2 bg-primary rounded-full mt-1"></div>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
           {filteredNotifications.length === 0 && (
             <motion.div
@@ -265,11 +263,12 @@ const Notifications = () => {
               </div>
               <h2 className="text-2xl font-bold mb-2">Bildirishnomalar yo'q</h2>
               <p className="text-gray-400">
-                Sizda {filter !== 'all' ? (filter === 'new-episode' ? 'yangi epizod' : filter === 'recommendation' ? 'tavsiya' : 'tizim yangiligi') : ''} bildirishnomalari yo'q
+                Sizda {filter !== 'all' ? `${filter} turi` : ''} bildirishnomalari yo'q
               </p>
             </motion.div>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

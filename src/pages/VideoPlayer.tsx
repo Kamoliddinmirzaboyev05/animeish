@@ -91,24 +91,10 @@ const VideoPlayer = () => {
             setCurrentEpisode(episode || foundAnime.episodes?.[0]);
           }
         } else {
-          const fallbackAnime = {
-            id: Number(animeId),
-            title: 'Test Anime',
-            type: 'series',
-            episodes: [
-              {
-                id: 1,
-                episode_number: 1,
-                title: 'Episode 1',
-                thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&h=170&fit=crop',
-                duration: '24:00',
-                video_url: '/video.mp4',
-                watched: false
-              }
-            ]
-          };
-          setAnime(fallbackAnime);
-          setCurrentEpisode(fallbackAnime.episodes[0]);
+          // No fallback data - redirect to home if anime not found
+          console.error('Anime not found:', animeId);
+          navigate('/');
+          return;
         }
       } catch (error) {
         console.error('Error loading anime data:', error);
@@ -165,15 +151,21 @@ const VideoPlayer = () => {
           }
         }
 
-        // Set video URL immediately
-        setVideoUrl(videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
-        setIsVimeoVideo(videoUrl.includes('player.vimeo.com') || videoUrl.includes('iframe.mediadelivery.net'));
+        // Set video URL immediately - no fallback demo videos
+        if (!videoUrl) {
+          console.error('No video URL found for:', anime.title);
+          navigate('/');
+          return;
+        }
+        
+        setVideoUrl(videoUrl);
+        setIsVimeoVideo(videoUrl.includes('player.vimeo.com') || videoUrl.includes('iframe.mediadelivery.net') || videoUrl.includes('b-cdn.net'));
         setIsLoadingVideo(false);
 
       } catch (error) {
         console.error('Error loading video:', error);
-        setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
-        setIsLoadingVideo(false);
+        navigate('/');
+        return;
       }
     };
 
@@ -782,7 +774,7 @@ const VideoPlayer = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className={`absolute top-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 md:p-4`}
+                    className={`absolute top-0 left-0 right-0 ${!isFullscreen && anime?.type === 'series' ? 'lg:right-80' : ''} bg-gradient-to-b from-black/80 via-black/40 to-transparent p-3 md:p-4`}
                   >
                     <div className="flex items-center justify-between">
                       <button
@@ -836,7 +828,7 @@ const VideoPlayer = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20 }}
-                      className={`absolute bottom-0 left-0 right-0 ${!isFullscreen ? 'lg:right-80' : ''} bg-gradient-to-t from-black/90 via-black/60 to-transparent`}
+                      className={`absolute bottom-0 left-0 right-0 ${!isFullscreen && anime?.type === 'series' ? 'lg:right-80' : ''} bg-gradient-to-t from-black/90 via-black/60 to-transparent`}
                     >
                       {/* Progress Bar */}
                       <div className="px-4 pb-2">
