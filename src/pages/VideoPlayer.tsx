@@ -61,6 +61,10 @@ const VideoPlayer = () => {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSkipLabel, setShowSkipLabel] = useState<'forward' | 'backward' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [networkSpeed, setNetworkSpeed] = useState<'slow' | 'medium' | 'fast'>('medium');
+  const [bufferHealth, setBufferHealth] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
+  const [showRetry, setShowRetry] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -71,6 +75,44 @@ const VideoPlayer = () => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Network speed detection
+  useEffect(() => {
+    const detectNetworkSpeed = () => {
+      if ('connection' in navigator) {
+        const connection = (navigator as any).connection;
+        const effectiveType = connection?.effectiveType;
+
+        switch (effectiveType) {
+          case 'slow-2g':
+          case '2g':
+            setNetworkSpeed('slow');
+            break;
+          case '3g':
+            setNetworkSpeed('medium');
+            break;
+          case '4g':
+          default:
+            setNetworkSpeed('fast');
+            break;
+        }
+
+        console.log('Network speed detected:', effectiveType, '-> mapped to:', networkSpeed);
+      }
+    };
+
+    detectNetworkSpeed();
+
+    // Listen for network changes
+    if ('connection' in navigator) {
+      const connection = (navigator as any).connection;
+      connection?.addEventListener('change', detectNetworkSpeed);
+
+      return () => {
+        connection?.removeEventListener('change', detectNetworkSpeed);
+      };
+    }
   }, []);
 
   // Load anime data
@@ -157,7 +199,7 @@ const VideoPlayer = () => {
           navigate('/');
           return;
         }
-        
+
         setVideoUrl(videoUrl);
         setIsVimeoVideo(videoUrl.includes('player.vimeo.com') || videoUrl.includes('iframe.mediadelivery.net') || videoUrl.includes('b-cdn.net'));
         setIsLoadingVideo(false);
@@ -177,10 +219,22 @@ const VideoPlayer = () => {
   // Video controls
   const togglePlay = () => {
     if (!videoRef.current) return;
+
     if (isPlaying) {
       videoRef.current.pause();
     } else {
-      videoRef.current.play();
+      // Check if video is ready to play
+      if (videoRef.current.readyState >= 2) {
+        videoRef.current.play().catch((error) => {
+          console.error('Play failed:', error);
+          setIsBuffering(true);
+        });
+      } else {
+        console.log('Video not ready, readyState:', videoRef.current.readyState);
+        setIsBuffering(true);
+        // Try to load more data
+        videoRef.current.load();
+      }
     }
   };
 
@@ -257,19 +311,13 @@ const VideoPlayer = () => {
     if (!videoRef.current) return;
     setDuration(videoRef.current.duration);
     setIsLoadingVideo(false);
-    setIsBuffering(false);
 
     const savedPosition = localStorage.getItem(`video-${animeId}-${episodeNumber}`);
     if (savedPosition) {
       videoRef.current.currentTime = Number(savedPosition);
     }
 
-    // Auto-play new episode
-    setTimeout(() => {
-      if (videoRef.current) {
-        videoRef.current.play().catch(console.error);
-      }
-    }, 500);
+    console.log('Video metadata loaded, duration:', videoRef.current.duration);
   };
 
   const handleTimeUpdate = () => {
@@ -306,35 +354,129 @@ const VideoPlayer = () => {
     setIsPlaying(true);
     setIsBuffering(false);
     setIsLoadingVideo(false);
+    console.log('Video started playing');
   };
 
   const handlePause = () => {
     setIsPlaying(false);
+    console.log('Video paused');
   };
 
   const handleWaiting = () => {
-    if (videoRef.current && videoRef.current.readyState < 3) {
-      setIsBuffering(true);
-    }
+    console.log('Video waiting/buffering, readyState:', videoRef.current?.readyState);
+    setIsBuffering(true);
   };
 
   const handleCanPlay = () => {
+    console.log('Video can play, readyState:', videoRef.current?.readyState);
     setIsBuffering(false);
     setIsLoadingVideo(false);
   };
 
   const handleCanPlayThrough = () => {
+    console.log('Video can play through');
     setIsBuffering(false);
     setIsLoadingVideo(false);
   };
 
   const handleLoadStart = () => {
+    console.log('Video load started');
     setIsLoadingVideo(true);
     setIsBuffering(true);
   };
 
   const handleLoadedData = () => {
+    console.log('Video data loaded');
     setIsLoadingVideo(false);
+  };
+
+  const handleProgress = () => {
+    if (!videoRef.current) return;
+
+    // Update buffered time more accurately
+    const buffered = videoRef.current.buffered;
+    if (buffered.length > 0) {
+      const bufferedEnd = buffered.end(buffered.length - 1);
+      setBufferedTime(bufferedEnd);
+
+      // Check if we have enough buffer to play smoothly
+      const currentTime = videoRef.current.currentTime;
+      const bufferAhead = bufferedEnd - currentTime;
+      const bufferHealthPercent = Math.min((bufferAhead / 10) * 100, 100); // 10 seconds = 100% health
+
+      setBufferHealth(bufferHealthPercent);
+
+      // Adaptive buffering based on network speed
+      let minBufferTime = 3; // default
+      switch (networkSpeed) {
+        case 'slow':
+          minBufferTime = 8;
+          break;
+        case 'medium':
+          minBufferTime = 5;
+          break;
+        case 'fast':
+          minBufferTime = 3;
+          break;
+      }
+
+      console.log(`Buffer: ${bufferAhead.toFixed(1)}s ahead, health: ${bufferHealthPercent.toFixed(0)}%, min required: ${minBufferTime}s`);
+
+      // Smart buffering logic
+      if (bufferAhead < minBufferTime && isPlaying && !isBuffering && videoRef.current.readyState < 4) {
+        console.log('Starting buffering - insufficient buffer');
+        setIsBuffering(true);
+      } else if (bufferAhead >= minBufferTime + 2 && isBuffering && videoRef.current.readyState >= 3) {
+        console.log('Stopping buffering - sufficient buffer');
+        setIsBuffering(false);
+      }
+    }
+  };
+
+  const handleSeeking = () => {
+    console.log('Video seeking');
+    setIsBuffering(true);
+  };
+
+  const handleSeeked = () => {
+    console.log('Video seeked');
+    setIsBuffering(false);
+  };
+
+  const handleStalled = () => {
+    console.log('Video stalled');
+    setIsBuffering(true);
+  };
+
+  const handleSuspend = () => {
+    console.log('Video suspended');
+  };
+
+  const handleError = (e: any) => {
+    console.error('Video error:', e);
+    setIsLoadingVideo(false);
+    setIsBuffering(false);
+
+    if (retryCount < 3) {
+      console.log(`Retrying video load (attempt ${retryCount + 1}/3)`);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.load();
+          setRetryCount(prev => prev + 1);
+        }
+      }, 2000);
+    } else {
+      setShowRetry(true);
+    }
+  };
+
+  const handleRetry = () => {
+    setShowRetry(false);
+    setRetryCount(0);
+    setIsLoadingVideo(true);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
   };
 
   // Progress bar interaction
@@ -571,7 +713,7 @@ const VideoPlayer = () => {
   return (
     <>
       <SEO
-        title={anime?.type === 'movie' 
+        title={anime?.type === 'movie'
           ? `${anime?.title} - Film | Aniki`
           : `${anime?.title} - Episode ${currentEpisode?.episode_number} | Aniki`
         }
@@ -711,22 +853,63 @@ const VideoPlayer = () => {
                   onCanPlayThrough={handleCanPlayThrough}
                   onLoadStart={handleLoadStart}
                   onLoadedData={handleLoadedData}
+                  onProgress={handleProgress}
+                  onSeeking={handleSeeking}
+                  onSeeked={handleSeeked}
+                  onStalled={handleStalled}
+                  onSuspend={handleSuspend}
+                  onError={handleError}
                   playsInline
-                  preload="metadata"
+                  preload="auto"
+                  crossOrigin="anonymous"
                 />
               )}
 
-              {/* Loading/Buffering */}
-              {((isLoadingVideo || isBuffering) && !isPlaying) && !isVimeoVideo && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 pointer-events-none">
-                  <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+              {/* Initial Loading */}
+              {isLoadingVideo && !showRetry && !isVimeoVideo && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70 pointer-events-none">
+                  <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-gray-600 border-t-primary rounded-full animate-spin mx-auto mb-4"></div>
+                    <div className="text-white text-lg font-medium">Video yuklanmoqda...</div>
+                    <div className="text-gray-400 text-sm mt-2">
+                      {retryCount > 0 ? `Qayta urinish (${retryCount}/3)` : 'Iltimos, kuting'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Retry UI */}
+              {showRetry && !isVimeoVideo && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+                  <div className="text-center">
+                    <div className="text-red-400 text-6xl mb-4">⚠️</div>
+                    <div className="text-white text-xl font-medium mb-2">Video yuklanmadi</div>
+                    <div className="text-gray-400 text-sm mb-6">Internet aloqangizni tekshiring</div>
+                    <button
+                      onClick={handleRetry}
+                      className="px-6 py-3 bg-primary hover:bg-primary-dark rounded-lg text-white font-medium transition-colors"
+                    >
+                      Qayta urinish
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Buffering during playback */}
-              {isBuffering && isPlaying && !isVimeoVideo && (
+              {isBuffering && !isLoadingVideo && !isVimeoVideo && (
                 <div className="absolute top-4 right-4 pointer-events-none">
-                  <div className="w-8 h-8 border-2 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+                  <div className="bg-black/80 backdrop-blur-sm rounded-lg p-3 flex items-center gap-3">
+                    <div className="w-6 h-6 border-2 border-gray-600 border-t-primary rounded-full animate-spin"></div>
+                    <div className="flex flex-col">
+                      <span className="text-white text-sm">Buferlanmoqda...</span>
+                      <div className="w-20 h-1 bg-gray-600 rounded-full mt-1">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all duration-300"
+                          style={{ width: `${bufferHealth}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -796,7 +979,7 @@ const VideoPlayer = () => {
                           {anime?.title}
                         </h1>
                         <p className="text-xs md:text-sm text-gray-300 truncate">
-                          {anime?.type === 'movie' 
+                          {anime?.type === 'movie'
                             ? currentEpisode?.title || 'Film'
                             : `Episode ${currentEpisode?.episode_number}: ${currentEpisode?.title}`
                           }
