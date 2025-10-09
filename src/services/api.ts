@@ -287,18 +287,18 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
 export const fetchVideoData = async (): Promise<VideoData[]> => {
     try {
-        console.log('Fetching video data from API...');
         const response = await fetch(`${API_BASE_URL}/movies/`);
         if (!response.ok) {
             throw new Error(`Failed to fetch video data: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        console.log('Video data fetched:', { count: data.length });
         
-        // Transform to VideoData format
-        return data.map((movie: any) => ({
-            id: movie.id.toString(),
-            videoUrl: movie.episodes?.[0]?.video_url || ''
+        // Transform to VideoData format - optimized for movie/series
+        return data.map((item: any) => ({
+            id: item.id.toString(),
+            videoUrl: item.type === 'movie' 
+                ? item.videos?.[0]?.url || ''
+                : item.episodes?.[0]?.video_url || ''
         }));
     } catch (error) {
         console.error('Error fetching video data:', error);
@@ -306,32 +306,33 @@ export const fetchVideoData = async (): Promise<VideoData[]> => {
     }
 };
 
-export const getVideoUrlById = async (animeId: string | number): Promise<string> => {
+export const getVideoUrlById = async (animeId: string | number, episodeNumber: number = 1): Promise<string> => {
     try {
-        console.log('Getting video URL for anime ID:', animeId);
-        
-        // First try to get specific anime data
+        // Use cached anime data if available
         const anime = await fetchAnimeById(Number(animeId));
-        if (anime?.episodes?.[0]?.video_url) {
-            console.log('Found video URL in anime data:', anime.episodes[0].video_url);
-            return anime.episodes[0].video_url;
+        
+        if (!anime) {
+            console.log('❌ Anime not found');
+            return '';
         }
         
-        // Fallback to video data list
-        const videoData = await fetchVideoData();
-        const targetId = String(animeId);
-        const video = videoData.find(v => v.id === targetId);
-        
-        if (video?.videoUrl) {
-            console.log('Found video URL in video data:', video.videoUrl);
-            return video.videoUrl;
+        // Movie: always has single video in episodes array (movies have episodes with video_url)
+        if (anime.type === 'movie') {
+            return anime.episodes?.[0]?.video_url || anime.videos?.[0]?.url || '';
         }
         
-        console.log('No video URL found, using fallback');
-        return ''; // Return empty string instead of local video
+        // Series: get specific episode from episodes array
+        if (anime.type === 'series') {
+            const episode = anime.episodes?.find((ep: any) => ep.episode_number === episodeNumber) || anime.episodes?.[0];
+            return episode?.video_url || episode?.videoUrl || '';
+        }
+        
+        // Fallback
+        return anime.videoUrl || '';
+        
     } catch (error) {
-        console.error('Error getting video URL:', error);
-        return ''; // Return empty string on error
+        console.error('❌ Error getting video URL:', error);
+        return '';
     }
 };
 
@@ -352,7 +353,8 @@ const transformAnimeData = (apiData: any) => {
         status: apiData.type === 'series' ? 'Ongoing' : 'Completed',
         episodes: apiData.episodes?.map((ep: any) => ({
             id: ep.id,
-            episodeNumber: ep.episode_number,
+            episode_number: ep.episode_number,
+            episodeNumber: ep.episode_number, // Keep both for compatibility
             title: ep.title,
             thumbnail: apiData.poster, // Use anime poster for episodes
             duration: ep.duration,
@@ -360,7 +362,15 @@ const transformAnimeData = (apiData: any) => {
             videoUrl: ep.video_url,
             watched: false // This should come from user's watch history
         })) || [],
-        videos: apiData.videos || [],
+        videos: apiData.videos?.map((video: any) => ({
+            id: video.id,
+            url: video.url,
+            quality: video.quality
+        })) || [],
+        // Set video URL based on type
+        videoUrl: apiData.type === 'movie' 
+            ? apiData.videos?.[0]?.url || ''
+            : apiData.episodes?.[0]?.video_url || '',
         trailerUrl: apiData.videos?.[0]?.url,
         ratings: apiData.ratings?.map((rating: any) => ({
             id: rating.id,
@@ -813,14 +823,62 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
             } as ApiError;
         }
 
+        // Get user info - try multiple sources
+        let userId = 0;
+        
+        console.log('🔍 Getting user ID for rating...');
+        
+        // First try localStorage
+        try {
+            const userStr = localStorage.getItem('user');
+            console.log('📦 User from localStorage:', userStr);
+            
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                console.log('👤 Parsed user:', user);
+                userId = user.id || 0;
+            }
+        } catch (e) {
+            console.error('❌ Error parsing user from localStorage:', e);
+        }
+        
+        // If no user ID, try to get from API
+        if (!userId) {
+            console.log('🌐 No user ID in localStorage, fetching from API...');
+            try {
+                const profile = await getUserProfile();
+                console.log('👤 Profile from API:', profile);
+                userId = profile.id || 0;
+                
+                // Store updated user info
+                if (userId) {
+                    localStorage.setItem('user', JSON.stringify(profile));
+                }
+            } catch (profileError) {
+                console.error('❌ Could not get user profile:', profileError);
+            }
+        }
+
+        console.log('🆔 Final user ID:', userId);
+
+        if (!userId) {
+            throw {
+                message: 'Foydalanuvchi ma\'lumotlari topilmadi. Iltimos, qaytadan tizimga kiring.',
+                errors: { user: ['Foydalanuvchi ID topilmadi'] },
+            } as ApiError;
+        }
+
         // Prepare the payload exactly as required by the API
         const payload = {
+            user: Number(userId),
             movie_id: Number(ratingData.movie_id),
             score: Number(ratingData.score),
             comment: ratingData.comment.trim()
         };
 
         console.log('Adding rating with payload:', payload);
+        console.log('User ID:', userId);
+        console.log('Token:', token ? 'Present' : 'Missing');
         
         const response = await fetch(`${API_BASE_URL}/ratings/`, {
             method: 'POST',
@@ -1029,5 +1087,73 @@ export const getBanners = async (): Promise<any[]> => {
     } catch (error) {
         console.error('❌ Banners fetch error:', error);
         return [];
+    }
+};
+
+// Notifications API functions
+export interface Notification {
+    id: number;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    is_read: boolean;
+    created_at: string;
+    anime_id?: number;
+    episode_number?: number;
+}
+
+export const getNotifications = async (): Promise<Notification[]> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log('No auth token for notifications');
+            return [];
+        }
+
+        console.log('🔔 Fetching notifications...');
+        
+        const response = await fetch(`${API_BASE_URL}/notification/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch notifications:', response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        console.log('📬 Notifications received:', data.length);
+        
+        return data;
+    } catch (error) {
+        console.error('❌ Error fetching notifications:', error);
+        return [];
+    }
+};
+
+export const markNotificationAsRead = async (notificationId: number): Promise<boolean> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            return false;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/notification/${notificationId}/`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ is_read: true }),
+        });
+
+        return response.ok;
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+        return false;
     }
 };

@@ -80,22 +80,29 @@ const VideoPlayer = () => {
         const foundAnime = await fetchAnimeById(Number(animeId));
         if (foundAnime) {
           setAnime(foundAnime);
-          const episode = foundAnime.episodes?.find(
-            (e: any) => e.episodeNumber === Number(episodeNumber)
-          );
-          setCurrentEpisode(episode || foundAnime.episodes?.[0]);
+          // For movies, use the first episode (movies have episodes with video_url)
+          if (foundAnime.type === 'movie') {
+            setCurrentEpisode(foundAnime.episodes?.[0]);
+          } else {
+            // For series, find the specific episode
+            const episode = foundAnime.episodes?.find(
+              (e: any) => e.episode_number === Number(episodeNumber)
+            );
+            setCurrentEpisode(episode || foundAnime.episodes?.[0]);
+          }
         } else {
           const fallbackAnime = {
             id: Number(animeId),
             title: 'Test Anime',
+            type: 'series',
             episodes: [
               {
                 id: 1,
-                episodeNumber: 1,
+                episode_number: 1,
                 title: 'Episode 1',
                 thumbnail: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&h=170&fit=crop',
                 duration: '24:00',
-                videoUrl: '/video.mp4',
+                video_url: '/video.mp4',
                 watched: false
               }
             ]
@@ -127,37 +134,42 @@ const VideoPlayer = () => {
     localStorage.setItem('watchHistory', JSON.stringify([entry, ...filtered]));
   }, [anime, currentEpisode]);
 
-  // Load video URL
+  // Load video URL - optimized for speed
   useEffect(() => {
-    const loadVideo = async () => {
+    const loadVideo = () => {
       if (!anime) return;
 
       setIsLoadingVideo(true);
+      let videoUrl = '';
 
       try {
-        let videoUrl = '';
-
-        if (currentEpisode?.video_url) {
-          videoUrl = currentEpisode.video_url;
-        } else if (anime.videos && anime.videos.length > 0) {
-          videoUrl = anime.videos[0].url;
-        } else {
-          videoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        // Movie: single video from episodes array (movies have episodes with video_url)
+        if (anime.type === 'movie') {
+          videoUrl = anime.episodes?.[0]?.video_url || anime.videos?.[0]?.url || anime.videoUrl || '';
+        }
+        // Series: specific episode from episodes array
+        else if (anime.type === 'series') {
+          const episode = anime.episodes?.find((ep: any) => ep.episode_number === Number(episodeNumber)) || anime.episodes?.[0];
+          videoUrl = episode?.video_url || episode?.videoUrl || '';
+        }
+        // Fallback
+        else {
+          videoUrl = anime.episodes?.[0]?.video_url || anime.videoUrl || '';
         }
 
-        if (videoUrl.includes('vimeo.com') && !videoUrl.includes('player.vimeo.com')) {
+        // Handle Vimeo URLs quickly
+        if (videoUrl && videoUrl.includes('vimeo.com') && !videoUrl.includes('player.vimeo.com')) {
           const vimeoId = videoUrl.match(/vimeo\.com\/(\d+)/)?.[1];
           if (vimeoId) {
             videoUrl = `https://player.vimeo.com/video/${vimeoId}`;
           }
         }
 
-        setVideoUrl(videoUrl);
-        setIsVimeoVideo(videoUrl.includes('player.vimeo.com'));
+        // Set video URL immediately
+        setVideoUrl(videoUrl || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
+        setIsVimeoVideo(videoUrl.includes('player.vimeo.com') || videoUrl.includes('iframe.mediadelivery.net'));
+        setIsLoadingVideo(false);
 
-        if (videoUrl.includes('player.vimeo.com')) {
-          setIsLoadingVideo(false);
-        }
       } catch (error) {
         console.error('Error loading video:', error);
         setVideoUrl('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4');
@@ -165,7 +177,7 @@ const VideoPlayer = () => {
       }
     };
 
-    if (anime && currentEpisode) {
+    if (anime) {
       loadVideo();
     }
   }, [anime, currentEpisode]);
@@ -286,9 +298,9 @@ const VideoPlayer = () => {
 
     if (duration > 0 && current / duration > 0.9) {
       markAsWatched();
-      if (anime && currentEpisode && !showNextEpisodeCountdown) {
+      if (anime && currentEpisode && !showNextEpisodeCountdown && anime.type === 'series') {
         const nextEp = anime.episodes.find(
-          (e: any) => e.episodeNumber === currentEpisode.episodeNumber + 1
+          (e: any) => e.episode_number === currentEpisode.episode_number + 1
         );
         if (nextEp) {
           setShowNextEpisodeCountdown(true);
@@ -533,22 +545,22 @@ const VideoPlayer = () => {
   }, [animeId, navigate]);
 
   const nextEpisode = useCallback(() => {
-    if (!anime || !currentEpisode) return;
+    if (!anime || !currentEpisode || anime.type === 'movie') return;
     const nextEp = anime.episodes.find(
-      (e: any) => e.episodeNumber === currentEpisode.episodeNumber + 1
+      (e: any) => e.episode_number === currentEpisode.episode_number + 1
     );
     if (nextEp) {
-      goToEpisode(nextEp.episodeNumber);
+      goToEpisode(nextEp.episode_number);
     }
   }, [anime, currentEpisode, goToEpisode]);
 
   const previousEpisode = useCallback(() => {
-    if (!anime || !currentEpisode) return;
+    if (!anime || !currentEpisode || anime.type === 'movie') return;
     const prevEp = anime.episodes.find(
-      (e: any) => e.episodeNumber === currentEpisode.episodeNumber - 1
+      (e: any) => e.episode_number === currentEpisode.episode_number - 1
     );
     if (prevEp) {
-      goToEpisode(prevEp.episodeNumber);
+      goToEpisode(prevEp.episode_number);
     }
   }, [anime, currentEpisode, goToEpisode]);
 
@@ -567,12 +579,21 @@ const VideoPlayer = () => {
   return (
     <>
       <SEO
-        title={`${anime?.title} - Episode ${currentEpisode?.episodeNumber} | Aniki`}
-        description={`${anime?.title} anime serialining ${currentEpisode?.episodeNumber}-qismini tomosha qiling. ${currentEpisode?.title || 'Eng yaxshi anime streaming platformasi Aniki da.'}`}
-        keywords={`${anime?.title}, episode ${currentEpisode?.episodeNumber}, anime, anime uzbek, anime tomosha, aniki, ${anime?.genres?.join(', ') || 'anime serial'}`}
+        title={anime?.type === 'movie' 
+          ? `${anime?.title} - Film | Aniki`
+          : `${anime?.title} - Episode ${currentEpisode?.episode_number} | Aniki`
+        }
+        description={anime?.type === 'movie'
+          ? `${anime?.title} filmini tomosha qiling. ${anime?.description || 'Eng yaxshi film streaming platformasi Aniki da.'}`
+          : `${anime?.title} anime serialining ${currentEpisode?.episode_number}-qismini tomosha qiling. ${currentEpisode?.title || 'Eng yaxshi anime streaming platformasi Aniki da.'}`
+        }
+        keywords={anime?.type === 'movie'
+          ? `${anime?.title}, film, kino, uzbek tilida, aniki, ${anime?.genres?.join(', ') || 'film'}`
+          : `${anime?.title}, episode ${currentEpisode?.episode_number}, anime, anime uzbek, anime tomosha, aniki, ${anime?.genres?.join(', ') || 'anime serial'}`
+        }
         image={currentEpisode?.thumbnail || anime?.banner}
         url={`https://aniki.uz/watch/${animeId}/${episodeNumber}`}
-        type="video.episode"
+        type={anime?.type === 'movie' ? 'video.movie' : 'video.episode'}
         noIndex={true}
       />
       <div
@@ -660,8 +681,8 @@ const VideoPlayer = () => {
         }
       `}</style>
 
-        {/* Video Container */}
-        <div className={`absolute inset-0 ${!isFullscreen ? 'lg:right-80' : ''}`}>
+        {/* Video Container - Full width for movies, with sidebar for series */}
+        <div className={`absolute inset-0 ${!isFullscreen && anime?.type === 'series' ? 'lg:right-80' : ''}`}>
           {videoUrl && (
             <div
               className="relative h-full w-full bg-black"
@@ -783,19 +804,25 @@ const VideoPlayer = () => {
                           {anime?.title}
                         </h1>
                         <p className="text-xs md:text-sm text-gray-300 truncate">
-                          Episode {currentEpisode?.episodeNumber}: {currentEpisode?.title}
+                          {anime?.type === 'movie' 
+                            ? currentEpisode?.title || 'Film'
+                            : `Episode ${currentEpisode?.episode_number}: ${currentEpisode?.title}`
+                          }
                         </p>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowEpisodeList(!showEpisodeList);
-                        }}
-                        className={`${isFullscreen ? 'block' : 'lg:hidden'} control-btn p-2 hover:bg-primary/20 rounded-full`}
-                      >
-                        <List className="w-6 h-6 text-white" />
-                      </button>
+                      {/* Episodes list button - Only for Series */}
+                      {anime?.type === 'series' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowEpisodeList(!showEpisodeList);
+                          }}
+                          className={`${isFullscreen ? 'block' : 'lg:hidden'} control-btn p-2 hover:bg-primary/20 rounded-full`}
+                        >
+                          <List className="w-6 h-6 text-white" />
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 )}
@@ -837,16 +864,18 @@ const VideoPlayer = () => {
                         {/* Mobile Controls */}
                         <div className="md:hidden space-y-3">
                           <div className="flex items-center justify-between">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                previousEpisode();
-                              }}
-                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
-                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                            >
-                              <SkipBack className="w-6 h-6 text-white" />
-                            </button>
+                            {anime?.type === 'series' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  previousEpisode();
+                                }}
+                                disabled={!anime?.episodes?.find((e: any) => e.episode_number === (currentEpisode?.episode_number || 1) - 1)}
+                                className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                              >
+                                <SkipBack className="w-6 h-6 text-white" />
+                              </button>
+                            )}
 
                             <div className="flex items-center gap-6">
                               <button
@@ -884,16 +913,18 @@ const VideoPlayer = () => {
                               </button>
                             </div>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                nextEpisode();
-                              }}
-                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
-                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                            >
-                              <SkipForward className="w-6 h-6 text-white" />
-                            </button>
+                            {anime?.type === 'series' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  nextEpisode();
+                                }}
+                                disabled={!anime?.episodes?.find((e: any) => e.episode_number === (currentEpisode?.episode_number || 1) + 1)}
+                                className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                              >
+                                <SkipForward className="w-6 h-6 text-white" />
+                              </button>
+                            )}
                           </div>
 
                           <div className="flex items-center justify-between text-white">
@@ -981,16 +1012,18 @@ const VideoPlayer = () => {
                         {/* Desktop Controls */}
                         <div className="hidden md:flex items-center justify-between text-white">
                           <div className="flex items-center gap-4">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                previousEpisode();
-                              }}
-                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) - 1)}
-                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                            >
-                              <SkipBack className="w-5 h-5" />
-                            </button>
+                            {anime?.type === 'series' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  previousEpisode();
+                                }}
+                                disabled={!anime?.episodes?.find((e: any) => e.episode_number === (currentEpisode?.episode_number || 1) - 1)}
+                                className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                              >
+                                <SkipBack className="w-5 h-5" />
+                              </button>
+                            )}
 
                             <button
                               onClick={(e) => {
@@ -1026,16 +1059,18 @@ const VideoPlayer = () => {
                               <ChevronRight className="w-6 h-6" />
                             </button>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                nextEpisode();
-                              }}
-                              disabled={!anime?.episodes?.find((e: any) => e.episodeNumber === (currentEpisode?.episodeNumber || 1) + 1)}
-                              className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
-                            >
-                              <SkipForward className="w-5 h-5" />
-                            </button>
+                            {anime?.type === 'series' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  nextEpisode();
+                                }}
+                                disabled={!anime?.episodes?.find((e: any) => e.episode_number === (currentEpisode?.episode_number || 1) + 1)}
+                                className="control-btn p-2 disabled:opacity-30 hover:bg-primary/20 rounded-full"
+                              >
+                                <SkipForward className="w-5 h-5" />
+                              </button>
+                            )}
 
                             <span className="text-sm font-medium ml-4">
                               {formatTime(currentTime)} / {formatTime(duration)}
@@ -1122,9 +1157,9 @@ const VideoPlayer = () => {
           )}
         </div>
 
-        {/* Episode List Sidebar */}
+        {/* Episode List Sidebar - Only for Series */}
         <AnimatePresence>
-          {showEpisodeList && (
+          {showEpisodeList && anime?.type === 'series' && (
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
@@ -1146,21 +1181,21 @@ const VideoPlayer = () => {
                 {anime?.episodes?.map((episode: any) => (
                   <button
                     key={episode.id}
-                    onClick={() => goToEpisode(episode.episodeNumber)}
-                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episodeNumber === currentEpisode?.episodeNumber
+                    onClick={() => goToEpisode(episode.episode_number)}
+                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episode_number === currentEpisode?.episode_number
                       ? 'bg-primary/20 border-primary/30'
                       : ''
                       }`}
                   >
                     <div className="flex gap-3">
                       <img
-                        src={episode.thumbnail}
+                        src={episode.thumbnail || anime.thumbnail}
                         alt={episode.title}
                         className="w-16 h-9 object-cover rounded"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">
-                          Episode {episode.episodeNumber}
+                          Episode {episode.episode_number}
                         </p>
                         <p className="text-xs text-gray-400 truncate">
                           {episode.title}
@@ -1177,8 +1212,8 @@ const VideoPlayer = () => {
           )}
         </AnimatePresence>
 
-        {/* Desktop Episode List */}
-        {!isFullscreen && (
+        {/* Desktop Episode List - Only for Series */}
+        {!isFullscreen && anime?.type === 'series' && (
           <div className="hidden lg:block absolute top-0 right-0 w-80 h-full bg-dark-light border-l border-dark-lighter">
             <div className="p-4 border-b border-dark-lighter">
               <h3 className="text-lg font-semibold text-white">Episodes</h3>
@@ -1187,21 +1222,21 @@ const VideoPlayer = () => {
               {anime?.episodes?.map((episode: any) => (
                 <button
                   key={episode.id}
-                  onClick={() => goToEpisode(episode.episodeNumber)}
-                  className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episodeNumber === currentEpisode?.episodeNumber
+                  onClick={() => goToEpisode(episode.episode_number)}
+                  className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter/50 ${episode.episode_number === currentEpisode?.episode_number
                     ? 'bg-primary/20 border-primary/30'
                     : ''
                     }`}
                 >
                   <div className="flex gap-3">
                     <img
-                      src={episode.thumbnail}
+                      src={episode.thumbnail || anime.thumbnail}
                       alt={episode.title}
                       className="w-16 h-9 object-cover rounded"
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">
-                        Episode {episode.episodeNumber}
+                        Episode {episode.episode_number}
                       </p>
                       <p className="text-xs text-gray-400 truncate">
                         {episode.title}

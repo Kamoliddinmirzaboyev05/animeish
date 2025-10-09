@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, Menu, X, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getNotifications } from '../services/api';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -15,6 +17,28 @@ const Navbar = () => {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Load notifications
+  useEffect(() => {
+    const loadNotifications = async () => {
+      const isLoggedIn = localStorage.getItem('access_token');
+      if (isLoggedIn) {
+        try {
+          const notifications = await getNotifications();
+          const unreadCount = notifications.filter(n => !n.is_read).length;
+          setUnreadNotifications(unreadCount);
+        } catch (error) {
+          console.error('Error loading notifications:', error);
+        }
+      }
+    };
+
+    loadNotifications();
+    
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(loadNotifications, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -82,7 +106,11 @@ const Navbar = () => {
                   className="relative p-2 hover:bg-dark-light rounded-full transition-colors"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-primary text-white text-xs rounded-full flex items-center justify-center font-medium">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
                 </Link>
 
                 <div className="hidden md:block relative group">
@@ -182,9 +210,14 @@ const Navbar = () => {
                   <Link
                     to="/notifications"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block py-3 hover:text-primary transition-colors border-b border-dark-lighter"
+                    className="flex items-center justify-between py-3 hover:text-primary transition-colors border-b border-dark-lighter"
                   >
-                    Bildirishnomalar
+                    <span>Bildirishnomalar</span>
+                    {unreadNotifications > 0 && (
+                      <span className="min-w-[18px] h-[18px] bg-primary text-white text-xs rounded-full flex items-center justify-center font-medium">
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      </span>
+                    )}
                   </Link>
                   <Link
                     to="/profile"

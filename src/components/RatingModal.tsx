@@ -38,10 +38,19 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
     setSuccess(false);
 
     try {
-      console.log('Submitting rating:', {
+      console.log('🎯 Submitting rating:', {
         movie_id: animeId,
         score: rating,
         comment: comment.trim()
+      });
+      
+      // Check if user is logged in
+      const token = localStorage.getItem('access_token');
+      const userStr = localStorage.getItem('user');
+      console.log('🔐 Auth status:', {
+        hasToken: !!token,
+        hasUser: !!userStr,
+        user: userStr ? JSON.parse(userStr) : null
       });
       
       await addRating({
