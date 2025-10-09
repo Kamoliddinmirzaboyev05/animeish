@@ -138,7 +138,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
             <div className="sm:hidden w-12 h-1 bg-gray-600 rounded-full mx-auto mb-4"></div>
             <div className="flex items-center justify-between mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-xl font-bold">
-                {success ? 'Muvaffaqiyatli yuborildi!' : 'Reyting va Izoh'}
+                {success ? 'Muvaffaqiyatli yuborildi!' : 'Baholash va Izoh'}
               </h2>
               <button
                 onClick={handleClose}
@@ -257,7 +257,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        <span className="hidden sm:inline">Reyting Yuborish</span>
+                        <span className="hidden sm:inline">Baholash</span>
                         <span className="sm:hidden">Yuborish</span>
                       </>
                     )}

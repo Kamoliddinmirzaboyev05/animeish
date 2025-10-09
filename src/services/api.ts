@@ -388,11 +388,9 @@ const transformAnimeData = (apiData: any) => {
             score: rating.score,
             comment: rating.comment,
             created_at: rating.created_at,
-            user: {
-                id: rating.user?.id,
-                first_name: rating.user?.first_name || 'Anonim',
-                username: rating.user?.username || 'user'
-            }
+            user: rating.user, // email/username string
+            first_name: rating.first_name || 'Anonim',
+            is_comment: rating.is_comment
         })) || [],
         ratingsCount: apiData.ratings?.length || 0,
         averageRating: apiData.rating_avg || 0,
@@ -1000,6 +998,80 @@ export const getUserRatings = async (): Promise<RatingResponse[]> => {
     } catch (error) {
         console.error('Fetch ratings error:', error);
         return [];
+    }
+};
+
+export const checkUserRating = async (movieId: number): Promise<RatingResponse | null> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            console.log('No auth token for rating check');
+            return null;
+        }
+
+        // Get current user info from multiple sources
+        let currentUserEmail = '';
+        let currentUserId = 0;
+        
+        try {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                currentUserEmail = user.email || user.username || '';
+                currentUserId = user.id || 0;
+                console.log('Current user info:', { email: currentUserEmail, id: currentUserId });
+            }
+        } catch (e) {
+            console.error('Error parsing user from localStorage:', e);
+        }
+
+        // If no user info in localStorage, try to get from API
+        if (!currentUserEmail && !currentUserId) {
+            try {
+                const profile = await getUserProfile();
+                currentUserEmail = profile.email || profile.username || '';
+                currentUserId = profile.id || 0;
+                console.log('User info from API:', { email: currentUserEmail, id: currentUserId });
+            } catch (profileError) {
+                console.error('Could not get user profile:', profileError);
+            }
+        }
+
+        if (!currentUserEmail && !currentUserId) {
+            console.log('No user identification found');
+            return null;
+        }
+
+        // Get the anime data to check ratings
+        const anime = await fetchAnimeById(movieId);
+        if (!anime || !anime.ratings) {
+            console.log('No anime or ratings found');
+            return null;
+        }
+
+        console.log('Checking ratings for user:', currentUserEmail);
+        console.log('Available ratings:', anime.ratings.map((r: any) => ({ user: r.user, score: r.score })));
+
+        // Find user's rating by email/username (more flexible matching)
+        const userRating = anime.ratings.find((rating: any) => {
+            const ratingUser = rating.user?.toLowerCase?.() || rating.user;
+            const currentUser = currentUserEmail.toLowerCase();
+            
+            return ratingUser === currentUser || 
+                   ratingUser === currentUserId.toString() ||
+                   rating.user === currentUserEmail;
+        });
+
+        if (userRating) {
+            console.log('Found user rating:', userRating);
+        } else {
+            console.log('No user rating found');
+        }
+
+        return userRating || null;
+    } catch (error) {
+        console.error('Error checking user rating:', error);
+        return null;
     }
 };
 

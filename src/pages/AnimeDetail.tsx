@@ -9,7 +9,7 @@ import StructuredData from '../components/StructuredData';
 import Toast from '../components/Toast';
 import RatingModal from '../components/RatingModal';
 import RatingsSection from '../components/RatingsSection';
-import { fetchAnimeById, fetchAnimeList, addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
+import { fetchAnimeById, fetchAnimeList, addBookmark, removeBookmark, checkBookmarkStatus, checkUserRating } from '../services/api';
 import { translateStatus, translateGenres } from '../utils/translations';
 
 const AnimeDetail = () => {
@@ -21,6 +21,8 @@ const AnimeDetail = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [userRating, setUserRating] = useState<any>(null);
+  const [checkingRating, setCheckingRating] = useState(false);
 
   const isLoggedIn = localStorage.getItem('access_token');
 
@@ -57,7 +59,22 @@ const AnimeDetail = () => {
       }
     };
 
+    const checkUserRatingStatus = async () => {
+      if (isLoggedIn) {
+        try {
+          setCheckingRating(true);
+          const rating = await checkUserRating(Number(id));
+          setUserRating(rating);
+        } catch (error) {
+          console.error('Error checking user rating:', error);
+        } finally {
+          setCheckingRating(false);
+        }
+      }
+    };
+
     checkSavedStatus();
+    checkUserRatingStatus();
   }, [id]);
 
   const handleWatch = () => {
@@ -100,7 +117,31 @@ const AnimeDetail = () => {
       navigate('/login');
       return;
     }
+    
+    if (userRating) {
+      showToast(`Siz avval ${userRating.score}/5 reyting bergansiz. Bir filmni faqat bir marta baholash mumkin.`, 'info');
+      return;
+    }
+    
     setShowRatingModal(true);
+  };
+
+  const handleRatingSubmitted = () => {
+    // Reload anime data to get updated ratings
+    const reloadAnimeData = async () => {
+      try {
+        const animeData = await fetchAnimeById(Number(id));
+        setAnime(animeData);
+        
+        // Check user rating again
+        const rating = await checkUserRating(Number(id));
+        setUserRating(rating);
+      } catch (error) {
+        console.error('Error reloading anime data:', error);
+      }
+    };
+    
+    reloadAnimeData();
   };
 
   const showToast = (message: string, type: 'success' | 'error' | 'info') => {
@@ -242,11 +283,27 @@ const AnimeDetail = () => {
                   {isLoggedIn && (
                     <button
                       onClick={handleRatingClick}
-                      className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-yellow-500/20 text-yellow-400 border-2 border-yellow-500/30 hover:bg-yellow-500/30 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
+                      disabled={checkingRating || !!userRating}
+                      className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-2 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
+                        userRating
+                          ? 'bg-green-500/20 text-green-400 border-green-500/30 cursor-not-allowed opacity-75'
+                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
+                      } ${checkingRating ? 'opacity-50 cursor-wait' : ''}`}
+                      title={userRating ? `Siz ${userRating.score}/5 reyting bergansiz` : 'Reyting berish'}
                     >
-                      <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="hidden sm:inline">Reyting Berish</span>
-                      <span className="sm:hidden">Baholash</span>
+                      {checkingRating ? (
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      ) : userRating ? (
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                      ) : (
+                        <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {userRating ? `${userRating.score}/5 Berilgan` : 'Baholash'}
+                      </span>
+                      <span className="sm:hidden">
+                        {userRating ? `${userRating.score}/5` : 'Baholash'}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -345,6 +402,7 @@ const AnimeDetail = () => {
             ratingsCount={anime?.ratingsCount || 0}
             onAddRating={handleRatingClick}
             loading={loading}
+            userRating={userRating}
           />
 
           {relatedAnime.length > 0 && (
@@ -359,16 +417,7 @@ const AnimeDetail = () => {
         animeId={Number(id)}
         animeTitle={anime?.title || ''}
         onShowToast={showToast}
-        onRatingSubmitted={async () => {
-          console.log('Rating submitted successfully');
-          // Reload anime data to show new rating
-          try {
-            const updatedAnime = await fetchAnimeById(Number(id));
-            setAnime(updatedAnime);
-          } catch (error) {
-            console.error('Error reloading anime data:', error);
-          }
-        }}
+        onRatingSubmitted={handleRatingSubmitted}
       />
       
       {toast && (

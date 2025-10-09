@@ -966,19 +966,39 @@ const VideoPlayer = () => {
                                 </AnimatePresence>
                               </div>
 
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleMute();
-                                }}
-                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                              >
-                                {isMuted ? (
-                                  <VolumeX className="w-5 h-5" />
-                                ) : (
-                                  <Volume2 className="w-5 h-5" />
-                                )}
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleMute();
+                                  }}
+                                  className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                                >
+                                  {isMuted ? (
+                                    <VolumeX className="w-5 h-5" />
+                                  ) : (
+                                    <Volume2 className="w-5 h-5" />
+                                  )}
+                                </button>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="1"
+                                  step="0.1"
+                                  value={isMuted ? 0 : volume}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    const newVolume = parseFloat(e.target.value);
+                                    if (videoRef.current) {
+                                      videoRef.current.volume = newVolume;
+                                      videoRef.current.muted = newVolume === 0;
+                                      setVolume(newVolume);
+                                      setIsMuted(newVolume === 0);
+                                    }
+                                  }}
+                                  className="w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                                />
+                              </div>
 
                               <button
                                 onClick={(e) => {
@@ -1111,19 +1131,39 @@ const VideoPlayer = () => {
                               </AnimatePresence>
                             </div>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleMute();
-                              }}
-                              className="control-btn p-2 hover:bg-primary/20 rounded-full"
-                            >
-                              {isMuted ? (
-                                <VolumeX className="w-5 h-5" />
-                              ) : (
-                                <Volume2 className="w-5 h-5" />
-                              )}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleMute();
+                                }}
+                                className="control-btn p-2 hover:bg-primary/20 rounded-full"
+                              >
+                                {isMuted ? (
+                                  <VolumeX className="w-5 h-5" />
+                                ) : (
+                                  <Volume2 className="w-5 h-5" />
+                                )}
+                              </button>
+                              <input
+                                type="range"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={isMuted ? 0 : volume}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  const newVolume = parseFloat(e.target.value);
+                                  if (videoRef.current) {
+                                    videoRef.current.volume = newVolume;
+                                    videoRef.current.muted = newVolume === 0;
+                                    setVolume(newVolume);
+                                    setIsMuted(newVolume === 0);
+                                  }
+                                }}
+                                className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer"
+                              />
+                            </div>
 
                             <button
                               onClick={(e) => {

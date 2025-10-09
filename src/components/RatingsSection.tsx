@@ -7,11 +7,9 @@ interface Rating {
   score: number;
   comment: string;
   created_at: string;
-  user: {
-    id: number;
-    first_name: string;
-    username: string;
-  };
+  user: string; // email/username
+  first_name: string; // user's first name
+  is_comment: boolean;
 }
 
 interface RatingsSectionProps {
@@ -20,9 +18,10 @@ interface RatingsSectionProps {
   ratingsCount: number;
   onAddRating?: () => void;
   loading?: boolean;
+  userRating?: any;
 }
 
-const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loading = false }: RatingsSectionProps) => {
+const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loading = false, userRating }: RatingsSectionProps) => {
   const [showAllRatings, setShowAllRatings] = useState(false);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
 
@@ -57,15 +56,25 @@ const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loa
     try {
       const date = new Date(dateString);
       const now = new Date();
-      const diffTime = Math.abs(now.getTime() - date.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffTime = now.getTime() - date.getTime();
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays === 0) return 'Bugun';
+      if (diffMinutes < 1) return 'Hozir';
+      if (diffMinutes < 60) return `${diffMinutes} daqiqa oldin`;
+      if (diffHours < 24) return `${diffHours} soat oldin`;
       if (diffDays === 1) return 'Kecha';
-      if (diffDays <= 7) return `${diffDays} kun oldin`;
-      if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} hafta oldin`;
-      if (diffDays <= 365) return `${Math.ceil(diffDays / 30)} oy oldin`;
-      return `${Math.ceil(diffDays / 365)} yil oldin`;
+      if (diffDays < 7) return `${diffDays} kun oldin`;
+      if (diffDays < 30) return `${Math.ceil(diffDays / 7)} hafta oldin`;
+      if (diffDays < 365) return `${Math.ceil(diffDays / 30)} oy oldin`;
+      
+      // For older dates, show the actual date
+      return date.toLocaleDateString('uz-UZ', {
+        day: 'numeric',
+        month: 'long',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
     } catch (error) {
       return 'Noma\'lum sana';
     }
@@ -146,9 +155,22 @@ const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loa
         {isLoggedIn && onAddRating && (
           <button
             onClick={onAddRating}
-            className="px-4 py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium w-full sm:w-auto"
+            disabled={!!userRating}
+            className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium w-full sm:w-auto flex items-center gap-2 ${
+              userRating
+                ? 'bg-green-500/20 text-green-400 cursor-not-allowed opacity-75'
+                : 'bg-primary hover:bg-primary-dark'
+            }`}
+            title={userRating ? `Siz ${userRating.score}/5 reyting bergansiz` : 'Baholash'}
           >
-            Reyting Berish
+            {userRating ? (
+              <>
+                <Star className="w-4 h-4 fill-current" />
+                {userRating.score}/5 Berilgan
+              </>
+            ) : (
+              'Baholash'
+            )}
           </button>
         )}
       </div>
@@ -226,7 +248,7 @@ const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loa
                       <div className="flex flex-col gap-2 mb-3">
                         <div className="flex items-center justify-between">
                           <h4 className="font-semibold text-sm">
-                            {rating.user.first_name}
+                            {rating.first_name || 'Anonim'}
                           </h4>
                           <span className="text-xs text-gray-500">
                             {formatDate(rating.created_at)}
@@ -282,7 +304,7 @@ const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loa
               onClick={onAddRating}
               className="mt-4 px-6 py-3 bg-primary rounded-lg hover:bg-primary-dark transition-colors font-medium"
             >
-              Birinchi Reyting Berish
+              Birinchi Baholash
             </button>
           )}
         </div>
