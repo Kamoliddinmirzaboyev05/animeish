@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, Heart } from 'lucide-react';
+import { Trash2, Heart, ChevronLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import Toast from '../components/Toast';
@@ -72,6 +72,17 @@ const MyList = () => {
       <Navbar />
 
       <div className="pt-20 sm:pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span>Orqaga</span>
+          </button>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
           <div className='sm:flex flex-wrap'>
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">Mening Ro'yxatim</h1>

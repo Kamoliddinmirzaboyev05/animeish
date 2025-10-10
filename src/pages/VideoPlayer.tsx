@@ -14,6 +14,7 @@ import {
   Settings,
   Minimize,
   ChevronLeft,
+
   RotateCcw,
   RotateCw,
   X,
@@ -27,6 +28,7 @@ const VideoPlayer = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
   const hideControlsTimerRef = useRef<number | undefined>(undefined);
+  const lastTapRef = useRef<number>(0);
 
   const isLoggedIn = localStorage.getItem('access_token');
 
@@ -62,6 +64,7 @@ const VideoPlayer = () => {
   useEffect(() => {
     const loadAnimeData = async () => {
       try {
+        setIsLoading(true);
         const data = await fetchAnimeById(Number(animeId));
         if (data) {
           setAnime(data);
@@ -87,7 +90,7 @@ const VideoPlayer = () => {
     }
   }, [animeId, episodeNumber, navigate]);
 
-  // Load video URL
+  // Load video URL - YANGILANDI
   useEffect(() => {
     if (!anime) return;
 
@@ -126,24 +129,39 @@ const VideoPlayer = () => {
       url.includes('iframe.mediadelivery.net') ||
       url.includes('youtube.com/embed');
 
+    // Video statelarini reset qilish
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setShowNextEpisode(false);
+    setCountdown(10);
+
     setVideoUrl(url);
     setIsVimeoVideo(isIframe);
     setIsLoading(false);
-  }, [anime, episodeNumber, navigate]);
 
-  // Video controls
+    // Local storage'dan eski vaqtni o'chirish
+    localStorage.removeItem(`video-${animeId}-${episodeNumber}`);
+  }, [anime, episodeNumber, navigate, animeId]);
+
+  // Video controls - YANGILANDI
   const togglePlay = useCallback(() => {
     if (!videoRef.current) return;
 
     if (isPlaying) {
       videoRef.current.pause();
+      setIsPlaying(false);
     } else {
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.error('Play failed:', err);
-          setIsBuffering(true);
-        });
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsBuffering(false);
+          })
+          .catch(err => {
+            console.error('Play failed:', err);
+            setIsBuffering(true);
+          });
       }
     }
   }, [isPlaying]);
@@ -181,6 +199,7 @@ const VideoPlayer = () => {
     if (!videoRef.current) return;
     const newTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, duration));
     videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
     setShowSkipIndicator(seconds > 0 ? 'forward' : 'backward');
     setTimeout(() => setShowSkipIndicator(null), 800);
   }, [duration]);
@@ -192,15 +211,55 @@ const VideoPlayer = () => {
     setShowSettings(false);
   }, []);
 
-  // Video event handlers
+  // Mobile double tap handler - YANGI FUNKSIYA
+  const handleVideoTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const currentTime = Date.now();
+    const tapLength = currentTime - lastTapRef.current;
+
+    if (tapLength < 300 && tapLength > 0) {
+      // Double tap detected
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      let clientX: number;
+
+      if ('touches' in e) {
+        // Touch event
+        clientX = e.touches[0].clientX;
+      } else {
+        // Mouse event
+        clientX = e.clientX;
+      }
+
+      const tapPosition = clientX - rect.left;
+      const screenThird = rect.width / 3;
+
+      if (tapPosition < screenThird) {
+        // Left side - skip backward
+        skipTime(-10);
+      } else if (tapPosition > screenThird * 2) {
+        // Right side - skip forward
+        skipTime(10);
+      } else {
+        // Center - toggle play/pause
+        togglePlay();
+      }
+    }
+
+    lastTapRef.current = currentTime;
+  }, [skipTime, togglePlay]);
+
+  // Video event handlers - YANGILANDI
   const handleLoadedMetadata = useCallback(() => {
     if (!videoRef.current) return;
     setDuration(videoRef.current.duration);
     setIsLoading(false);
 
+    // Yangi episode uchun saved time ni o'chirish
     const savedTime = localStorage.getItem(`video-${animeId}-${episodeNumber}`);
-    if (savedTime) {
+    if (savedTime && Number(savedTime) > 0) {
       videoRef.current.currentTime = Number(savedTime);
+      setCurrentTime(Number(savedTime));
     }
   }, [animeId, episodeNumber]);
 
@@ -214,7 +273,10 @@ const VideoPlayer = () => {
       setBuffered(bufferedEnd);
     }
 
-    localStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
+    // Faqat 5 soniyadan ko'p vaqt o'tganda saqlash
+    if (current > 5) {
+      localStorage.setItem(`video-${animeId}-${episodeNumber}`, String(current));
+    }
 
     // Show next episode at 90%
     if (duration > 0 && current / duration > 0.9 && !showNextEpisode && anime?.type === 'series') {
@@ -233,12 +295,13 @@ const VideoPlayer = () => {
     setBuffered(bufferedEnd);
   }, []);
 
-  // Progress bar click
+  // Progress bar click - YANGILANDI
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !videoRef.current) return;
     const rect = progressBarRef.current.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
-    handleSeek(pos * duration);
+    const newTime = pos * duration;
+    handleSeek(newTime);
   }, [duration, handleSeek]);
 
   // Controls visibility
@@ -247,20 +310,28 @@ const VideoPlayer = () => {
     if (hideControlsTimerRef.current) {
       clearTimeout(hideControlsTimerRef.current);
     }
-    if (isPlaying) {
+    if (isPlaying && !showSettings && !showEpisodeList) {
       hideControlsTimerRef.current = window.setTimeout(() => {
         setShowControls(false);
       }, 3000);
     }
-  }, [isPlaying]);
+  }, [isPlaying, showSettings, showEpisodeList]);
 
-  // Episode navigation
+  // Episode navigation - YANGILANDI
   const goToEpisode = useCallback((epNum: number) => {
+    // Video statelarini to'liq reset qilish
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setShowNextEpisode(false);
+    setCountdown(10);
+
+    // Navigate qilish
     navigate(`/watch/${animeId}/${epNum}`);
     setShowEpisodeList(false);
-    setCurrentTime(0);
-    setIsPlaying(false);
-  }, [animeId, navigate]);
+
+    // Local storage'dan eski vaqtni o'chirish
+    localStorage.removeItem(`video-${animeId}-${episodeNumber}`);
+  }, [animeId, navigate, episodeNumber]);
 
   const nextEpisode = useCallback(() => {
     if (!anime || !currentEpisode || anime.type === 'movie') return;
@@ -289,15 +360,13 @@ const VideoPlayer = () => {
       return () => clearTimeout(timer);
     } else if (showNextEpisode && countdown === 0) {
       nextEpisode();
-      setShowNextEpisode(false);
-      setCountdown(10);
     }
   }, [showNextEpisode, countdown, nextEpisode]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - YANGILANDI
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.target !== document.body) return;
+      if (e.target !== document.body && !(e.target as Element).className?.includes('video-player')) return;
 
       switch (e.code) {
         case 'Space':
@@ -318,7 +387,7 @@ const VideoPlayer = () => {
             const newVol = Math.min(volume + 0.1, 1);
             videoRef.current.volume = newVol;
             setVolume(newVol);
-            setIsMuted(false);
+            setIsMuted(newVol === 0);
           }
           break;
         case 'ArrowDown':
@@ -327,6 +396,7 @@ const VideoPlayer = () => {
             const newVol = Math.max(volume - 0.1, 0);
             videoRef.current.volume = newVol;
             setVolume(newVol);
+            setIsMuted(newVol === 0);
           }
           break;
         case 'KeyF':
@@ -337,12 +407,19 @@ const VideoPlayer = () => {
           e.preventDefault();
           toggleMute();
           break;
+        case 'Escape':
+          if (showEpisodeList) {
+            setShowEpisodeList(false);
+          } else if (showSettings) {
+            setShowSettings(false);
+          }
+          break;
       }
     };
 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [volume, togglePlay, toggleMute, toggleFullscreen, skipTime]);
+  }, [volume, togglePlay, toggleMute, toggleFullscreen, skipTime, showEpisodeList, showSettings]);
 
   const formatTime = (time: number) => {
     if (!time || isNaN(time)) return '0:00';
@@ -383,9 +460,10 @@ const VideoPlayer = () => {
 
       <div
         ref={containerRef}
-        className="relative h-screen bg-black overflow-hidden"
+        className="relative h-screen bg-black overflow-hidden video-player"
         onMouseMove={showControlsTemp}
         onTouchStart={showControlsTemp}
+        onDoubleClick={handleVideoTap}
       >
         {/* Video Container */}
         <div className={`absolute inset-0 ${!isFullscreen && anime?.type === 'series' ? 'lg:right-80' : ''}`}>
@@ -393,6 +471,7 @@ const VideoPlayer = () => {
             <div
               className="relative h-full w-full"
               onClick={togglePlay}
+              onTouchStart={handleVideoTap}
             >
               {isVimeoVideo ? (
                 <iframe
@@ -418,6 +497,7 @@ const VideoPlayer = () => {
                   preload="auto"
                 >
                   <source src={videoUrl} type="video/mp4" />
+                  Sizning brauzeringiz video elementini qo'llab-quvvatlamaydi.
                 </video>
               )}
 
@@ -437,11 +517,19 @@ const VideoPlayer = () => {
                     exit={{ opacity: 0 }}
                     className={`absolute top-1/2 -translate-y-1/2 ${showSkipIndicator === 'backward' ? 'left-8' : 'right-8'} bg-black/80 rounded-full p-4 pointer-events-none`}
                   >
-                    {showSkipIndicator === 'backward' ? (
-                      <RotateCcw className="w-8 h-8 text-white" />
-                    ) : (
-                      <RotateCw className="w-8 h-8 text-white" />
-                    )}
+                    <div className="flex items-center gap-2 text-white">
+                      {showSkipIndicator === 'backward' ? (
+                        <>
+                          <RotateCcw className="w-6 h-6" />
+                          <span>10s</span>
+                        </>
+                      ) : (
+                        <>
+                          <RotateCw className="w-6 h-6" />
+                          <span>10s</span>
+                        </>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -477,7 +565,7 @@ const VideoPlayer = () => {
                           e.stopPropagation();
                           isFullscreen ? toggleFullscreen() : navigate(`/anime/${animeId}`);
                         }}
-                        className="p-2 hover:bg-white/10 rounded-full"
+                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
                       >
                         <ChevronLeft className="w-6 h-6 text-white" />
                       </button>
@@ -486,6 +574,7 @@ const VideoPlayer = () => {
                         <h1 className="font-semibold truncate">{anime?.title}</h1>
                         <p className="text-sm text-gray-300 truncate">
                           {anime?.type === 'movie' ? 'Film' : `Episode ${currentEpisode?.episode_number}`}
+                          {currentEpisode?.title && ` - ${currentEpisode.title}`}
                         </p>
                       </div>
 
@@ -495,7 +584,7 @@ const VideoPlayer = () => {
                             e.stopPropagation();
                             setShowEpisodeList(!showEpisodeList);
                           }}
-                          className="p-2 hover:bg-white/10 rounded-full lg:hidden"
+                          className="p-2 hover:bg-white/10 rounded-full transition-colors lg:hidden"
                         >
                           <List className="w-6 h-6 text-white" />
                         </button>
@@ -518,17 +607,21 @@ const VideoPlayer = () => {
                       {/* Progress Bar */}
                       <div
                         ref={progressBarRef}
-                        className="w-full h-1 bg-white/30 rounded-full mb-4 cursor-pointer hover:h-2 transition-all"
+                        className="w-full h-2 bg-white/30 rounded-full mb-4 cursor-pointer group hover:h-3 transition-all"
                         onClick={handleProgressClick}
                       >
                         <div className="relative h-full">
                           <div
-                            className="absolute h-full bg-white/50 rounded-full"
+                            className="absolute h-full bg-white/50 rounded-full transition-all"
                             style={{ width: `${(buffered / duration) * 100}%` }}
                           />
                           <div
-                            className="absolute h-full bg-primary rounded-full"
+                            className="absolute h-full bg-primary rounded-full transition-all"
                             style={{ width: `${(currentTime / duration) * 100}%` }}
+                          />
+                          <div
+                            className="absolute w-3 h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ left: `${(currentTime / duration) * 100}%`, marginLeft: '-6px' }}
                           />
                         </div>
                       </div>
@@ -536,10 +629,15 @@ const VideoPlayer = () => {
                       {/* Controls */}
                       <div className="flex items-center justify-between text-white">
                         <div className="flex items-center gap-2">
+                          <span className="text-sm block sm:hidden">
+                            {formatTime(currentTime)}
+                          </span>
+
                           {anime?.type === 'series' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); prevEpisode(); }}
-                              className="p-2 hover:bg-white/10 rounded-full"
+                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                              disabled={!anime.episodes?.find((e: any) => e.episode_number === (currentEpisode?.episode_number || 0) - 1)}
                             >
                               <SkipBack className="w-5 h-5" />
                             </button>
@@ -547,21 +645,21 @@ const VideoPlayer = () => {
 
                           <button
                             onClick={(e) => { e.stopPropagation(); skipTime(-10); }}
-                            className="p-2 hover:bg-white/10 rounded-full hidden sm:block"
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
                             <RotateCcw className="w-5 h-5" />
                           </button>
 
                           <button
                             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                            className="p-3 bg-primary hover:bg-primary-dark rounded-full"
+                            className="p-3 bg-primary hover:bg-primary-dark rounded-full transition-colors"
                           >
                             {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
                           </button>
 
                           <button
                             onClick={(e) => { e.stopPropagation(); skipTime(10); }}
-                            className="p-2 hover:bg-white/10 rounded-full hidden sm:block"
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
                             <RotateCw className="w-5 h-5" />
                           </button>
@@ -569,7 +667,8 @@ const VideoPlayer = () => {
                           {anime?.type === 'series' && (
                             <button
                               onClick={(e) => { e.stopPropagation(); nextEpisode(); }}
-                              className="p-2 hover:bg-white/10 rounded-full"
+                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                              disabled={!anime.episodes?.find((e: any) => e.episode_number === (currentEpisode?.episode_number || 0) + 1)}
                             >
                               <SkipForward className="w-5 h-5" />
                             </button>
@@ -584,7 +683,7 @@ const VideoPlayer = () => {
                           <div className="hidden sm:flex items-center gap-2">
                             <button
                               onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                              className="p-2 hover:bg-white/10 rounded-full"
+                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
                             >
                               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                             </button>
@@ -610,7 +709,7 @@ const VideoPlayer = () => {
                           <div className="relative">
                             <button
                               onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
-                              className="p-2 hover:bg-white/10 rounded-full"
+                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
                             >
                               <Settings className="w-5 h-5" />
                             </button>
@@ -621,15 +720,15 @@ const VideoPlayer = () => {
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   exit={{ opacity: 0, y: 10 }}
-                                  className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg p-2 min-w-[140px]"
+                                  className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg p-2 min-w-[140px] border border-gray-700"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <div className="text-xs text-gray-400 px-2 py-1">Speed</div>
+                                  <div className="text-xs text-gray-400 px-2 py-1">Playback Speed</div>
                                   {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
                                     <button
                                       key={speed}
                                       onClick={() => changeSpeed(speed)}
-                                      className={`w-full text-left px-3 py-2 text-sm hover:bg-white/10 rounded ${playbackSpeed === speed ? 'text-primary' : ''}`}
+                                      className={`w-full text-left px-3 py-2 text-sm hover:bg-white/10 rounded transition-colors ${playbackSpeed === speed ? 'text-primary font-medium' : 'text-white'}`}
                                     >
                                       {speed}x {speed === 1 ? '(Normal)' : ''}
                                     </button>
@@ -641,7 +740,7 @@ const VideoPlayer = () => {
 
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                            className="p-2 hover:bg-white/10 rounded-full"
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
                             {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
                           </button>
@@ -668,7 +767,7 @@ const VideoPlayer = () => {
                 <h3 className="text-white font-semibold">Episodes</h3>
                 <button
                   onClick={() => setShowEpisodeList(false)}
-                  className="p-2 hover:bg-white/10 rounded-full"
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
@@ -678,7 +777,10 @@ const VideoPlayer = () => {
                   <button
                     key={ep.id}
                     onClick={() => goToEpisode(ep.episode_number)}
-                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-gray-800 ${ep.episode_number === currentEpisode?.episode_number ? 'bg-primary/20' : ''}`}
+                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-gray-800 transition-colors ${ep.episode_number === currentEpisode?.episode_number
+                        ? 'bg-primary/20 border-primary/30'
+                        : ''
+                      }`}
                   >
                     <div className="flex gap-3">
                       <img
@@ -709,7 +811,10 @@ const VideoPlayer = () => {
                 <button
                   key={ep.id}
                   onClick={() => goToEpisode(ep.episode_number)}
-                  className={`w-full p-4 text-left hover:bg-white/5 border-b border-gray-800 ${ep.episode_number === currentEpisode?.episode_number ? 'bg-primary/20' : ''}`}
+                  className={`w-full p-4 text-left hover:bg-white/5 border-b border-gray-800 transition-colors ${ep.episode_number === currentEpisode?.episode_number
+                      ? 'bg-primary/20 border-primary/30'
+                      : ''
+                    }`}
                 >
                   <div className="flex gap-3">
                     <img
@@ -735,16 +840,24 @@ const VideoPlayer = () => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/90 rounded-lg p-6 text-center z-50"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/90 rounded-lg p-6 text-center z-50 border border-gray-700"
             >
               <h3 className="text-white text-lg font-semibold mb-2">Keyingi epizod</h3>
               <div className="text-primary text-4xl font-bold mb-4">{countdown}</div>
-              <button
-                onClick={() => { setShowNextEpisode(false); setCountdown(10); }}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm"
-              >
-                Bekor qilish
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowNextEpisode(false); setCountdown(10); }}
+                  className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  onClick={nextEpisode}
+                  className="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-white text-sm transition-colors"
+                >
+                  Davom etish
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

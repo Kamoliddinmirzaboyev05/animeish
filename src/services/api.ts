@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://animeish.pythonanywhere.com';
+const API_BASE_URL = 'https://api.aniki.uz';
 console.log('🔧 API_BASE_URL configured as:', API_BASE_URL);
 
 export interface VideoData {

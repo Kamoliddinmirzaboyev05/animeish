@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { User, Clock, Heart, TrendingUp, Play, Crown, Calendar, Loader2 } from 'lucide-react';
+import { User, Clock, Heart, TrendingUp, Play, Crown, Calendar, Loader2, ChevronLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { fetchAnimeList, getBookmarks } from '../services/api';
 import { getUserProfile, type UserProfile, type ApiError } from '../services/api';
@@ -148,6 +148,17 @@ const Profile = () => {
       <Navbar />
 
       <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span>Orqaga</span>
+          </button>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

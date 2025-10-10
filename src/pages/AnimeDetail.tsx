@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Play, Heart, Calendar, Film, MessageSquare } from 'lucide-react';
+import { Star, Play, Heart, Calendar, Film, MessageSquare, ChevronLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
@@ -233,6 +233,17 @@ const AnimeDetail = () => {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-transparent" />
+
+          {/* Back Button */}
+          <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span className="hidden sm:inline">Orqaga</span>
+            </button>
+          </div>
 
           <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">

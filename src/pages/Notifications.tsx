@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, PlayCircle, AlertCircle, Check, RefreshCw } from 'lucide-react';
+import { Bell, PlayCircle, AlertCircle, Check, RefreshCw, ChevronLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, type Notification } from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -108,6 +108,17 @@ const Notifications = () => {
       <Navbar />
 
       <div className="pt-20 sm:pt-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 sm:pb-12">
+        {/* Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span>Orqaga</span>
+          </button>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
