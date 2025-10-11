@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { Lock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
+import { requestPasswordReset, confirmPasswordReset } from '../services/api';
 
 const resetSchema = z.object({
   code: z.string().length(6, 'Kod 6 raqamdan iborat bo\'lishi kerak'),
@@ -93,41 +94,11 @@ const ForgotPasswordReset = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('https://animeish.pythonanywhere.com/password-reset/confirm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          code: data.code,
-          new_password: data.new_password,
-        }),
+      await confirmPasswordReset({
+        email,
+        code: data.code,
+        new_password: data.new_password,
       });
-
-      let responseData;
-      try {
-        responseData = await response.json();
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        throw new Error(response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati');
-      }
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 400) {
-          if (responseData.message?.includes('code') || responseData.error?.includes('code')) {
-            throw new Error('Noto\'g\'ri yoki muddati o\'tgan tasdiqlash kodi');
-          } else if (responseData.message?.includes('password') || responseData.error?.includes('password')) {
-            throw new Error('Parol talablarga mos kelmaydi');
-          }
-        } else if (response.status === 404) {
-          throw new Error('Foydalanuvchi topilmadi');
-        } else if (response.status === 429) {
-          throw new Error('Juda ko\'p urinish. Iltimos, biroz kuting');
-        }
-        throw new Error(responseData.message || responseData.error || 'Parolni tiklashda xatolik');
-      }
 
       setSuccess('Parol muvaffaqiyatli o\'zgartirildi!');
 
@@ -141,7 +112,19 @@ const ForgotPasswordReset = () => {
       }, 2000);
     } catch (err: any) {
       console.error('Password reset error:', err);
-      setError(err.message || 'Parolni tiklashda xatolik yuz berdi');
+      
+      // Handle specific error cases
+      if (err.message?.includes('code') || err.message?.includes('kod')) {
+        setError('Noto\'g\'ri yoki muddati o\'tgan tasdiqlash kodi');
+      } else if (err.message?.includes('password') || err.message?.includes('parol')) {
+        setError('Parol talablarga mos kelmaydi');
+      } else if (err.message?.includes('404') || err.message?.includes('topilmadi')) {
+        setError('Foydalanuvchi topilmadi');
+      } else if (err.message?.includes('429') || err.message?.includes('ko\'p urinish')) {
+        setError('Juda ko\'p urinish. Iltimos, biroz kuting');
+      } else {
+        setError(err.message || 'Parolni tiklashda xatolik yuz berdi');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -154,28 +137,7 @@ const ForgotPasswordReset = () => {
     setError('');
     
     try {
-      const response = await fetch('https://animeish.pythonanywhere.com/password-reset/request/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      let responseData;
-      try {
-        responseData = await response.json();
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        throw new Error('Noto\'g\'ri javob formati');
-      }
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('Juda ko\'p so\'rov yuborildi. Iltimos, biroz kuting');
-        }
-        throw new Error(responseData.message || responseData.error || 'Kodni qayta yuborishda xatolik');
-      }
+      await requestPasswordReset({ email });
 
       setSuccess('Yangi tasdiqlash kodi yuborildi');
       setOtp(['', '', '', '', '', '']); // Clear OTP inputs
@@ -191,7 +153,12 @@ const ForgotPasswordReset = () => {
       }, 100);
     } catch (error: any) {
       console.error('Resend code error:', error);
-      setError(error.message || 'Kodni qayta yuborishda xatolik');
+      
+      if (error.message?.includes('429') || error.message?.includes('ko\'p so\'rov')) {
+        setError('Juda ko\'p so\'rov yuborildi. Iltimos, biroz kuting');
+      } else {
+        setError(error.message || 'Kodni qayta yuborishda xatolik');
+      }
     } finally {
       setIsLoading(false);
     }

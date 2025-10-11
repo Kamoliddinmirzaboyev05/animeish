@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Heart, Play, MessageSquare } from 'lucide-react';
+import { Star, Heart, Play } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
@@ -12,12 +12,12 @@ interface AnimeCardProps {
   onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: AnimeCardProps) => {
+const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
   const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
-  
+
   const isLoggedIn = localStorage.getItem('access_token');
 
   useEffect(() => {
@@ -31,19 +31,19 @@ const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: Anim
         }
       }
     };
-    
+
     checkSavedStatus();
   }, [anime.id, isLoggedIn]);
 
   const toggleSaved = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isLoggedIn) {
       navigate('/login');
       return;
     }
-    
+
     try {
       if (isSaved) {
         await removeBookmark(anime.id);
@@ -57,17 +57,7 @@ const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: Anim
     }
   };
 
-  const handleRatingClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (!isLoggedIn) {
-      navigate('/login');
-      return;
-    }
-    
-    setShowRatingModal(true);
-  };
+
 
   const watchedEpisodes = anime.episodes?.filter((e: any) => e.watched).length || 0;
   const progress = anime.totalEpisodes > 0 ? (watchedEpisodes / anime.totalEpisodes) * 100 : 0;
@@ -99,7 +89,7 @@ const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: Anim
               </div>
             </div>
           )}
-          
+
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
@@ -128,16 +118,6 @@ const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: Anim
                 className={`w-3 h-3 sm:w-4 sm:h-4 ${isSaved ? 'fill-primary text-primary' : 'text-white'}`}
               />
             </button>
-            
-            {showRating && isLoggedIn && (
-              <button
-                onClick={handleRatingClick}
-                className="w-6 h-6 sm:w-8 sm:h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-yellow-500 transition-colors"
-                title="Reyting va izoh berish"
-              >
-                <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-              </button>
-            )}
           </div>
 
           {showProgress && watchedEpisodes > 0 && (
@@ -178,7 +158,7 @@ const AnimeCard = ({ anime, showProgress, showRating = true, onShowToast }: Anim
           </div>
         </div>
       </motion.div>
-      
+
       <RatingModal
         isOpen={showRatingModal}
         onClose={() => setShowRatingModal(false)}

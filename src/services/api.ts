@@ -25,7 +25,7 @@ export interface VerifyOTPData {
 export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse> => {
     try {
         console.log('Verifying OTP:', verifyData);
-        
+
         const response = await fetch(`${API_BASE_URL}/verify-otp/`, {
             method: 'POST',
             headers: {
@@ -146,7 +146,7 @@ export interface Notification {
 export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> => {
     try {
         console.log('Sending OTP to email:', otpData.email);
-        
+
         const response = await fetch(`${API_BASE_URL}/send-otp/`, {
             method: 'POST',
             headers: {
@@ -185,7 +185,7 @@ export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> =>
 export const registerUser = async (userData: RegisterData): Promise<AuthResponse> => {
     try {
         console.log('Registering user with data:', userData);
-        
+
         const response = await fetch(`${API_BASE_URL}/users/register/`, {
             method: 'POST',
             headers: {
@@ -214,7 +214,7 @@ export const registerUser = async (userData: RegisterData): Promise<AuthResponse
 export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => {
     try {
         console.log('Logging in user with data:', loginData);
-        
+
         const response = await fetch(`${API_BASE_URL}/token/`, {
             method: 'POST',
             headers: {
@@ -261,6 +261,96 @@ export const clearAuthData = () => {
     localStorage.removeItem('user');
 };
 
+// Password reset interfaces
+export interface PasswordResetRequestData {
+    email: string;
+}
+
+export interface PasswordResetConfirmData {
+    email: string;
+    code: string;
+    new_password: string;
+}
+
+// Password reset functions
+export const requestPasswordReset = async (data: PasswordResetRequestData): Promise<{ message: string }> => {
+    try {
+        console.log('Requesting password reset for email:', data.email);
+
+        const response = await fetch(`${API_BASE_URL}/password-reset/request/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        let responseData;
+        try {
+            responseData = await response.json();
+        } catch (parseError) {
+            console.error('Failed to parse password reset response as JSON:', parseError);
+            throw {
+                message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
+                errors: {},
+            } as ApiError;
+        }
+
+        console.log('Password reset request response:', { status: response.status, data: responseData });
+
+        if (!response.ok) {
+            throw {
+                message: responseData.message || responseData.error || 'Parol tiklash so\'rovini yuborishda xatolik',
+                errors: responseData,
+            } as ApiError;
+        }
+
+        return responseData;
+    } catch (error) {
+        console.error('Password reset request error:', error);
+        throw error;
+    }
+};
+
+export const confirmPasswordReset = async (data: PasswordResetConfirmData): Promise<{ message: string }> => {
+    try {
+        console.log('Confirming password reset:', { email: data.email, code: data.code });
+
+        const response = await fetch(`${API_BASE_URL}/password-reset/confirm/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        let responseData;
+        try {
+            responseData = await response.json();
+        } catch (parseError) {
+            console.error('Failed to parse password reset confirm response as JSON:', parseError);
+            throw {
+                message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
+                errors: {},
+            } as ApiError;
+        }
+
+        console.log('Password reset confirm response:', { status: response.status, data: responseData });
+
+        if (!response.ok) {
+            throw {
+                message: responseData.message || responseData.error || 'Parolni tiklashda xatolik',
+                errors: responseData,
+            } as ApiError;
+        }
+
+        return responseData;
+    } catch (error) {
+        console.error('Password reset confirm error:', error);
+        throw error;
+    }
+};
+
 // User profile functions
 export const getUserProfile = async (): Promise<UserProfile> => {
     try {
@@ -270,7 +360,7 @@ export const getUserProfile = async (): Promise<UserProfile> => {
         }
 
         console.log('Fetching user profile...');
-        
+
         const response = await fetch(`${API_BASE_URL}/user/me`, {
             method: 'GET',
             headers: {
@@ -303,11 +393,11 @@ export const fetchVideoData = async (): Promise<VideoData[]> => {
             throw new Error(`Failed to fetch video data: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        
+
         // Transform to VideoData format - optimized for movie/series
         return data.map((item: any) => ({
             id: item.id.toString(),
-            videoUrl: item.type === 'movie' 
+            videoUrl: item.type === 'movie'
                 ? item.episodes?.[0]?.video_url || ''
                 : item.episodes?.[0]?.video_url || ''
         }));
@@ -321,26 +411,26 @@ export const getVideoUrlById = async (animeId: string | number, episodeNumber: n
     try {
         // Use cached anime data if available
         const anime = await fetchAnimeById(Number(animeId));
-        
+
         if (!anime) {
             console.log('❌ Anime not found');
             return '';
         }
-        
+
         // Movie: always has single video in episodes array (movies have episodes with video_url)
         if (anime.type === 'movie') {
             return anime.episodes?.[0]?.video_url || anime.videos?.[0]?.url || '';
         }
-        
+
         // Series: get specific episode from episodes array
         if (anime.type === 'series') {
             const episode = anime.episodes?.find((ep: any) => ep.episode_number === episodeNumber) || anime.episodes?.[0];
             return episode?.video_url || episode?.videoUrl || '';
         }
-        
+
         // Fallback
         return anime.videoUrl || '';
-        
+
     } catch (error) {
         console.error('❌ Error getting video URL:', error);
         return '';
@@ -379,7 +469,7 @@ const transformAnimeData = (apiData: any) => {
             quality: video.quality
         })) || [],
         // Set video URL based on type
-        videoUrl: apiData.type === 'movie' 
+        videoUrl: apiData.type === 'movie'
             ? apiData.videos?.[0]?.url || ''
             : apiData.episodes?.[0]?.video_url || '',
         trailerUrl: apiData.videos?.[0]?.url,
@@ -425,36 +515,36 @@ export const fetchAnimeList = async (): Promise<any[]> => {
 export const searchAnime = async (query: string): Promise<any[]> => {
     try {
         const allAnime = await fetchAnimeList();
-        
+
         if (!query.trim()) {
             return allAnime;
         }
-        
+
         const searchTerm = query.toLowerCase().trim();
-        
+
         // Calculate similarity score for fuzzy matching
         const calculateSimilarity = (str1: string, str2: string): number => {
             const longer = str1.length > str2.length ? str1 : str2;
             const shorter = str1.length > str2.length ? str2 : str1;
-            
+
             if (longer.length === 0) return 1.0;
-            
+
             const editDistance = levenshteinDistance(longer, shorter);
             return (longer.length - editDistance) / longer.length;
         };
-        
+
         // Levenshtein distance algorithm for fuzzy matching
         const levenshteinDistance = (str1: string, str2: string): number => {
             const matrix = [];
-            
+
             for (let i = 0; i <= str2.length; i++) {
                 matrix[i] = [i];
             }
-            
+
             for (let j = 0; j <= str1.length; j++) {
                 matrix[0][j] = j;
             }
-            
+
             for (let i = 1; i <= str2.length; i++) {
                 for (let j = 1; j <= str1.length; j++) {
                     if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
@@ -468,51 +558,51 @@ export const searchAnime = async (query: string): Promise<any[]> => {
                     }
                 }
             }
-            
+
             return matrix[str2.length][str1.length];
         };
-        
+
         // Search and score results
         const searchResults = allAnime.map(anime => {
             const title = anime.title?.toLowerCase() || '';
             const description = anime.description?.toLowerCase() || '';
             const genres = anime.genres?.join(' ').toLowerCase() || '';
             const year = anime.year?.toString() || '';
-            
+
             let score = 0;
-            
+
             // Exact title match gets highest score
             if (title.includes(searchTerm)) {
                 score += 100;
                 if (title.startsWith(searchTerm)) score += 50;
                 if (title === searchTerm) score += 100;
             }
-            
+
             // Fuzzy title matching
             const titleSimilarity = calculateSimilarity(title, searchTerm);
             if (titleSimilarity > 0.6) {
                 score += titleSimilarity * 80;
             }
-            
+
             // Genre matching
             if (genres.includes(searchTerm)) {
                 score += 30;
             }
-            
+
             // Year matching
             if (year.includes(searchTerm)) {
                 score += 20;
             }
-            
+
             // Description matching
             if (description.includes(searchTerm)) {
                 score += 10;
             }
-            
+
             // Partial word matching in title
             const titleWords = title.split(' ');
             const searchWords = searchTerm.split(' ');
-            
+
             searchWords.forEach((searchWord: string) => {
                 titleWords.forEach((titleWord: string) => {
                     if (titleWord.includes(searchWord) || searchWord.includes(titleWord)) {
@@ -524,26 +614,26 @@ export const searchAnime = async (query: string): Promise<any[]> => {
                     }
                 });
             });
-            
+
             return { ...anime, searchScore: score };
         });
-        
+
         // Filter results with minimum score and sort by relevance
         const filteredResults = searchResults
             .filter(anime => anime.searchScore > 5)
             .sort((a, b) => b.searchScore - a.searchScore);
-        
+
         // If no good matches found, return popular anime as suggestions
         if (filteredResults.length === 0) {
             const suggestions = allAnime
                 .sort((a, b) => (b.rating || 0) - (a.rating || 0))
                 .slice(0, 12)
                 .map(anime => ({ ...anime, isSuggestion: true }));
-            
+
             console.log('No matches found, returning suggestions:', suggestions.length);
             return suggestions;
         }
-        
+
         return filteredResults;
     } catch (error) {
         console.error('Error searching anime:', error);
@@ -553,15 +643,31 @@ export const searchAnime = async (query: string): Promise<any[]> => {
 
 export const fetchAnimeById = async (id: number): Promise<any | null> => {
     try {
+        console.log('🔍 Fetching anime by ID:', id);
         const response = await fetch(`${API_BASE_URL}/movies/`);
         if (!response.ok) {
+            console.error('❌ API response not OK:', response.status, response.statusText);
             throw new Error('Failed to fetch anime list');
         }
         const data = await response.json();
+        console.log('📊 Total movies fetched:', data.length);
+
         const anime = data.find((item: any) => item.id === id);
-        return anime ? transformAnimeData(anime) : null;
+        console.log('🎯 Found anime:', anime ? anime.title : 'Not found');
+
+        if (anime) {
+            console.log('📺 Anime episodes:', anime.episodes?.length || 0);
+            console.log('🎬 Anime type:', anime.type);
+            const transformed = transformAnimeData(anime);
+            console.log('✅ Transformed anime data:', transformed.title);
+            return transformed;
+        } else {
+            console.error('❌ Anime not found with ID:', id);
+            console.log('📋 Available IDs:', data.map((item: any) => item.id).slice(0, 10));
+            return null;
+        }
     } catch (error) {
-        console.error('Error fetching anime by ID:', error);
+        console.error('❌ Error fetching anime by ID:', error);
         return null;
     }
 };
@@ -616,8 +722,8 @@ export const getActionAnime = async () => {
     try {
         const animeList = await fetchAnimeList();
         return animeList
-            .filter((anime: any) => anime.genres?.some((genre: string) => 
-                genre.toLowerCase().includes('action') || 
+            .filter((anime: any) => anime.genres?.some((genre: string) =>
+                genre.toLowerCase().includes('action') ||
                 genre.toLowerCase().includes('jang')
             ))
             .slice(0, 10);
@@ -631,8 +737,8 @@ export const getRomanceAnime = async () => {
     try {
         const animeList = await fetchAnimeList();
         return animeList
-            .filter((anime: any) => anime.genres?.some((genre: string) => 
-                genre.toLowerCase().includes('romance') || 
+            .filter((anime: any) => anime.genres?.some((genre: string) =>
+                genre.toLowerCase().includes('romance') ||
                 genre.toLowerCase().includes('romantic') ||
                 genre.toLowerCase().includes('muhabbat')
             ))
@@ -647,8 +753,8 @@ export const getFantasyAnime = async () => {
     try {
         const animeList = await fetchAnimeList();
         return animeList
-            .filter((anime: any) => anime.genres?.some((genre: string) => 
-                genre.toLowerCase().includes('fantasy') || 
+            .filter((anime: any) => anime.genres?.some((genre: string) =>
+                genre.toLowerCase().includes('fantasy') ||
                 genre.toLowerCase().includes('fantastik') ||
                 genre.toLowerCase().includes('magic')
             ))
@@ -664,10 +770,10 @@ export const getContinueWatching = async () => {
         // This should be based on user's watch history from localStorage or API
         const watchHistory = JSON.parse(localStorage.getItem('watchHistory') || '[]');
         if (watchHistory.length === 0) return [];
-        
+
         const animeList = await fetchAnimeList();
         const continueWatchingIds = [...new Set(watchHistory.map((h: any) => h.animeId))];
-        
+
         return animeList
             .filter((anime: any) => continueWatchingIds.includes(anime.id))
             .slice(0, 10);
@@ -686,7 +792,7 @@ export const getBookmarks = async (): Promise<any[]> => {
         }
 
         console.log('Fetching bookmarks...');
-        
+
         const response = await fetch(`${API_BASE_URL}/bookmarks/`, {
             method: 'GET',
             headers: {
@@ -721,7 +827,7 @@ export const addBookmark = async (movieId: number): Promise<{ message: string }>
         }
 
         console.log('Adding bookmark for movie:', movieId);
-        
+
         const response = await fetch(`${API_BASE_URL}/bookmarks/`, {
             method: 'POST',
             headers: {
@@ -756,7 +862,7 @@ export const removeBookmark = async (movieId: number): Promise<{ message: string
         }
 
         console.log('Removing bookmark for movie:', movieId);
-        
+
         const response = await fetch(`${API_BASE_URL}/bookmarks/${movieId}/`, {
             method: 'DELETE',
             headers: {
@@ -834,14 +940,14 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
 
         // Get user info - try multiple sources
         let userId = 0;
-        
+
         console.log('🔍 Getting user ID for rating...');
-        
+
         // First try localStorage
         try {
             const userStr = localStorage.getItem('user');
             console.log('📦 User from localStorage:', userStr);
-            
+
             if (userStr) {
                 const user = JSON.parse(userStr);
                 console.log('👤 Parsed user:', user);
@@ -850,7 +956,7 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
         } catch (e) {
             console.error('❌ Error parsing user from localStorage:', e);
         }
-        
+
         // If no user ID, try to get from API
         if (!userId) {
             console.log('🌐 No user ID in localStorage, fetching from API...');
@@ -858,7 +964,7 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
                 const profile = await getUserProfile();
                 console.log('👤 Profile from API:', profile);
                 userId = profile.id || 0;
-                
+
                 // Store updated user info
                 if (userId) {
                     localStorage.setItem('user', JSON.stringify(profile));
@@ -889,7 +995,7 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
         console.log('Adding rating with payload:', payload);
         console.log('User ID:', userId);
         console.log('Token:', token ? 'Present' : 'Missing');
-        
+
         const response = await fetch(`${API_BASE_URL}/ratings/`, {
             method: 'POST',
             headers: {
@@ -945,12 +1051,12 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
         return data;
     } catch (error: any) {
         console.error('Add rating error:', error);
-        
+
         // If it's already a formatted error, throw it as is
         if (error.message && error.errors) {
             throw error;
         }
-        
+
         // Handle network errors
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             throw {
@@ -958,7 +1064,7 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
                 errors: { network: ['Internet aloqasi yo\'q'] },
             } as ApiError;
         }
-        
+
         // Generic error
         throw {
             message: error.message || 'Reyting yuborishda xatolik yuz berdi',
@@ -975,7 +1081,7 @@ export const getUserRatings = async (): Promise<RatingResponse[]> => {
         }
 
         console.log('Fetching user ratings...');
-        
+
         const response = await fetch(`${API_BASE_URL}/ratings/`, {
             method: 'GET',
             headers: {
@@ -1012,7 +1118,7 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
         // Get current user info from multiple sources
         let currentUserEmail = '';
         let currentUserId = 0;
-        
+
         try {
             const userStr = localStorage.getItem('user');
             if (userStr) {
@@ -1056,10 +1162,10 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
         const userRating = anime.ratings.find((rating: any) => {
             const ratingUser = rating.user?.toLowerCase?.() || rating.user;
             const currentUser = currentUserEmail.toLowerCase();
-            
-            return ratingUser === currentUser || 
-                   ratingUser === currentUserId.toString() ||
-                   rating.user === currentUserEmail;
+
+            return ratingUser === currentUser ||
+                ratingUser === currentUserId.toString() ||
+                rating.user === currentUserEmail;
         });
 
         if (userRating) {
@@ -1080,31 +1186,31 @@ export const getBanners = async (): Promise<any[]> => {
     try {
         console.log('🔄 Fetching banners from:', `${API_BASE_URL}/banners/`);
         console.log('🌐 Full URL:', `${API_BASE_URL}/banners/`);
-        
+
         const response = await fetch(`${API_BASE_URL}/banners/`);
         console.log('📡 Response status:', response.status, response.statusText);
         console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-        
+
         if (!response.ok) {
             console.error('❌ Response not OK:', response.status, response.statusText);
             throw new Error(`Failed to fetch banners: ${response.status} ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         console.log('📦 Raw API data:', data);
         console.log('📊 Data type:', typeof data, 'Is array:', Array.isArray(data), 'Length:', data?.length);
         console.log('🔍 First item structure:', data?.[0]);
-        
+
         if (!Array.isArray(data)) {
             console.error('❌ API did not return an array');
             return [];
         }
-        
+
         if (data.length === 0) {
             console.log('⚠️ No banners in API response');
             return [];
         }
-        
+
         // Transform banner data using the exact API structure
         const transformedBanners = data.map((banner: any, index: number) => {
             console.log(`🔄 Processing banner ${index + 1}:`, banner);
@@ -1117,7 +1223,7 @@ export const getBanners = async (): Promise<any[]> => {
                 photo: banner.photo,
                 poster: banner.movie?.poster
             });
-            
+
             const transformed = {
                 id: banner.id,
                 title: banner.movie?.title || 'Anime Banner',
@@ -1145,13 +1251,13 @@ export const getBanners = async (): Promise<any[]> => {
                 bannerId: banner.id,
                 bannerPhoto: banner.photo
             };
-            
+
             console.log(`✅ Transformed banner ${index + 1}:`, transformed);
             return transformed;
         });
-        
+
         console.log('🔄 Transformed banners:', transformedBanners);
-        
+
         // Filter valid banners (must have movie and photo)
         const validBanners = transformedBanners.filter((banner: any) => {
             const isValid = banner.movieId && banner.banner;
@@ -1162,12 +1268,12 @@ export const getBanners = async (): Promise<any[]> => {
             });
             return isValid;
         });
-        
+
         console.log('✅ Valid banners count:', validBanners.length);
         console.log('🎯 Final banners:', validBanners);
-        
+
         return validBanners.slice(0, 5); // Limit to 5 banners
-        
+
     } catch (error) {
         console.error('❌ Banners fetch error:', error);
         return [];
@@ -1185,7 +1291,7 @@ export const getNotifications = async (): Promise<Notification[]> => {
         }
 
         console.log('🔔 Fetching notifications...');
-        
+
         const response = await fetch(`${API_BASE_URL}/notification/`, {
             method: 'GET',
             headers: {
@@ -1201,7 +1307,7 @@ export const getNotifications = async (): Promise<Notification[]> => {
 
         const data = await response.json();
         console.log('📬 Notifications received:', data.length);
-        
+
         return data;
     } catch (error) {
         console.error('❌ Error fetching notifications:', error);
@@ -1241,7 +1347,7 @@ export const markAllNotificationsAsRead = async (): Promise<boolean> => {
         }
 
         console.log('🔔 Marking all notifications as read...');
-        
+
         const response = await fetch(`${API_BASE_URL}/notification/all/`, {
             method: 'POST',
             headers: {

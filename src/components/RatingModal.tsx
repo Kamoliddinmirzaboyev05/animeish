@@ -28,10 +28,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
       return;
     }
 
-    if (!comment.trim()) {
-      setError('Iltimos, izoh yozing');
-      return;
-    }
+    // Izoh ixtiyoriy - faqat reyting majburiy
 
     setIsSubmitting(true);
     setError('');
@@ -56,7 +53,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
       await addRating({
         movie_id: animeId,
         score: rating,
-        comment: comment.trim()
+        comment: comment.trim() || '' // Bo'sh izoh ham ruxsat etiladi
       });
 
       setSuccess(true);
@@ -204,12 +201,12 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Izoh <span className="text-red-400">*</span>
+                    Izoh <span className="text-gray-500">(ixtiyoriy)</span>
                   </label>
                   <textarea
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
-                    placeholder="Bu anime haqida fikringizni yozing... (kamida 10 ta belgi)"
+                    placeholder="Bu anime haqida fikringizni yozing... (ixtiyoriy)"
                     rows={3}
                     maxLength={500}
                     disabled={isSubmitting}
@@ -217,7 +214,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
                   />
                   <div className="flex justify-between items-center mt-1">
                     <p className="text-xs text-gray-500">
-                      Minimal 10 ta belgi kerak
+                      Izoh yozish ixtiyoriy
                     </p>
                     <span className="text-xs text-gray-500">
                       {comment.length}/500
@@ -245,7 +242,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting || rating === 0 || comment.trim().length < 10}
+                    disabled={isSubmitting || rating === 0}
                     className="flex-1 px-4 py-3 sm:py-2 bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
                     {isSubmitting ? (

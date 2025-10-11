@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { Mail, Loader2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { requestPasswordReset } from '../services/api';
 
 const emailSchema = z.object({
   email: z.string().min(1, 'Email manzil kiritilishi shart').email('Noto\'g\'ri email manzil'),
@@ -30,32 +31,7 @@ const ForgotPasswordEmail = () => {
     setError('');
 
     try {
-      const response = await fetch('https://animeish.pythonanywhere.com/password-reset/request/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email }),
-      });
-
-      let responseData;
-      try {
-        responseData = await response.json();
-      } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        throw new Error(response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati');
-      }
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 404) {
-          throw new Error('Bu email manzil tizimda ro\'yxatdan o\'tmagan');
-        } else if (response.status === 429) {
-          throw new Error('Juda ko\'p so\'rov yuborildi. Iltimos, biroz kuting');
-        } else {
-          throw new Error(responseData.message || responseData.error || 'Email yuborishda xatolik');
-        }
-      }
+      await requestPasswordReset({ email: data.email });
 
       // Navigate to OTP verification with email
       navigate('/forgot-password/verify', { 
@@ -66,7 +42,15 @@ const ForgotPasswordEmail = () => {
       });
     } catch (err: any) {
       console.error('Password reset request error:', err);
-      setError(err.message || 'Email yuborishda xatolik yuz berdi');
+      
+      // Handle specific error cases
+      if (err.message?.includes('404') || err.message?.includes('topilmadi')) {
+        setError('Bu email manzil tizimda ro\'yxatdan o\'tmagan');
+      } else if (err.message?.includes('429') || err.message?.includes('ko\'p so\'rov')) {
+        setError('Juda ko\'p so\'rov yuborildi. Iltimos, biroz kuting');
+      } else {
+        setError(err.message || 'Email yuborishda xatolik yuz berdi');
+      }
     } finally {
       setIsLoading(false);
     }
