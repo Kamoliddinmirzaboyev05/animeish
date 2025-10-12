@@ -383,17 +383,17 @@ export default function AnimeDetail() {
         clearTimeout(hideControlsTimerRef.current);
         hideControlsTimerRef.current = undefined;
       }
-      
+
       // Always show controls on tap
       setShowControls(true);
-      
+
       // Set auto-hide timer (only if video is playing and no menus are open)
       if (isPlaying && !showSettings && !showEpisodeList) {
         hideControlsTimerRef.current = window.setTimeout(() => {
           setShowControls(false);
         }, 4000); // 4 seconds
       }
-      
+
       lastTapRef.current = currentTapTime;
     }
   }, [skipTime, togglePlay, isPlaying, showSettings, showEpisodeList]);
@@ -651,8 +651,8 @@ export default function AnimeDetail() {
                 src={videoUrl}
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
-                onPlay={() => { 
-                  setIsPlaying(true); 
+                onPlay={() => {
+                  setIsPlaying(true);
                   setIsBuffering(false);
                   // Restart auto-hide timer when video starts playing
                   if (showControls && !showSettings && !showEpisodeList) {
@@ -664,7 +664,7 @@ export default function AnimeDetail() {
                     }, 4000);
                   }
                 }}
-                onPause={() => { 
+                onPause={() => {
                   setIsPlaying(false);
                   // Clear auto-hide timer when video is paused
                   if (hideControlsTimerRef.current) {
@@ -774,13 +774,13 @@ export default function AnimeDetail() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 sm:p-6 z-20"
+                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-3 sm:p-6 z-20"
                   >
-                    {/* Progress Bar - Compact */}
+                    {/* Progress Bar - Mobile Optimized */}
                     <div className="mb-4">
                       <div
                         ref={progressBarRef}
-                        className="w-full h-2 bg-white/20 rounded-full cursor-pointer group hover:h-3 transition-all touch-manipulation"
+                        className="w-full h-2 sm:h-2 bg-white/20 rounded-full cursor-pointer group hover:h-3 transition-all touch-manipulation"
                         onClick={handleProgressClick}
                         onMouseDown={handleProgressMouseDown}
                         onTouchStart={(e) => {
@@ -811,29 +811,73 @@ export default function AnimeDetail() {
                             className="absolute h-full bg-primary rounded-full transition-all"
                             style={{ width: `${(currentTime / duration) * 100}%` }}
                           />
-                          {/* Progress Thumb */}
+                          {/* Progress Thumb - Larger for mobile */}
                           <div
-                            className="absolute w-3 h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 shadow-lg border-2 border-white/50 transition-all"
+                            className="absolute w-3 h-3 sm:w-3 sm:h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 shadow-lg border-2 border-white/50 transition-all"
                             style={{
                               left: `${(currentTime / duration) * 100}%`,
                               marginLeft: '-6px',
-                              transform: `translateY(-50%) scale(${isDragging ? 1.3 : 1})`
+                              transform: `translateY(-50%) scale(${isDragging ? 1.4 : 1.1})`
                             }}
                           />
                         </div>
                       </div>
 
-                      {/* Time Display */}
-                      <div className="flex justify-between items-center mt-1 text-xs text-white/80">
+                      {/* Time Display - Better mobile typography */}
+                      <div className="flex justify-between items-center mt-2 text-xs sm:text-sm text-white/90 font-medium">
                         <span>{formatTime(currentTime)}</span>
                         <span>{formatTime(duration)}</span>
                       </div>
                     </div>
 
-                    {/* Compact Controls Layout */}
-                    <div className="space-y-3">
-                      {/* Main Controls Row */}
-                      <div className="flex items-center justify-center gap-4 sm:gap-6">
+                    {/* Professional Mobile Controls Layout - Single Row */}
+                    <div className="flex items-center justify-between">
+                      {/* Left Side - Volume Control */}
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            toggleMute();
+                          }}
+                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                          {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                        </motion.button>
+
+                        {/* Volume Slider - Hidden on small screens */}
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.05"
+                          value={isMuted ? 0 : volume}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            const v = parseFloat(e.target.value);
+                            if (videoRef.current) {
+                              videoRef.current.volume = v;
+                              setVolume(v);
+                              setIsMuted(v === 0);
+                            }
+                          }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onTouchStart={(e) => e.stopPropagation()}
+                          className="hidden sm:block w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer touch-manipulation
+                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                            [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
+                            [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-primary 
+                            [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-lg"
+                          style={{
+                            background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
+                          }}
+                        />
+                      </div>
+
+                      {/* Center - Main Playback Controls */}
+                      <div className="flex items-center gap-3 sm:gap-4">
                         {/* Previous Episode */}
                         {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) - 1) && (
                           <motion.button
@@ -842,7 +886,7 @@ export default function AnimeDetail() {
                             onClick={(e) => { e.stopPropagation(); e.preventDefault(); prevEpisode(); }}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
-                            <SkipBack className="w-5 h-5 text-white" />
+                            <SkipBack className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           </motion.button>
                         )}
 
@@ -853,10 +897,10 @@ export default function AnimeDetail() {
                           onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(-10); }}
                           className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
-                          <RotateCcw className="w-5 h-5 text-white" />
+                          <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </motion.button>
 
-                        {/* Play/Pause */}
+                        {/* Play/Pause - Larger and prominent */}
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -865,12 +909,12 @@ export default function AnimeDetail() {
                             e.preventDefault();
                             togglePlay();
                           }}
-                          className="p-3 bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-lg"
+                          className="p-3 sm:p-4 bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-lg"
                         >
                           {isPlaying ? (
-                            <Pause className="w-6 h-6 text-white" />
+                            <Pause className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                           ) : (
-                            <Play className="w-6 h-6 text-white ml-0.5" />
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white ml-0.5" />
                           )}
                         </motion.button>
 
@@ -881,7 +925,7 @@ export default function AnimeDetail() {
                           onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(10); }}
                           className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
-                          <RotateCw className="w-5 h-5 text-white" />
+                          <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                         </motion.button>
 
                         {/* Next Episode */}
@@ -892,111 +936,64 @@ export default function AnimeDetail() {
                             onClick={(e) => { e.stopPropagation(); e.preventDefault(); nextEpisode(); }}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
-                            <SkipForward className="w-5 h-5 text-white" />
+                            <SkipForward className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                           </motion.button>
                         )}
                       </div>
 
-                      {/* Secondary Controls Row - Compact */}
-                      <div className="flex items-center justify-between">
-                        {/* Volume Control */}
-                        <div className="flex items-center gap-2">
+                      {/* Right Side - Settings & Fullscreen */}
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        {/* Settings */}
+                        <div className="relative">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={(e) => {
                               e.stopPropagation();
                               e.preventDefault();
-                              toggleMute();
+                              setShowSettings(!showSettings);
                             }}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
-                            {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                            <Settings className="w-4 h-4 text-white" />
                           </motion.button>
 
-                          {/* Compact Volume Slider */}
-                          <input
-                            type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={isMuted ? 0 : volume}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              const v = parseFloat(e.target.value);
-                              if (videoRef.current) {
-                                videoRef.current.volume = v;
-                                setVolume(v);
-                                setIsMuted(v === 0);
-                              }
-                            }}
-                            onMouseDown={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()}
-                            className="w-12 sm:w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer touch-manipulation
-                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
-                              [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
-                              [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-primary 
-                              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-lg"
-                            style={{
-                              background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
-                            }}
-                          />
+                          <AnimatePresence>
+                            {showSettings && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-2 min-w-[120px] border border-gray-700 shadow-xl"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="text-xs text-gray-400 px-2 py-1 mb-1">Tezlik</div>
+                                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                                  <motion.button
+                                    key={speed}
+                                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => changeSpeed(speed)}
+                                    className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${playbackSpeed === speed ? 'text-primary font-medium bg-primary/10' : 'text-white'
+                                      }`}
+                                  >
+                                    {speed}x {speed === 1 ? '(Normal)' : ''}
+                                  </motion.button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
 
-                        {/* Right Controls - Compact */}
-                        <div className="flex items-center gap-1">
-                          {/* Settings */}
-                          <div className="relative">
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                setShowSettings(!showSettings);
-                              }}
-                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                            >
-                              <Settings className="w-4 h-4 text-white" />
-                            </motion.button>
-
-                            <AnimatePresence>
-                              {showSettings && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                  className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-2 min-w-[120px] border border-gray-700 shadow-xl"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <div className="text-xs text-gray-400 px-2 py-1 mb-1">Tezlik</div>
-                                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                                    <motion.button
-                                      key={speed}
-                                      whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                                      whileTap={{ scale: 0.98 }}
-                                      onClick={() => changeSpeed(speed)}
-                                      className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${playbackSpeed === speed ? 'text-primary font-medium bg-primary/10' : 'text-white'
-                                        }`}
-                                    >
-                                      {speed}x {speed === 1 ? '(Normal)' : ''}
-                                    </motion.button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-                          {/* Fullscreen */}
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFullscreen(); }}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                          >
-                            {isFullscreen ? <Minimize className="w-4 h-4 text-white" /> : <Maximize className="w-4 h-4 text-white" />}
-                          </motion.button>
-                        </div>
+                        {/* Fullscreen */}
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFullscreen(); }}
+                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                          {isFullscreen ? <Minimize className="w-4 h-4 text-white" /> : <Maximize className="w-4 h-4 text-white" />}
+                        </motion.button>
                       </div>
                     </div>
                   </motion.div>

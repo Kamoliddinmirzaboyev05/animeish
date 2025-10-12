@@ -915,6 +915,41 @@ export const getFantasyAnime = async () => {
     }
 };
 
+export const getRecommendations = async (): Promise<any[]> => {
+    try {
+        const token = getAuthToken();
+        if (!token) {
+            // If no token, return popular anime as fallback
+            return await getPopularAnime();
+        }
+
+        console.log('Fetching recommendations...');
+
+        const response = await cachedFetch(`${API_BASE_URL}/recommendations/`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        }, 10); // Cache for 10 minutes
+
+        if (!response.ok) {
+            console.warn('Recommendations API failed, falling back to popular anime');
+            return await getPopularAnime();
+        }
+
+        const data = await response.json();
+        console.log('Recommendations response:', data);
+
+        // Transform the data to match our anime format
+        return data.map(transformAnimeData);
+    } catch (error) {
+        console.error('Error fetching recommendations:', error);
+        // Fallback to popular anime if recommendations fail
+        return await getPopularAnime();
+    }
+};
+
 export const getContinueWatching = async () => {
     try {
         // This should be based on user's watch history from localStorage or API
