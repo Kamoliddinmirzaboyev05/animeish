@@ -120,7 +120,7 @@ export interface Bookmark {
 export interface RatingData {
     movie_id: number;
     score: number;
-    comment: string;
+    comment?: string | null;
 }
 
 export interface RatingResponse {
@@ -924,14 +924,8 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
             } as ApiError;
         }
 
-        if (!ratingData.comment || ratingData.comment.trim().length < 10) {
-            throw {
-                message: 'Izoh kamida 10 ta belgidan iborat bo\'lishi kerak',
-                errors: { comment: ['Izoh juda qisqa'] },
-            } as ApiError;
-        }
-
-        if (ratingData.comment.trim().length > 500) {
+        // Comment is optional, but if provided, check length
+        if (ratingData.comment && ratingData.comment.trim().length > 500) {
             throw {
                 message: 'Izoh 500 ta belgidan oshmasligi kerak',
                 errors: { comment: ['Izoh juda uzun'] },
@@ -988,8 +982,8 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
             user: Number(userId),
             movie_id: Number(ratingData.movie_id),
             score: Number(ratingData.score),
-            comment: ratingData.comment.trim(),
-            is_comment: true
+            comment: ratingData.comment ? ratingData.comment.trim() : null,
+            is_comment: !!ratingData.comment
         };
 
         console.log('Adding rating with payload:', payload);

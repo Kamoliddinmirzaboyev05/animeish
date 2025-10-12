@@ -12,12 +12,12 @@ import StructuredData from '../components/StructuredData';
 import Toast from '../components/Toast';
 import RatingModal from '../components/RatingModal';
 import RatingsSection from '../components/RatingsSection';
-import { 
-  fetchAnimeById, 
-  addBookmark, 
-  removeBookmark, 
-  checkBookmarkStatus, 
-  checkUserRating 
+import {
+  fetchAnimeById,
+  addBookmark,
+  removeBookmark,
+  checkBookmarkStatus,
+  checkUserRating
 } from '../services/api';
 import { translateStatus, translateGenres } from '../utils/translations';
 
@@ -150,7 +150,7 @@ export default function AnimeDetail() {
   // ==========================================
   const enterWatchMode = useCallback((episode?: Episode) => {
     if (!anime) return;
-    
+
     if (!isLoggedIn) {
       navigate('/login');
       return;
@@ -254,26 +254,100 @@ export default function AnimeDetail() {
     setShowSettings(false);
   }, []);
 
+  const [isDragging, setIsDragging] = useState(false);
+
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation(); // Prevent video click handler
     if (!progressBarRef.current || !videoRef.current) return;
     const rect = progressBarRef.current.getBoundingClientRect();
-    const pos = (e.clientX - rect.left) / rect.width;
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const newTime = pos * duration;
     videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
   }, [duration]);
+
+  const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setIsDragging(true);
+    handleProgressClick(e);
+  }, [handleProgressClick]);
+
+  const handleProgressMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !progressBarRef.current || !videoRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const newTime = pos * duration;
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  }, [isDragging, duration]);
+
+  const handleProgressMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  // Add global mouse and touch events for dragging
+  useEffect(() => {
+    if (isDragging) {
+      const handleTouchMove = (e: TouchEvent) => {
+        if (!progressBarRef.current || !videoRef.current) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = progressBarRef.current.getBoundingClientRect();
+        const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+        const newTime = pos * duration;
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      };
+
+      const handleTouchEnd = () => {
+        setIsDragging(false);
+      };
+
+      document.addEventListener('mousemove', handleProgressMouseMove);
+      document.addEventListener('mouseup', handleProgressMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleProgressMouseMove);
+        document.removeEventListener('mouseup', handleProgressMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+      };
+    }
+  }, [isDragging, handleProgressMouseMove, handleProgressMouseUp, duration]);
+
+  // ==========================================
+  // AUTO-HIDE CONTROLS
+  // ==========================================
+  const showControlsTemp = useCallback(() => {
+    setShowControls(true);
+    if (hideControlsTimerRef.current) {
+      clearTimeout(hideControlsTimerRef.current);
+    }
+    if (isPlaying && !showSettings && !showEpisodeList) {
+      hideControlsTimerRef.current = window.setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+  }, [isPlaying, showSettings, showEpisodeList]);
 
   // ==========================================
   // MOBILE DOUBLE TAP
   // ==========================================
-  const handleVideoTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handleVideoTap = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
     const currentTapTime = Date.now();
     const tapLength = currentTapTime - lastTapRef.current;
 
     if (tapLength < 300 && tapLength > 0) {
+      // Double tap detected
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientX = e.touches[0]?.clientX || e.changedTouches[0]?.clientX;
+      if (!clientX) return;
+
       const tapPosition = clientX - rect.left;
       const screenThird = rect.width / 3;
 
@@ -284,9 +358,23 @@ export default function AnimeDetail() {
       } else {
         togglePlay();
       }
+
+      // Reset tap time to prevent triple tap
+      lastTapRef.current = 0;
+    } else {
+      // Single tap - just show controls, don't toggle play
+      showControlsTemp();
+      lastTapRef.current = currentTapTime;
     }
-    lastTapRef.current = currentTapTime;
-  }, [skipTime, togglePlay]);
+  }, [skipTime, togglePlay, showControlsTemp]);
+
+  // Separate handler for mouse clicks (desktop)
+  const handleVideoClick = useCallback((e: React.MouseEvent) => {
+    // Only toggle play on desktop mouse clicks
+    if (e.detail === 1) { // Single click
+      togglePlay();
+    }
+  }, [togglePlay]);
 
   // ==========================================
   // VIDEO EVENT HANDLERS
@@ -313,21 +401,6 @@ export default function AnimeDetail() {
       if (nextEp) setShowNextEpisode(true);
     }
   }, [duration, showNextEpisode, anime, currentEpisode]);
-
-  // ==========================================
-  // AUTO-HIDE CONTROLS
-  // ==========================================
-  const showControlsTemp = useCallback(() => {
-    setShowControls(true);
-    if (hideControlsTimerRef.current) {
-      clearTimeout(hideControlsTimerRef.current);
-    }
-    if (isPlaying && !showSettings && !showEpisodeList) {
-      hideControlsTimerRef.current = window.setTimeout(() => {
-        setShowControls(false);
-      }, 3000);
-    }
-  }, [isPlaying, showSettings, showEpisodeList]);
 
   // ==========================================
   // COUNTDOWN TIMER
@@ -521,12 +594,10 @@ export default function AnimeDetail() {
           <div className={`absolute inset-0 ${!isFullscreen && anime.type === 'series' ? 'lg:right-80' : ''}`}>
             <div
               className="relative h-full w-full"
-              onClick={togglePlay}
-              onTouchStart={handleVideoTap}
             >
               <video
                 ref={videoRef}
-                className="w-full h-full object-contain bg-black"
+                className="w-full h-full object-contain bg-black cursor-pointer"
                 src={videoUrl}
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
@@ -534,6 +605,8 @@ export default function AnimeDetail() {
                 onPause={() => setIsPlaying(false)}
                 onWaiting={() => setIsBuffering(true)}
                 onCanPlay={() => setIsBuffering(false)}
+                onClick={handleVideoClick}
+                onTouchEnd={handleVideoTap}
                 playsInline
                 preload="metadata"
               />
@@ -552,7 +625,7 @@ export default function AnimeDetail() {
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    className={`absolute top-1/2 -translate-y-1/2 ${showSkipIndicator === 'backward' ? 'left-8' : 'right-8'} bg-black/80 rounded-full p-4 pointer-events-none`}
+                    className={`absolute top-1/2 -translate-y-1/2 ${showSkipIndicator === 'backward' ? 'left-8' : 'right-8'} bg-black/80 rounded-full p-4 pointer-events-none z-30`}
                   >
                     <div className="flex items-center gap-2 text-white">
                       {showSkipIndicator === 'backward' ? (
@@ -571,155 +644,202 @@ export default function AnimeDetail() {
                 )}
               </AnimatePresence>
 
-              {/* Center Play Button */}
-              <AnimatePresence>
-                {showControls && !isPlaying && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                  >
-                    <div className="bg-primary/90 rounded-full p-6">
-                      <Play className="w-16 h-16 text-white ml-1" />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Top Bar */}
+              {/* Top Bar - Mobile Optimized */}
               <AnimatePresence>
                 {showControls && (
                   <motion.div
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 to-transparent p-4 z-10"
+                    className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent p-4 z-20"
                   >
                     <div className="flex items-center gap-3">
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           isFullscreen ? toggleFullscreen() : exitWatchMode();
                         }}
-                        className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        className="p-3 hover:bg-white/10 rounded-full transition-colors"
                       >
                         <ChevronLeft className="w-6 h-6 text-white" />
-                      </button>
+                      </motion.button>
 
-                      <div className="flex-1 text-white">
-                        <h1 className="font-semibold truncate text-lg">{anime.title}</h1>
-                        <p className="text-sm text-gray-300 truncate">
+                      <div className="flex-1 text-white min-w-0">
+                        <h1 className="font-semibold truncate text-base sm:text-lg">{anime.title}</h1>
+                        <p className="text-xs sm:text-sm text-gray-300 truncate">
                           {anime.type === 'movie' ? 'Film' : `Episode ${currentEpisode?.episode_number}`}
                           {currentEpisode?.title && ` - ${currentEpisode.title}`}
                         </p>
                       </div>
 
                       {anime.type === 'series' && (
-                        <button
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowEpisodeList(!showEpisodeList);
                           }}
-                          className="p-2 hover:bg-white/10 rounded-full transition-colors lg:hidden"
+                          className="p-3 hover:bg-white/10 rounded-full transition-colors lg:hidden"
                         >
                           <List className="w-6 h-6 text-white" />
-                        </button>
+                        </motion.button>
                       )}
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Bottom Controls */}
+              {/* Mobile-First Bottom Controls Overlay */}
               <AnimatePresence>
                 {showControls && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 20 }}
-                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-4 z-10"
+                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 sm:p-6 z-20"
                   >
-                    {/* Progress Bar */}
-                    <div
-                      ref={progressBarRef}
-                      className="w-full h-2 bg-white/30 rounded-full mb-4 cursor-pointer group hover:h-3 transition-all"
-                      onClick={handleProgressClick}
-                    >
-                      <div className="relative h-full">
-                        <div
-                          className="absolute h-full bg-white/50 rounded-full"
-                          style={{ width: `${(buffered / duration) * 100}%` }}
-                        />
-                        <div
-                          className="absolute h-full bg-primary rounded-full"
-                          style={{ width: `${(currentTime / duration) * 100}%` }}
-                        />
-                        <div
-                          className="absolute w-3 h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ left: `${(currentTime / duration) * 100}%`, marginLeft: '-6px' }}
-                        />
+                    {/* Progress Bar - Enhanced for Mobile */}
+                    <div className="mb-6">
+                      <div
+                        ref={progressBarRef}
+                        className="w-full h-3 sm:h-2 bg-white/20 rounded-full cursor-pointer group hover:h-4 sm:hover:h-3 transition-all touch-manipulation"
+                        onClick={handleProgressClick}
+                        onMouseDown={handleProgressMouseDown}
+                        onTouchStart={(e) => {
+                          e.stopPropagation();
+                          setIsDragging(true);
+                          handleProgressClick(e as any);
+                        }}
+                        onTouchMove={(e) => {
+                          if (!isDragging || !progressBarRef.current || !videoRef.current) return;
+                          e.preventDefault();
+                          const touch = e.touches[0];
+                          const rect = progressBarRef.current.getBoundingClientRect();
+                          const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+                          const newTime = pos * duration;
+                          videoRef.current.currentTime = newTime;
+                          setCurrentTime(newTime);
+                        }}
+                        onTouchEnd={() => setIsDragging(false)}
+                      >
+                        <div className="relative h-full">
+                          {/* Buffered Progress */}
+                          <div
+                            className="absolute h-full bg-white/30 rounded-full transition-all"
+                            style={{ width: `${(buffered / duration) * 100}%` }}
+                          />
+                          {/* Current Progress */}
+                          <div
+                            className="absolute h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${(currentTime / duration) * 100}%` }}
+                          />
+                          {/* Progress Thumb */}
+                          <div
+                            className="absolute w-4 h-4 sm:w-3 sm:h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 shadow-lg border-2 border-white/50 transition-all"
+                            style={{
+                              left: `${(currentTime / duration) * 100}%`,
+                              marginLeft: '-8px',
+                              transform: `translateY(-50%) scale(${isDragging ? 1.2 : 1})`
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Time Display */}
+                      <div className="flex justify-between items-center mt-2 text-xs sm:text-sm text-white/80">
+                        <span>{formatTime(currentTime)}</span>
+                        <span>{formatTime(duration)}</span>
                       </div>
                     </div>
 
-                    {/* Controls Row */}
-                    <div className="flex items-center justify-between text-white">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm hidden sm:block">
-                          {formatTime(currentTime)} / {formatTime(duration)}
-                        </span>
+                    {/* Control Buttons Row */}
+                    <div className="flex items-center justify-center gap-6 sm:gap-8">
+                      {/* Previous Episode */}
+                      {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) - 1) && (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); prevEpisode(); }}
+                          className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                          <SkipBack className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
+                        </motion.button>
+                      )}
 
-                        {anime.type === 'series' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); prevEpisode(); }}
-                            disabled={!anime.episodes.find(e => e.episode_number === (currentEpisode?.episode_number || 0) - 1)}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <SkipBack className="w-5 h-5" />
-                          </button>
+                      {/* Skip Backward */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(-10); }}
+                        className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
+                      >
+                        <RotateCcw className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
+                      </motion.button>
+
+                      {/* Play/Pause - Larger for Mobile */}
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          e.preventDefault();
+                          togglePlay(); 
+                        }}
+                        className="p-4 sm:p-3 bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-lg"
+                      >
+                        {isPlaying ? (
+                          <Pause className="w-8 h-8 sm:w-6 sm:h-6 text-white" />
+                        ) : (
+                          <Play className="w-8 h-8 sm:w-6 sm:h-6 text-white ml-1" />
                         )}
+                      </motion.button>
 
-                        <button
-                          onClick={(e) => { e.stopPropagation(); skipTime(-10); }}
+                      {/* Skip Forward */}
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(10); }}
+                        className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
+                      >
+                        <RotateCw className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
+                      </motion.button>
+
+                      {/* Next Episode */}
+                      {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) + 1) && (
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); nextEpisode(); }}
+                          className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                          <SkipForward className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
+                        </motion.button>
+                      )}
+                    </div>
+
+                    {/* Secondary Controls Row */}
+                    <div className="flex items-center justify-between mt-4 sm:mt-3">
+                      {/* Volume Control */}
+                      <div className="flex items-center gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            e.preventDefault();
+                            toggleMute(); 
+                          }}
                           className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
-                          <RotateCcw className="w-5 h-5" />
-                        </button>
+                          {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                        </motion.button>
 
-                        <button
-                          onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                          className="p-3 bg-primary hover:bg-primary-dark rounded-full transition-colors"
-                        >
-                          {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-                        </button>
-
-                        <button
-                          onClick={(e) => { e.stopPropagation(); skipTime(10); }}
-                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                          <RotateCw className="w-5 h-5" />
-                        </button>
-
-                        {anime.type === 'series' && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); nextEpisode(); }}
-                            disabled={!anime.episodes.find(e => e.episode_number === (currentEpisode?.episode_number || 0) + 1)}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          >
-                            <SkipForward className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Volume */}
-                        <div className="hidden sm:flex items-center gap-2">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                          >
-                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                          </button>
+                        {/* Volume Slider - Hidden on small screens */}
+                        <div className="hidden sm:block">
                           <input
                             type="range"
                             min="0"
@@ -735,39 +855,51 @@ export default function AnimeDetail() {
                                 setIsMuted(v === 0);
                               }
                             }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
                             className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
                           />
                         </div>
+                      </div>
 
+                      {/* Right Controls */}
+                      <div className="flex items-center gap-2">
                         {/* Settings */}
                         <div className="relative">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setShowSettings(!showSettings); }}
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              e.preventDefault();
+                              setShowSettings(!showSettings); 
+                            }}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
-                            <Settings className="w-5 h-5" />
-                          </button>
+                            <Settings className="w-5 h-5 text-white" />
+                          </motion.button>
 
                           <AnimatePresence>
                             {showSettings && (
                               <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 10 }}
-                                className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg p-2 min-w-[140px] border border-gray-700"
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-3 min-w-[160px] border border-gray-700 shadow-xl"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <div className="text-xs text-gray-400 px-2 py-1">Speed</div>
+                                <div className="text-xs text-gray-400 px-2 py-1 mb-2">Tezlik</div>
                                 {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                                  <button
+                                  <motion.button
                                     key={speed}
+                                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => changeSpeed(speed)}
-                                    className={`w-full text-left px-3 py-2 text-sm hover:bg-white/10 rounded transition-colors ${
-                                      playbackSpeed === speed ? 'text-primary font-medium' : 'text-white'
-                                    }`}
+                                    className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${playbackSpeed === speed ? 'text-primary font-medium bg-primary/10' : 'text-white'
+                                      }`}
                                   >
                                     {speed}x {speed === 1 ? '(Normal)' : ''}
-                                  </button>
+                                  </motion.button>
                                 ))}
                               </motion.div>
                             )}
@@ -775,12 +907,14 @@ export default function AnimeDetail() {
                         </div>
 
                         {/* Fullscreen */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFullscreen(); }}
                           className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
-                          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-                        </button>
+                          {isFullscreen ? <Minimize className="w-5 h-5 text-white" /> : <Maximize className="w-5 h-5 text-white" />}
+                        </motion.button>
                       </div>
                     </div>
                   </motion.div>
@@ -812,9 +946,8 @@ export default function AnimeDetail() {
                     <button
                       key={ep.id}
                       onClick={() => goToEpisode(ep)}
-                      className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter transition-colors ${
-                        ep.episode_number === currentEpisode?.episode_number ? 'bg-primary/20 border-primary/30' : ''
-                      }`}
+                      className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter transition-colors ${ep.episode_number === currentEpisode?.episode_number ? 'bg-primary/20 border-primary/30' : ''
+                        }`}
                     >
                       <div className="flex gap-3">
                         <img
@@ -847,9 +980,8 @@ export default function AnimeDetail() {
                   <button
                     key={ep.id}
                     onClick={() => goToEpisode(ep)}
-                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter transition-colors ${
-                      ep.episode_number === currentEpisode?.episode_number ? 'bg-primary/20 border-primary/30' : ''
-                    }`}
+                    className={`w-full p-4 text-left hover:bg-white/5 border-b border-dark-lighter transition-colors ${ep.episode_number === currentEpisode?.episode_number ? 'bg-primary/20 border-primary/30' : ''
+                      }`}
                   >
                     <div className="flex gap-3">
                       <img
@@ -1010,11 +1142,10 @@ export default function AnimeDetail() {
                   </button>
                   <button
                     onClick={toggleSaved}
-                    className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                      isSaved
+                    className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${isSaved
                         ? 'bg-primary/20 text-primary border-2 border-primary'
                         : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm'
-                    }`}
+                      }`}
                   >
                     <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isSaved ? 'fill-primary' : ''}`} />
                     <span className="hidden sm:inline">{isSaved ? 'Ro\'yxatimda' : 'Ro\'yxatga Qo\'shish'}</span>
@@ -1024,11 +1155,10 @@ export default function AnimeDetail() {
                     <button
                       onClick={handleRatingClick}
                       disabled={checkingRating || !!userRating}
-                      className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-2 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${
-                        userRating
+                      className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-2 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${userRating
                           ? 'bg-green-500/20 text-green-400 border-green-500/30 cursor-not-allowed opacity-75'
                           : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
-                      } ${checkingRating ? 'opacity-50 cursor-wait' : ''}`}
+                        } ${checkingRating ? 'opacity-50 cursor-wait' : ''}`}
                       title={userRating ? `Siz ${userRating.score}/5 reyting bergansiz` : 'Reyting berish'}
                     >
                       {checkingRating ? (

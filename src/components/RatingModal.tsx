@@ -22,7 +22,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (rating === 0) {
       setError('Iltimos, reyting bering');
       return;
@@ -40,7 +40,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
         score: rating,
         comment: comment.trim()
       });
-      
+
       // Check if user is logged in
       const token = localStorage.getItem('access_token');
       const userStr = localStorage.getItem('user');
@@ -49,32 +49,32 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
         hasUser: !!userStr,
         user: userStr ? JSON.parse(userStr) : null
       });
-      
+
       await addRating({
         movie_id: animeId,
         score: rating,
-        comment: comment.trim() || '' // Bo'sh izoh ham ruxsat etiladi
+        comment: comment.trim() || null // Bo'sh izoh bo'lsa null yuborish
       });
 
       setSuccess(true);
-      
+
       // Show success message
       if (onShowToast) {
         onShowToast('Reyting va izoh muvaffaqiyatli yuborildi!', 'success');
       }
-      
+
       // Call callback if provided
       if (onRatingSubmitted) {
         onRatingSubmitted();
       }
-      
+
       // Close modal after a short delay to show success state
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error: any) {
       console.error('Error submitting rating:', error);
-      
+
       // Handle different error types
       if (error.errors) {
         if (error.errors.movie_id) {
@@ -116,7 +116,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={handleClose}
           />
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -180,11 +180,10 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
                         className="p-2 sm:p-1 transition-transform hover:scale-110 active:scale-95 disabled:cursor-not-allowed"
                       >
                         <Star
-                          className={`w-8 h-8 sm:w-6 sm:h-6 transition-colors ${
-                            star <= (hoveredRating || rating)
+                          className={`w-8 h-8 sm:w-6 sm:h-6 transition-colors ${star <= (hoveredRating || rating)
                               ? 'text-yellow-400 fill-yellow-400'
                               : 'text-gray-600'
-                          }`}
+                            }`}
                         />
                       </button>
                     ))}
