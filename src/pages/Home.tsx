@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import Navbar from '../components/Navbar';
 import HeroSlider from '../components/HeroSlider';
 import AnimeSlider from '../components/AnimeSlider';
@@ -55,7 +56,7 @@ const Home = () => {
         setContinueWatching(continueWatch);
       } catch (error) {
         console.error('Error loading anime data:', error);
-        showToast('Ma\'lumotlarni yuklashda xatolik yuz berdi', 'error');
+        toast.error('Ma\'lumotlarni yuklashda xatolik yuz berdi');
       } finally {
         setLoading(false);
       }
