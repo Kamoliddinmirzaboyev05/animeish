@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Mail, ArrowLeft, Loader2 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { verifyOTP, sendOTP } from '../services/api';
@@ -76,11 +77,14 @@ const VerifyOTP = () => {
       }
     } catch (error: any) {
       console.error('OTP verification error:', error);
+      let errorMessage = 'Tasdiqlash kodida xatolik. Iltimos, qayta urinib ko\'ring.';
+      
       if (error.message) {
-        setError(error.message);
-      } else {
-        setError('Tasdiqlash kodida xatolik. Iltimos, qayta urinib ko\'ring.');
+        errorMessage = error.message;
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -94,10 +98,12 @@ const VerifyOTP = () => {
       await sendOTP({ email });
       setError('');
       setOtp(['', '', '', '', '', '']); // Clear OTP inputs
-      // You could show a success toast here
+      toast.success('Tasdiqlash kodi qayta yuborildi!');
     } catch (error: any) {
       console.error('Resend OTP error:', error);
-      setError(error.message || 'Kodni qayta yuborishda xatolik');
+      const errorMessage = error.message || 'Kodni qayta yuborishda xatolik';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -113,11 +119,11 @@ const VerifyOTP = () => {
       <Navbar />
       
       <div className="pt-20 pb-12 px-4">
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md mx-4 sm:mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-dark-light rounded-2xl p-8 border border-dark-lighter"
+            className="bg-dark-light rounded-2xl p-4 sm:p-8 border border-dark-lighter"
           >
             {/* Header */}
             <div className="text-center mb-8">

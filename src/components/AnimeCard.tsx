@@ -9,10 +9,9 @@ interface AnimeCardProps {
   anime: any;
   showProgress?: boolean;
   showRating?: boolean;
-  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
+const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
   const navigate = useNavigate();
   const [isSaved, setIsSaved] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -102,14 +101,14 @@ const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
             </div>
           </div>
 
-          <div className="absolute top-1 sm:top-2 right-1 sm:right-2 flex gap-1 sm:gap-2">
-            {anime.rating && anime.rating > 0 && (
+          {anime.rating && anime.rating > 0 && (
+            <div className="absolute top-1 sm:top-2 right-1 sm:right-2 flex gap-1 sm:gap-2">
               <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
                 <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-semibold">{anime.rating}</span>
+                <span className="text-xs font-semibold">{anime.rating.toFixed(1)}</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="absolute top-1 sm:top-2 left-1 sm:left-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
@@ -125,9 +124,6 @@ const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
           {showProgress && watchedEpisodes > 0 && (
             <div className="absolute bottom-0 left-0 right-0">
               <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-1">
-                <div className="text-xs mb-1">
-                  {watchedEpisodes} / {anime.totalEpisodes || 0} eps
-                </div>
                 <div className="h-1 bg-dark-lighter rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary transition-all duration-300"
@@ -145,8 +141,14 @@ const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
           </h3>
           <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-400">
             <span>{anime.year || 'N/A'}</span>
-            <span className="hidden sm:inline">•</span>
-            <span className="hidden sm:inline">{anime.totalEpisodes || 0} eps</span>
+            {anime.type && (
+              <>
+                <span>•</span>
+                <span className="capitalize bg-primary/20 text-primary px-1.5 py-0.5 rounded text-xs font-medium">
+                  {anime.type === 'movie' ? 'Film' : 'Serial'}
+                </span>
+              </>
+            )}
           </div>
           <div className="flex flex-wrap gap-1">
             {anime.genres?.slice(0, 1).map((genre: string, index: number) => (
@@ -166,7 +168,6 @@ const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
         onClose={() => setShowRatingModal(false)}
         animeId={anime.id}
         animeTitle={anime.title}
-        onShowToast={onShowToast}
         onRatingSubmitted={() => {
           // Optionally refresh data or show success message
           console.log('Rating submitted successfully');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Star, Send } from 'lucide-react';
+import { toast } from 'sonner';
 import { addRating } from '../services/api';
 
 interface RatingModalProps {
@@ -9,10 +10,9 @@ interface RatingModalProps {
   animeId: number;
   animeTitle: string;
   onRatingSubmitted?: () => void;
-  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, onShowToast }: RatingModalProps) => {
+const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted }: RatingModalProps) => {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -59,9 +59,7 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
       setSuccess(true);
 
       // Show success message
-      if (onShowToast) {
-        onShowToast('Reyting va izoh muvaffaqiyatli yuborildi!', 'success');
-      }
+      toast.success('Reyting va izoh muvaffaqiyatli yuborildi!');
 
       // Call callback if provided
       if (onRatingSubmitted) {
@@ -76,19 +74,24 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
       console.error('Error submitting rating:', error);
 
       // Handle different error types
+      let errorMessage = 'Reyting yuborishda xatolik yuz berdi';
+      
       if (error.errors) {
         if (error.errors.movie_id) {
-          setError('Noto\'g\'ri anime ID');
+          errorMessage = 'Noto\'g\'ri anime ID';
         } else if (error.errors.score) {
-          setError('Noto\'g\'ri reyting qiymati');
+          errorMessage = 'Noto\'g\'ri reyting qiymati';
         } else if (error.errors.comment) {
-          setError('Izoh juda qisqa yoki juda uzun');
+          errorMessage = 'Izoh juda qisqa yoki juda uzun';
         } else {
-          setError(error.message || 'Reyting yuborishda xatolik yuz berdi');
+          errorMessage = error.message || 'Reyting yuborishda xatolik yuz berdi';
         }
       } else {
-        setError(error.message || 'Reyting yuborishda xatolik yuz berdi');
+        errorMessage = error.message || 'Reyting yuborishda xatolik yuz berdi';
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

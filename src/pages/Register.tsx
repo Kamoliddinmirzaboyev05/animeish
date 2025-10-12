@@ -4,12 +4,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Mail, Lock, User, Loader2, CheckCircle } from 'lucide-react';
-import { registerUser, loginUser, storeAuthData, sendOTP, type ApiError } from '../services/api';
+import { registerUser, loginUser, storeAuthData, sendOTP } from '../services/api';
 
 const registerSchema = z.object({
   first_name: z.string().min(2, 'Ism kamida 2 ta belgidan iborat bo\'lishi kerak'),
-  email: z.string().email('Noto\'g\'ri email manzil'),
+  email: z.string().min(1, 'Email manzil kiritilishi shart').email('Noto\'g\'ri email manzil'),
   password: z.string().min(6, 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'),
   confirm_password: z.string(),
 }).refine((data) => data.password === data.confirm_password, {
@@ -52,10 +53,36 @@ const Register = () => {
       await sendOTP({ email });
       setVerifiedEmail(email);
       navigate('/verify-otp', { state: { email } });
-    } catch (err) {
-      const apiError = err as ApiError;
+    } catch (err: any) {
       console.error('Send OTP error:', err);
-      setError(apiError.message || 'Email yuborishda xatolik yuz berdi');
+      
+      // Handle specific error messages from API
+      let errorMessage = 'Email yuborishda xatolik yuz berdi';
+      
+      // Check different error formats
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.errors) {
+        // Handle { "error": "message" } format
+        if (typeof err.errors === 'object' && err.errors.error) {
+          errorMessage = err.errors.error;
+        }
+        // Handle { "email": ["error message"] } format
+        else if (typeof err.errors === 'object' && err.errors.email) {
+          errorMessage = Array.isArray(err.errors.email) ? err.errors.email[0] : err.errors.email;
+        }
+        // Handle other field errors
+        else if (typeof err.errors === 'object') {
+          const firstError = Object.values(err.errors)[0];
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError as string;
+        }
+        else if (typeof err.errors === 'string') {
+          errorMessage = err.errors;
+        }
+      }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -79,6 +106,7 @@ const Register = () => {
         email: verifiedEmail || data.email
       });
       setSuccess('Ro\'yxatdan muvaffaqiyatli o\'tdingiz! Tizimga kirmoqda...');
+      toast.success('Ro\'yxatdan muvaffaqiyatli o\'tdingiz!');
       
       // Automatically login after successful registration
       const loginResponse = await loginUser({
@@ -93,18 +121,35 @@ const Register = () => {
       setTimeout(() => {
         navigate('/');
       }, 1000);
-    } catch (err) {
-      const apiError = err as ApiError;
+    } catch (err: any) {
+      console.error('Registration error:', err);
       
-      if (apiError.errors) {
-        // Handle field-specific errors
-        const errorMessages = Object.entries(apiError.errors)
-          .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-          .join('\n');
-        setError(errorMessages);
-      } else {
-        setError(apiError.message || 'Ro\'yxatdan o\'tishda xatolik yuz berdi');
+      let errorMessage = 'Ro\'yxatdan o\'tishda xatolik yuz berdi';
+      
+      // Handle different error formats
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.errors) {
+        // Handle { "error": "message" } format
+        if (typeof err.errors === 'object' && err.errors.error) {
+          errorMessage = err.errors.error;
+        }
+        // Handle field-specific errors like { "email": ["Bu email allaqachon mavjud"] }
+        else if (typeof err.errors === 'object') {
+          const errorEntries = Object.entries(err.errors);
+          if (errorEntries.length > 0) {
+            const [field, messages] = errorEntries[0];
+            const message = Array.isArray(messages) ? messages[0] : messages;
+            errorMessage = `${field}: ${message}`;
+          }
+        }
+        else if (typeof err.errors === 'string') {
+          errorMessage = err.errors;
+        }
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -124,9 +169,9 @@ const Register = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 w-full max-w-md mx-4"
+        className="relative z-10 w-full max-w-md mx-4 sm:mx-auto"
       >
-        <div className="bg-dark-light border border-dark-lighter rounded-2xl p-8 shadow-2xl">
+        <div className="bg-dark-light border border-dark-lighter rounded-2xl p-4 sm:p-8 shadow-2xl">
           <Link to="/" className="block text-center mb-8">
             <div className="flex items-center gap-3 justify-center">
               <img src="/logo.svg" alt="Aniki" className="w-8 h-8" />

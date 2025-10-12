@@ -5,7 +5,7 @@ import { Search as SearchIcon, SlidersHorizontal, X, Sparkles } from 'lucide-rea
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import SEO from '../components/SEO';
-import Toast from '../components/Toast';
+
 import { fetchAnimeList, searchAnime } from '../services/api';
 import { translateGenres } from '../utils/translations';
 
@@ -24,7 +24,7 @@ const Search = () => {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
   const [actualYearRange, setActualYearRange] = useState({ min: 2000, max: new Date().getFullYear() });
 
   useEffect(() => {
@@ -155,9 +155,7 @@ const Search = () => {
     minRating > 0 ||
     selectedStatus !== '';
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
-    setToast({ message, type });
-  };
+
 
   if (loading) {
     return (
@@ -467,7 +465,7 @@ const Search = () => {
                           Tavsiya
                         </div>
                       )}
-                      <AnimeCard anime={anime} onShowToast={showToast} />
+                      <AnimeCard anime={anime} />
                     </motion.div>
                   ))}
                 </div>
@@ -477,13 +475,7 @@ const Search = () => {
         </div>
       </div>
       
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
     </div>
   );
 };

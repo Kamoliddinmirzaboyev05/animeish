@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Star, Play, Pause, Heart, Calendar, Film, MessageSquare, ChevronLeft,
   Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward,
@@ -9,7 +10,6 @@ import {
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
-import Toast from '../components/Toast';
 import RatingModal from '../components/RatingModal';
 import RatingsSection from '../components/RatingsSection';
 import {
@@ -91,7 +91,7 @@ export default function AnimeDetail() {
   const [isSaved, setIsSaved] = useState(false);
   const [userRating, setUserRating] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [checkingRating, setCheckingRating] = useState(false);
 
@@ -235,7 +235,7 @@ export default function AnimeDetail() {
       if (!document.fullscreenElement) {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
-        
+
         // Mobile landscape orientation
         if (screen.orientation && 'lock' in screen.orientation) {
           try {
@@ -247,7 +247,7 @@ export default function AnimeDetail() {
       } else {
         await document.exitFullscreen();
         setIsFullscreen(false);
-        
+
         // Unlock orientation when exiting fullscreen
         if (screen.orientation && 'unlock' in screen.orientation) {
           try {
@@ -377,11 +377,29 @@ export default function AnimeDetail() {
       // Reset tap time to prevent triple tap
       lastTapRef.current = 0;
     } else {
-      // Single tap - just show controls, don't toggle play
-      showControlsTemp();
+      // Single tap - toggle controls visibility with proper timer management
+      setShowControls(prev => {
+        const newShowControls = !prev;
+
+        // Clear existing timer
+        if (hideControlsTimerRef.current) {
+          clearTimeout(hideControlsTimerRef.current);
+          hideControlsTimerRef.current = undefined;
+        }
+
+        // If showing controls, set auto-hide timer
+        if (newShowControls && isPlaying && !showSettings && !showEpisodeList) {
+          hideControlsTimerRef.current = window.setTimeout(() => {
+            setShowControls(false);
+          }, 3000);
+        }
+
+        return newShowControls;
+      });
+
       lastTapRef.current = currentTapTime;
     }
-  }, [skipTime, togglePlay, showControlsTemp]);
+  }, [skipTime, togglePlay, isPlaying, showSettings, showEpisodeList]);
 
   // Separate handler for mouse clicks (desktop)
   const handleVideoClick = useCallback((e: React.MouseEvent) => {
@@ -512,12 +530,15 @@ export default function AnimeDetail() {
       if (isSaved) {
         await removeBookmark(Number(id));
         setIsSaved(false);
+        toast.success('Ro\'yxatdan olib tashlandi');
       } else {
         await addBookmark(Number(id));
         setIsSaved(true);
+        toast.success('Ro\'yxatga qo\'shildi');
       }
     } catch (err) {
       console.error('Bookmark error:', err);
+      toast.error('Xatolik yuz berdi');
     }
   };
 
@@ -531,34 +552,39 @@ export default function AnimeDetail() {
     }
 
     if (userRating) {
-      showToast(`Siz avval ${userRating.score}/5 reyting bergansiz. Bir filmni faqat bir marta baholash mumkin.`, 'info');
+      toast.info(`Siz avval ${userRating.score}/5 reyting bergansiz. Bir filmni faqat bir marta baholash mumkin.`);
       return;
     }
 
     setShowRatingModal(true);
   };
 
-  const handleRatingSubmitted = () => {
+  const handleRatingSubmitted = async () => {
+    // Close the rating modal first
+    setShowRatingModal(false);
+
     // Reload anime data to get updated ratings
-    const reloadAnimeData = async () => {
-      try {
-        const animeData = await fetchAnimeById(Number(id));
-        setAnime(animeData);
+    try {
+      // Small delay to ensure the rating is processed on the server
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Check user rating again
-        const rating = await checkUserRating(Number(id));
-        setUserRating(rating);
-      } catch (error) {
-        console.error('Error reloading anime data:', error);
-      }
-    };
+      // Force refresh by fetching fresh data
+      const animeData = await fetchAnimeById(Number(id));
+      setAnime(animeData);
 
-    reloadAnimeData();
+      // Check user rating again
+      const rating = await checkUserRating(Number(id));
+      setUserRating(rating);
+
+      // Show success message
+      toast.success('Reyting muvaffaqiyatli yangilandi!');
+    } catch (error) {
+      console.error('Error reloading anime data:', error);
+      toast.error('Ma\'lumotlarni yangilashda xatolik');
+    }
   };
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
-    setToast({ message, type });
-  };
+
 
   // ==========================================
   // LOADING STATE
@@ -734,11 +760,11 @@ export default function AnimeDetail() {
                     exit={{ opacity: 0, y: 20 }}
                     className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 sm:p-6 z-20"
                   >
-                    {/* Progress Bar - Enhanced for Mobile */}
-                    <div className="mb-6">
+                    {/* Progress Bar - Compact */}
+                    <div className="mb-4">
                       <div
                         ref={progressBarRef}
-                        className="w-full h-3 sm:h-2 bg-white/20 rounded-full cursor-pointer group hover:h-4 sm:hover:h-3 transition-all touch-manipulation"
+                        className="w-full h-2 bg-white/20 rounded-full cursor-pointer group hover:h-3 transition-all touch-manipulation"
                         onClick={handleProgressClick}
                         onMouseDown={handleProgressMouseDown}
                         onTouchStart={(e) => {
@@ -771,107 +797,108 @@ export default function AnimeDetail() {
                           />
                           {/* Progress Thumb */}
                           <div
-                            className="absolute w-4 h-4 sm:w-3 sm:h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 shadow-lg border-2 border-white/50 transition-all"
+                            className="absolute w-3 h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 shadow-lg border-2 border-white/50 transition-all"
                             style={{
                               left: `${(currentTime / duration) * 100}%`,
-                              marginLeft: '-8px',
-                              transform: `translateY(-50%) scale(${isDragging ? 1.2 : 1})`
+                              marginLeft: '-6px',
+                              transform: `translateY(-50%) scale(${isDragging ? 1.3 : 1})`
                             }}
                           />
                         </div>
                       </div>
 
                       {/* Time Display */}
-                      <div className="flex justify-between items-center mt-2 text-xs sm:text-sm text-white/80">
+                      <div className="flex justify-between items-center mt-1 text-xs text-white/80">
                         <span>{formatTime(currentTime)}</span>
                         <span>{formatTime(duration)}</span>
                       </div>
                     </div>
 
-                    {/* Control Buttons Row */}
-                    <div className="flex items-center justify-center gap-6 sm:gap-8">
-                      {/* Previous Episode */}
-                      {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) - 1) && (
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); prevEpisode(); }}
-                          className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                          <SkipBack className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
-                        </motion.button>
-                      )}
-
-                      {/* Skip Backward */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(-10); }}
-                        className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
-                      >
-                        <RotateCcw className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
-                      </motion.button>
-
-                      {/* Play/Pause - Larger for Mobile */}
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          e.preventDefault();
-                          togglePlay(); 
-                        }}
-                        className="p-4 sm:p-3 bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-lg"
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-8 h-8 sm:w-6 sm:h-6 text-white" />
-                        ) : (
-                          <Play className="w-8 h-8 sm:w-6 sm:h-6 text-white ml-1" />
+                    {/* Compact Controls Layout */}
+                    <div className="space-y-3">
+                      {/* Main Controls Row */}
+                      <div className="flex items-center justify-center gap-4 sm:gap-6">
+                        {/* Previous Episode */}
+                        {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) - 1) && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); prevEpisode(); }}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                          >
+                            <SkipBack className="w-5 h-5 text-white" />
+                          </motion.button>
                         )}
-                      </motion.button>
 
-                      {/* Skip Forward */}
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(10); }}
-                        className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
-                      >
-                        <RotateCw className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
-                      </motion.button>
-
-                      {/* Next Episode */}
-                      {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) + 1) && (
+                        {/* Skip Backward */}
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); nextEpisode(); }}
-                          className="p-3 sm:p-2 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                          <SkipForward className="w-6 h-6 sm:w-5 sm:h-5 text-white" />
-                        </motion.button>
-                      )}
-                    </div>
-
-                    {/* Secondary Controls Row */}
-                    <div className="flex items-center justify-between mt-4 sm:mt-3">
-                      {/* Volume Control */}
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            e.preventDefault();
-                            toggleMute(); 
-                          }}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(-10); }}
                           className="p-2 hover:bg-white/10 rounded-full transition-colors"
                         >
-                          {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+                          <RotateCcw className="w-5 h-5 text-white" />
                         </motion.button>
 
-                        {/* Volume Slider - Now visible on all screens */}
-                        <div className="flex items-center justify-center">
+                        {/* Play/Pause */}
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            togglePlay();
+                          }}
+                          className="p-3 bg-primary hover:bg-primary-dark rounded-full transition-colors shadow-lg"
+                        >
+                          {isPlaying ? (
+                            <Pause className="w-6 h-6 text-white" />
+                          ) : (
+                            <Play className="w-6 h-6 text-white ml-0.5" />
+                          )}
+                        </motion.button>
+
+                        {/* Skip Forward */}
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); skipTime(10); }}
+                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                        >
+                          <RotateCw className="w-5 h-5 text-white" />
+                        </motion.button>
+
+                        {/* Next Episode */}
+                        {anime.type === 'series' && anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) + 1) && (
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); nextEpisode(); }}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                          >
+                            <SkipForward className="w-5 h-5 text-white" />
+                          </motion.button>
+                        )}
+                      </div>
+
+                      {/* Secondary Controls Row - Compact */}
+                      <div className="flex items-center justify-between">
+                        {/* Volume Control */}
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              toggleMute();
+                            }}
+                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                          >
+                            {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
+                          </motion.button>
+
+                          {/* Compact Volume Slider */}
                           <input
                             type="range"
                             min="0"
@@ -889,75 +916,71 @@ export default function AnimeDetail() {
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
-                            className="w-16 sm:w-20 h-2 bg-white/30 rounded-full appearance-none cursor-pointer touch-manipulation
-                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                            className="w-12 sm:w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer touch-manipulation
+                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
                               [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
-                              [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/50
-                              [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-primary 
+                              [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-primary 
                               [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-lg"
                             style={{
                               background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
                             }}
                           />
-                          <span className="text-xs text-white/70 ml-2 min-w-[2rem]">
-                            {Math.round((isMuted ? 0 : volume) * 100)}%
-                          </span>
                         </div>
-                      </div>
 
-                      {/* Right Controls */}
-                      <div className="flex items-center gap-2">
-                        {/* Settings */}
-                        <div className="relative">
+                        {/* Right Controls - Compact */}
+                        <div className="flex items-center gap-1">
+                          {/* Settings */}
+                          <div className="relative">
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                setShowSettings(!showSettings);
+                              }}
+                              className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            >
+                              <Settings className="w-4 h-4 text-white" />
+                            </motion.button>
+
+                            <AnimatePresence>
+                              {showSettings && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-2 min-w-[120px] border border-gray-700 shadow-xl"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <div className="text-xs text-gray-400 px-2 py-1 mb-1">Tezlik</div>
+                                  {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
+                                    <motion.button
+                                      key={speed}
+                                      whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                                      whileTap={{ scale: 0.98 }}
+                                      onClick={() => changeSpeed(speed)}
+                                      className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${playbackSpeed === speed ? 'text-primary font-medium bg-primary/10' : 'text-white'
+                                        }`}
+                                    >
+                                      {speed}x {speed === 1 ? '(Normal)' : ''}
+                                    </motion.button>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Fullscreen */}
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              e.preventDefault();
-                              setShowSettings(!showSettings); 
-                            }}
+                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFullscreen(); }}
                             className="p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
-                            <Settings className="w-5 h-5 text-white" />
+                            {isFullscreen ? <Minimize className="w-4 h-4 text-white" /> : <Maximize className="w-4 h-4 text-white" />}
                           </motion.button>
-
-                          <AnimatePresence>
-                            {showSettings && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                className="absolute bottom-full right-0 mb-2 bg-black/95 backdrop-blur-sm rounded-lg p-3 min-w-[160px] border border-gray-700 shadow-xl"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="text-xs text-gray-400 px-2 py-1 mb-2">Tezlik</div>
-                                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((speed) => (
-                                  <motion.button
-                                    key={speed}
-                                    whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => changeSpeed(speed)}
-                                    className={`w-full text-left px-3 py-2 text-sm rounded transition-colors ${playbackSpeed === speed ? 'text-primary font-medium bg-primary/10' : 'text-white'
-                                      }`}
-                                  >
-                                    {speed}x {speed === 1 ? '(Normal)' : ''}
-                                  </motion.button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
                         </div>
-
-                        {/* Fullscreen */}
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => { e.stopPropagation(); e.preventDefault(); toggleFullscreen(); }}
-                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                          {isFullscreen ? <Minimize className="w-5 h-5 text-white" /> : <Maximize className="w-5 h-5 text-white" />}
-                        </motion.button>
                       </div>
                     </div>
                   </motion.div>
@@ -1130,11 +1153,15 @@ export default function AnimeDetail() {
               >
                 <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{anime.title}</h1>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3 sm:mb-4 text-sm sm:text-base">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400" />
-                    <span className="font-semibold">{anime.rating || 'N/A'}</span>
-                  </div>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
+                  {anime.rating && anime.rating > 0 && (
+                    <>
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400" />
+                        <span className="font-semibold">{anime.rating.toFixed(1)}</span>
+                      </div>
+                      <span className="text-gray-400 hidden sm:inline">•</span>
+                    </>
+                  )}
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>{anime.year || 'N/A'}</span>
@@ -1144,8 +1171,13 @@ export default function AnimeDetail() {
                     <Film className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>{anime.totalEpisodes || 0} Epizod</span>
                   </div>
-                  <span className="px-2 sm:px-3 py-1 bg-primary/20 text-primary rounded-full text-xs sm:text-sm">
-                    {translateStatus(anime.status) || anime.status || 'N/A'}
+                  <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
+                    ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                    : anime.status === 'Completed' || anime.status === 'Tugallangan'
+                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                      : 'bg-primary/10 text-primary border-primary/30'
+                    }`}>
+                    {translateStatus(anime.status) || anime.status}
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
@@ -1159,8 +1191,8 @@ export default function AnimeDetail() {
                   <button
                     onClick={toggleSaved}
                     className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${isSaved
-                        ? 'bg-primary/20 text-primary border-2 border-primary'
-                        : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm'
+                      ? 'bg-primary/20 text-primary border-2 border-primary'
+                      : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm'
                       }`}
                   >
                     <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isSaved ? 'fill-primary' : ''}`} />
@@ -1172,8 +1204,8 @@ export default function AnimeDetail() {
                       onClick={handleRatingClick}
                       disabled={checkingRating || !!userRating}
                       className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-2 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${userRating
-                          ? 'bg-green-500/20 text-green-400 border-green-500/30 cursor-not-allowed opacity-75'
-                          : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
+                        ? 'bg-green-500/20 text-green-400 border-green-500/30 cursor-not-allowed opacity-75'
+                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
                         } ${checkingRating ? 'opacity-50 cursor-wait' : ''}`}
                       title={userRating ? `Siz ${userRating.score}/5 reyting bergansiz` : 'Reyting berish'}
                     >
@@ -1225,7 +1257,14 @@ export default function AnimeDetail() {
                 <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-400">Holat:</span>
-                    <span className="font-semibold">{translateStatus(anime.status) || anime.status || 'N/A'}</span>
+                    <span className={`font-semibold ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
+                      ? 'text-green-400'
+                      : anime.status === 'Completed' || anime.status === 'Tugallangan'
+                        ? 'text-blue-400'
+                        : 'text-primary'
+                      }`}>
+                      {translateStatus(anime.status) || anime.status}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Epizodlar:</span>
@@ -1235,10 +1274,12 @@ export default function AnimeDetail() {
                     <span className="text-gray-400">Yil:</span>
                     <span className="font-semibold">{anime.year || 'N/A'}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Reyting:</span>
-                    <span className="font-semibold">{anime.rating || 'N/A'}/10</span>
-                  </div>
+                  {anime.rating && anime.rating > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Reyting:</span>
+                      <span className="font-semibold">{anime.rating}/10</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1298,17 +1339,11 @@ export default function AnimeDetail() {
         onClose={() => setShowRatingModal(false)}
         animeId={Number(id)}
         animeTitle={anime?.title || ''}
-        onShowToast={showToast}
+
         onRatingSubmitted={handleRatingSubmitted}
       />
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
     </div>
   );
 }

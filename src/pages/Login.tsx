@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { loginUser, storeAuthData, sendOTP, type ApiError } from '../services/api';
 
@@ -37,6 +38,7 @@ const Login = () => {
     try {
       const response = await loginUser(data);
       storeAuthData(response);
+      toast.success('Muvaffaqiyatli tizimga kirdingiz!');
       navigate('/');
     } catch (err) {
       const apiError = err as ApiError;
@@ -49,19 +51,27 @@ const Login = () => {
           navigate('/verify-otp', { state: { email: data.username } });
           return;
         } catch (otpError) {
-          setError('Email tasdiqlash kodini yuborishda xatolik');
+          const errorMessage = 'Email tasdiqlash kodini yuborishda xatolik';
+          setError(errorMessage);
+          toast.error(errorMessage);
           return;
         }
       }
+      
+      let errorMessage = 'Noto\'g\'ri email yoki parol';
       
       if (apiError.errors) {
         const errorMessages = Object.entries(apiError.errors)
           .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
           .join('\n');
+        errorMessage = errorMessages;
         setError(errorMessages);
       } else {
-        setError('Noto\'g\'ri email yoki parol');
+        errorMessage = apiError.message || 'Noto\'g\'ri email yoki parol';
+        setError(errorMessage);
       }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

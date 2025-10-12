@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import HeroSlider from '../components/HeroSlider';
 import AnimeSlider from '../components/AnimeSlider';
 import SEO from '../components/SEO';
-import Toast from '../components/Toast';
+
 import {
   getBanners,
   getTrendingAnime,
@@ -25,7 +25,7 @@ const Home = () => {
   const [fantasyAnime, setFantasyAnime] = useState<any[]>([]);
   const [continueWatching, setContinueWatching] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
 
   useEffect(() => {
     const loadAnimeData = async () => {
@@ -64,9 +64,7 @@ const Home = () => {
     loadAnimeData();
   }, []);
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
-    setToast({ message, type });
-  };
+
 
   if (loading) {
     return (
@@ -102,31 +100,31 @@ const Home = () => {
 
         <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
           {continueWatching.length > 0 && (
-            <AnimeSlider title="Tomosha Davom Etish" anime={continueWatching} showProgress onShowToast={showToast} />
+            <AnimeSlider title="Tomosha Davom Etish" anime={continueWatching} showProgress />
           )}
 
           {trendingAnime.length > 0 && (
-            <AnimeSlider title="Hozir Mashhur" anime={trendingAnime} onShowToast={showToast} />
+            <AnimeSlider title="Hozir Mashhur" anime={trendingAnime} />
           )}
 
           {popularAnime.length > 0 && (
-            <AnimeSlider title="Bu Hafta Ommabop" anime={popularAnime} onShowToast={showToast} />
+            <AnimeSlider title="Bu Hafta Ommabop" anime={popularAnime} />
           )}
 
           {newReleases.length > 0 && (
-            <AnimeSlider title="Yangi Chiqarilganlar" anime={newReleases} onShowToast={showToast} />
+            <AnimeSlider title="Yangi Chiqarilganlar" anime={newReleases} />
           )}
 
           {actionAnime.length > 0 && (
-            <AnimeSlider title="Jangari" anime={actionAnime} onShowToast={showToast} />
+            <AnimeSlider title="Jangari" anime={actionAnime} />
           )}
 
           {romanceAnime.length > 0 && (
-            <AnimeSlider title="Romantik" anime={romanceAnime} onShowToast={showToast} />
+            <AnimeSlider title="Romantik" anime={romanceAnime} />
           )}
 
           {fantasyAnime.length > 0 && (
-            <AnimeSlider title="Fantastik" anime={fantasyAnime} onShowToast={showToast} />
+            <AnimeSlider title="Fantastik" anime={fantasyAnime} />
           )}
 
           {/* Empty state if no anime data */}
@@ -249,13 +247,7 @@ const Home = () => {
         </footer>
       </div>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+
     </div>
   );
 };

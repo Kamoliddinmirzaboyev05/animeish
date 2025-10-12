@@ -130,13 +130,15 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
               {current.description}
             </p>
             <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6 text-sm sm:text-base flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-yellow-400">★</span>
-                <span className="font-semibold">{current.rating ? current.rating.toFixed(1) : 'N/A'}</span>
-                {current.ratingCount && (
-                  <span className="text-gray-400 text-xs">({current.ratingCount})</span>
-                )}
-              </div>
+              {current.rating && current.rating > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-yellow-400">★</span>
+                  <span className="font-semibold">{current.rating.toFixed(1)}</span>
+                  {current.ratingCount && (
+                    <span className="text-gray-400 text-xs">({current.ratingCount})</span>
+                  )}
+                </div>
+              )}
               {current.year && (
                 <>
                   <span className="text-gray-400 hidden sm:inline">•</span>
@@ -155,7 +157,13 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
                   <span className="hidden md:inline">{current.genres.slice(0, 2).join(', ')}</span>
                 </>
               )}
-              <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded">
+              <span className={`px-2 py-1 text-xs rounded font-medium ${
+                current.status === 'Ongoing' || current.status === 'Davom etmoqda' 
+                  ? 'bg-green-500/20 text-green-400' 
+                  : current.status === 'Completed' || current.status === 'Tugallangan'
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-primary/20 text-primary'
+              }`}>
                 {current.status}
               </span>
             </div>

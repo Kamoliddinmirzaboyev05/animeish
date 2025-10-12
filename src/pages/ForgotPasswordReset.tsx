@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Lock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { requestPasswordReset, confirmPasswordReset } from '../services/api';
 
@@ -101,6 +102,7 @@ const ForgotPasswordReset = () => {
       });
 
       setSuccess('Parol muvaffaqiyatli o\'zgartirildi!');
+      toast.success('Parol muvaffaqiyatli o\'zgartirildi!');
 
       // Navigate to login after success
       setTimeout(() => {
@@ -114,17 +116,22 @@ const ForgotPasswordReset = () => {
       console.error('Password reset error:', err);
       
       // Handle specific error cases
+      let errorMessage = 'Parolni tiklashda xatolik yuz berdi';
+      
       if (err.message?.includes('code') || err.message?.includes('kod')) {
-        setError('Noto\'g\'ri yoki muddati o\'tgan tasdiqlash kodi');
+        errorMessage = 'Noto\'g\'ri yoki muddati o\'tgan tasdiqlash kodi';
       } else if (err.message?.includes('password') || err.message?.includes('parol')) {
-        setError('Parol talablarga mos kelmaydi');
+        errorMessage = 'Parol talablarga mos kelmaydi';
       } else if (err.message?.includes('404') || err.message?.includes('topilmadi')) {
-        setError('Foydalanuvchi topilmadi');
+        errorMessage = 'Foydalanuvchi topilmadi';
       } else if (err.message?.includes('429') || err.message?.includes('ko\'p urinish')) {
-        setError('Juda ko\'p urinish. Iltimos, biroz kuting');
+        errorMessage = 'Juda ko\'p urinish. Iltimos, biroz kuting';
       } else {
-        setError(err.message || 'Parolni tiklashda xatolik yuz berdi');
+        errorMessage = err.message || 'Parolni tiklashda xatolik yuz berdi';
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -140,6 +147,7 @@ const ForgotPasswordReset = () => {
       await requestPasswordReset({ email });
 
       setSuccess('Yangi tasdiqlash kodi yuborildi');
+      toast.success('Yangi tasdiqlash kodi yuborildi');
       setOtp(['', '', '', '', '', '']); // Clear OTP inputs
       setValue('code', ''); // Clear form value
       setResendCooldown(60); // Set 60 second cooldown
@@ -154,11 +162,16 @@ const ForgotPasswordReset = () => {
     } catch (error: any) {
       console.error('Resend code error:', error);
       
+      let errorMessage = 'Kodni qayta yuborishda xatolik';
+      
       if (error.message?.includes('429') || error.message?.includes('ko\'p so\'rov')) {
-        setError('Juda ko\'p so\'rov yuborildi. Iltimos, biroz kuting');
+        errorMessage = 'Juda ko\'p so\'rov yuborildi. Iltimos, biroz kuting';
       } else {
-        setError(error.message || 'Kodni qayta yuborishda xatolik');
+        errorMessage = error.message || 'Kodni qayta yuborishda xatolik';
       }
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

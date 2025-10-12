@@ -5,10 +5,9 @@ interface AnimeSliderProps {
   title: string;
   anime: any[];
   showProgress?: boolean;
-  onShowToast?: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const AnimeSlider = ({ title, anime, showProgress, onShowToast }: AnimeSliderProps) => {
+const AnimeSlider = ({ title, anime, showProgress }: AnimeSliderProps) => {
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -38,7 +37,7 @@ const AnimeSlider = ({ title, anime, showProgress, onShowToast }: AnimeSliderPro
         >
           {anime.map((item) => (
             <div key={item.id} className="flex-none w-36 sm:w-44 lg:w-48 snap-start">
-              <AnimeCard anime={item} showProgress={showProgress} onShowToast={onShowToast} />
+              <AnimeCard anime={item} showProgress={showProgress} />
             </div>
           ))}
         </div>

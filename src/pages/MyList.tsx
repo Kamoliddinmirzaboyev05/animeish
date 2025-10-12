@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Trash2, Heart, ChevronLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
-import Toast from '../components/Toast';
 import { getBookmarks, removeBookmark } from '../services/api';
 
 type SortOption = 'recent' | 'alphabetical' | 'rating';
@@ -12,7 +12,7 @@ const MyList = () => {
   const [myListAnime, setMyListAnime] = useState<any[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
 
   useEffect(() => {
     loadMyList();
@@ -34,15 +34,18 @@ const MyList = () => {
     e.stopPropagation();
     try {
       await removeBookmark(animeId);
-      loadMyList(); // Reload the list after removal
+      // Update local state immediately for better UX
+      setMyListAnime(prev => prev.filter(anime => anime.id !== animeId));
+      toast.success('Ro\'yxatdan olib tashlandi');
     } catch (error) {
       console.error('Error removing from list:', error);
+      toast.error('Xatolik yuz berdi');
+      // Reload list if there was an error
+      loadMyList();
     }
   };
 
-  const showToast = (message: string, type: 'success' | 'error' | 'info') => {
-    setToast({ message, type });
-  };
+
 
   const sortedAnime = [...myListAnime].sort((a, b) => {
     switch (sortBy) {
@@ -135,7 +138,7 @@ const MyList = () => {
                 transition={{ delay: index * 0.05 }}
                 className="relative group"
               >
-                <AnimeCard anime={anime} showProgress onShowToast={showToast} />
+                <AnimeCard anime={anime} showProgress />
                 <motion.button
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileHover={{ scale: 1.1 }}

@@ -29,6 +29,17 @@ const getCache = (key: string): any | null => {
   return cached.data;
 };
 
+// Cache invalidation helper
+const invalidateCache = (pattern: string): void => {
+  const keysToDelete: string[] = [];
+  cache.forEach((_, key) => {
+    if (key.includes(pattern)) {
+      keysToDelete.push(key);
+    }
+  });
+  keysToDelete.forEach(key => cache.delete(key));
+};
+
 // Enhanced fetch with caching
 const cachedFetch = async (url: string, options?: RequestInit, cacheMinutes: number = 5): Promise<Response> => {
   const cacheKey = getCacheKey(url, options?.body);
@@ -77,6 +88,14 @@ export interface VerifyOTPData {
     code: string;
 }
 
+export interface RegisterWithOTPData {
+    email: string;
+    code: number;
+    first_name: string;
+    password: string;
+    confirm_password: string;
+}
+
 export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse> => {
     try {
         console.log('Verifying OTP:', verifyData);
@@ -118,6 +137,65 @@ export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse
         return data;
     } catch (error) {
         console.error('OTP verification error:', error);
+        throw error;
+    }
+};
+
+export const registerWithOTP = async (registerData: RegisterWithOTPData): Promise<AuthResponse> => {
+    try {
+        console.log('Registering with OTP:', registerData);
+
+        const response = await fetch(`${API_BASE_URL}/verify-otp/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(registerData),
+        });
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            console.error('Failed to parse registration response as JSON:', parseError);
+            throw {
+                message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
+                errors: {},
+            } as ApiError;
+        }
+
+        console.log('Registration response:', { status: response.status, data });
+
+        if (!response.ok) {
+            // Handle different error response formats
+            let errorMessage = 'Ro\'yxatdan o\'tishda xatolik';
+            
+            if (data.error) {
+                errorMessage = data.error;
+            } else if (data.message) {
+                errorMessage = data.message;
+            } else if (data.code && Array.isArray(data.code)) {
+                errorMessage = data.code[0];
+            } else if (data.first_name && Array.isArray(data.first_name)) {
+                errorMessage = data.first_name[0];
+            } else if (data.password && Array.isArray(data.password)) {
+                errorMessage = data.password[0];
+            }
+            
+            throw {
+                message: errorMessage,
+                errors: data,
+            } as ApiError;
+        }
+
+        // If registration successful and token is returned, store it
+        if (data.access) {
+            storeAuthData(data);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Registration with OTP error:', error);
         throw error;
     }
 };
@@ -224,8 +302,19 @@ export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> =>
         console.log('OTP response:', { status: response.status, data });
 
         if (!response.ok) {
+            // Handle different error response formats
+            let errorMessage = 'OTP yuborishda xatolik';
+            
+            if (data.error) {
+                errorMessage = data.error;
+            } else if (data.message) {
+                errorMessage = data.message;
+            } else if (data.email && Array.isArray(data.email)) {
+                errorMessage = data.email[0];
+            }
+            
             throw {
-                message: data.message || data.error || 'Failed to send OTP',
+                message: errorMessage,
                 errors: data,
             } as ApiError;
         }
@@ -253,8 +342,23 @@ export const registerUser = async (userData: RegisterData): Promise<AuthResponse
         console.log('Registration response:', { status: response.status, data });
 
         if (!response.ok) {
+            // Handle different error response formats
+            let errorMessage = 'Ro\'yxatdan o\'tishda xatolik';
+            
+            if (data.error) {
+                errorMessage = data.error;
+            } else if (data.message) {
+                errorMessage = data.message;
+            } else if (data.email && Array.isArray(data.email)) {
+                errorMessage = data.email[0];
+            } else if (data.first_name && Array.isArray(data.first_name)) {
+                errorMessage = data.first_name[0];
+            } else if (data.password && Array.isArray(data.password)) {
+                errorMessage = data.password[0];
+            }
+            
             throw {
-                message: 'Registration failed',
+                message: errorMessage,
                 errors: data,
             } as ApiError;
         }
@@ -857,8 +961,15 @@ export const getBookmarks = async (): Promise<any[]> => {
             } as ApiError;
         }
 
-        // Transform bookmark data to match our anime format
-        return data.map((bookmark: Bookmark) => transformAnimeData(bookmark.movie));
+        // Transform bookmark data to match our anime format and keep bookmark ID
+        return data.map((bookmark: Bookmark) => {
+            const transformedAnime = transformAnimeData(bookmark.movie);
+            return {
+                ...transformedAnime,
+                bookmarkId: bookmark.id, // Keep bookmark ID for deletion
+                id: bookmark.movie.id // Keep movie ID for navigation
+            };
+        });
     } catch (error) {
         console.error('Bookmarks fetch error:', error);
         return [];
@@ -872,8 +983,6 @@ export const addBookmark = async (movieId: number): Promise<{ message: string }>
             throw new Error('No access token found');
         }
 
-        console.log('Adding bookmark for movie:', movieId);
-
         const response = await fetch(`${API_BASE_URL}/bookmarks/`, {
             method: 'POST',
             headers: {
@@ -884,7 +993,6 @@ export const addBookmark = async (movieId: number): Promise<{ message: string }>
         });
 
         const data = await response.json();
-        console.log('Add bookmark response:', { status: response.status, data });
 
         if (!response.ok) {
             throw {
@@ -892,6 +1000,9 @@ export const addBookmark = async (movieId: number): Promise<{ message: string }>
                 errors: data,
             } as ApiError;
         }
+
+        // Invalidate bookmarks cache after successful addition
+        invalidateCache('/bookmarks/');
 
         return data;
     } catch (error) {
@@ -907,17 +1018,21 @@ export const removeBookmark = async (movieId: number): Promise<{ message: string
             throw new Error('No access token found');
         }
 
-        console.log('Removing bookmark for movie:', movieId);
+        // First get bookmarks to find the bookmark ID for this movie
+        const bookmarks = await getBookmarks();
+        const bookmark = bookmarks.find((b: any) => b.id === movieId);
+        
+        if (!bookmark || !bookmark.bookmarkId) {
+            throw new Error('Bookmark not found');
+        }
 
-        const response = await fetch(`${API_BASE_URL}/bookmarks/${movieId}/`, {
+        const response = await fetch(`${API_BASE_URL}/bookmark/${bookmark.bookmarkId}/`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
         });
-
-        console.log('Remove bookmark response:', { status: response.status });
 
         if (!response.ok) {
             const data = await response.json();
@@ -926,6 +1041,9 @@ export const removeBookmark = async (movieId: number): Promise<{ message: string
                 errors: data,
             } as ApiError;
         }
+
+        // Invalidate bookmarks cache after successful removal
+        invalidateCache('/bookmarks/');
 
         return { message: 'Bookmark removed successfully' };
     } catch (error) {
@@ -1087,6 +1205,9 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
                 } as ApiError;
             }
         }
+
+        // Invalidate cache after successful rating submission
+        invalidateCache('/movies/');
 
         return data;
     } catch (error: any) {

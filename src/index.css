@@ -452,3 +452,38 @@
       min-width: 48px;
     }
   }
+
+  /* Custom Sonner Toast Styles */
+  .sonner-toast {
+    background: #18181B !important;
+    border: 1px solid #740775 !important;
+    color: white !important;
+  }
+
+  /* Success toast */
+  [data-type="success"] {
+    background: #18181B !important;
+    border: 1px solid #22c55e !important;
+    color: #22c55e !important;
+  }
+
+  /* Error toast */
+  [data-type="error"] {
+    background: #18181B !important;
+    border: 1px solid #ef4444 !important;
+    color: #ef4444 !important;
+  }
+
+  /* Info toast */
+  [data-type="info"] {
+    background: #18181B !important;
+    border: 1px solid #740775 !important;
+    color: #740775 !important;
+  }
+
+  /* Warning toast */
+  [data-type="warning"] {
+    background: #18181B !important;
+    border: 1px solid #f59e0b !important;
+    color: #f59e0b !important;
+  }
