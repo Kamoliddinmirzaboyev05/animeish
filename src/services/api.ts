@@ -1,6 +1,61 @@
 const API_BASE_URL = 'https://api.aniki.uz';
 console.log('🔧 API_BASE_URL configured as:', API_BASE_URL);
 
+// Simple in-memory cache for API responses
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+// Cache helper functions
+const getCacheKey = (url: string, params?: any): string => {
+  return params ? `${url}?${JSON.stringify(params)}` : url;
+};
+
+const setCache = (key: string, data: any, ttlMinutes: number = 5): void => {
+  cache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl: ttlMinutes * 60 * 1000
+  });
+};
+
+const getCache = (key: string): any | null => {
+  const cached = cache.get(key);
+  if (!cached) return null;
+  
+  if (Date.now() - cached.timestamp > cached.ttl) {
+    cache.delete(key);
+    return null;
+  }
+  
+  return cached.data;
+};
+
+// Enhanced fetch with caching
+const cachedFetch = async (url: string, options?: RequestInit, cacheMinutes: number = 5): Promise<Response> => {
+  const cacheKey = getCacheKey(url, options?.body);
+  
+  // Only cache GET requests
+  if (!options?.method || options.method === 'GET') {
+    const cached = getCache(cacheKey);
+    if (cached) {
+  
+      return new Response(JSON.stringify(cached), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  }
+  
+  const response = await fetch(url, options);
+  
+  // Cache successful GET responses
+  if (response.ok && (!options?.method || options.method === 'GET')) {
+    const data = await response.clone().json();
+    setCache(cacheKey, data, cacheMinutes);
+  }
+  
+  return response;
+};
+
 export interface VideoData {
     id: string;
     videoUrl: string;
@@ -499,7 +554,7 @@ const transformAnimeData = (apiData: any) => {
 // Anime API functions
 export const fetchAnimeList = async (): Promise<any[]> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/movies/`);
+        const response = await cachedFetch(`${API_BASE_URL}/movies/`, undefined, 10); // Cache for 10 minutes
         if (!response.ok) {
             throw new Error('Failed to fetch anime list');
         }
@@ -643,27 +698,18 @@ export const searchAnime = async (query: string): Promise<any[]> => {
 
 export const fetchAnimeById = async (id: number): Promise<any | null> => {
     try {
-        console.log('🔍 Fetching anime by ID:', id);
-        const response = await fetch(`${API_BASE_URL}/movies/`);
+        const response = await cachedFetch(`${API_BASE_URL}/movies/`, undefined, 15); // Cache for 15 minutes
         if (!response.ok) {
-            console.error('❌ API response not OK:', response.status, response.statusText);
             throw new Error('Failed to fetch anime list');
         }
         const data = await response.json();
-        console.log('📊 Total movies fetched:', data.length);
 
         const anime = data.find((item: any) => item.id === id);
-        console.log('🎯 Found anime:', anime ? anime.title : 'Not found');
 
         if (anime) {
-            console.log('📺 Anime episodes:', anime.episodes?.length || 0);
-            console.log('🎬 Anime type:', anime.type);
             const transformed = transformAnimeData(anime);
-            console.log('✅ Transformed anime data:', transformed.title);
             return transformed;
         } else {
-            console.error('❌ Anime not found with ID:', id);
-            console.log('📋 Available IDs:', data.map((item: any) => item.id).slice(0, 10));
             return null;
         }
     } catch (error) {
@@ -1178,45 +1224,24 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
 // Banners API function - using real API structure
 export const getBanners = async (): Promise<any[]> => {
     try {
-        console.log('🔄 Fetching banners from:', `${API_BASE_URL}/banners/`);
-        console.log('🌐 Full URL:', `${API_BASE_URL}/banners/`);
-
-        const response = await fetch(`${API_BASE_URL}/banners/`);
-        console.log('📡 Response status:', response.status, response.statusText);
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+        const response = await cachedFetch(`${API_BASE_URL}/banners/`, undefined, 30); // Cache for 30 minutes
 
         if (!response.ok) {
-            console.error('❌ Response not OK:', response.status, response.statusText);
             throw new Error(`Failed to fetch banners: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log('📦 Raw API data:', data);
-        console.log('📊 Data type:', typeof data, 'Is array:', Array.isArray(data), 'Length:', data?.length);
-        console.log('🔍 First item structure:', data?.[0]);
 
         if (!Array.isArray(data)) {
-            console.error('❌ API did not return an array');
             return [];
         }
 
         if (data.length === 0) {
-            console.log('⚠️ No banners in API response');
             return [];
         }
 
         // Transform banner data using the exact API structure
-        const transformedBanners = data.map((banner: any, index: number) => {
-            console.log(`🔄 Processing banner ${index + 1}:`, banner);
-            console.log(`📋 Banner details:`, {
-                id: banner.id,
-                hasMovie: !!banner.movie,
-                hasPhoto: !!banner.photo,
-                movieId: banner.movie?.id,
-                movieTitle: banner.movie?.title,
-                photo: banner.photo,
-                poster: banner.movie?.poster
-            });
+        const transformedBanners = data.map((banner: any) => {
 
             const transformed = {
                 id: banner.id,
@@ -1246,30 +1271,17 @@ export const getBanners = async (): Promise<any[]> => {
                 bannerPhoto: banner.photo
             };
 
-            console.log(`✅ Transformed banner ${index + 1}:`, transformed);
             return transformed;
         });
 
-        console.log('🔄 Transformed banners:', transformedBanners);
-
         // Filter valid banners (must have movie and photo)
         const validBanners = transformedBanners.filter((banner: any) => {
-            const isValid = banner.movieId && banner.banner;
-            console.log(`✅ Banner ${banner.id} validation:`, {
-                movieId: banner.movieId,
-                hasPhoto: !!banner.banner,
-                isValid
-            });
-            return isValid;
+            return banner.movieId && banner.banner;
         });
-
-        console.log('✅ Valid banners count:', validBanners.length);
-        console.log('🎯 Final banners:', validBanners);
 
         return validBanners.slice(0, 5); // Limit to 5 banners
 
     } catch (error) {
-        console.error('❌ Banners fetch error:', error);
         return [];
     }
 };

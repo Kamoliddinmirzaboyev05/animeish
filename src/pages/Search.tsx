@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, SlidersHorizontal, X, Sparkles, ChevronLeft } from 'lucide-react';
+import { Search as SearchIcon, SlidersHorizontal, X, Sparkles } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import SEO from '../components/SEO';
@@ -182,16 +182,7 @@ const Search = () => {
 
       <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="mb-8">
-          {/* Back Button */}
-          <div className="mb-4">
-            <button
-              onClick={() => window.history.back()}
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              <span>Orqaga</span>
-            </button>
-          </div>
+
           
           <div className="flex items-center gap-4 mb-6">
             <div className="relative flex-1">
@@ -213,12 +204,6 @@ const Search = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-            <span>
-              {searching ? 'Qidirilmoqda...' : `${filteredAnime.length} ta natija`}
-              {animeList.length > 0 && !searching && (
-                <span className="text-gray-500"> / {animeList.length} ta jami</span>
-              )}
-            </span>
             {showSuggestions && !searching && (
               <div className="flex items-center gap-2 text-primary">
                 <Sparkles className="w-4 h-4" />

@@ -8,9 +8,6 @@ interface HeroSliderProps {
 }
 
 const HeroSlider = ({ anime }: HeroSliderProps) => {
-  console.log('🎬 HeroSlider received anime:', anime);
-  console.log('📊 Anime count:', anime?.length);
-  console.log('🔍 First anime item:', anime?.[0]);
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [bookmarkStates, setBookmarkStates] = useState<Record<number, boolean>>({});
@@ -86,14 +83,8 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
   };
 
   const current = anime[currentIndex];
-  
-  console.log('🎯 Current anime:', current);
-  console.log('📍 Current index:', currentIndex);
-  console.log('🖼️ Current banner:', current?.banner);
-  console.log('📝 Current title:', current?.title);
 
   if (!current) {
-    console.log('❌ No current anime found');
     return null;
   }
 
@@ -250,14 +241,14 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
 
       <button
         onClick={goToPrevious}
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
+        className="hidden sm:flex absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full items-center justify-center transition-colors"
       >
         <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
       </button>
 
       <button
         onClick={goToNext}
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
+        className="hidden sm:flex absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full items-center justify-center transition-colors"
       >
         <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
       </button>

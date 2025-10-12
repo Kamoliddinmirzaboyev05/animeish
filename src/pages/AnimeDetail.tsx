@@ -112,8 +112,7 @@ export default function AnimeDetail() {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [showSkipIndicator, setShowSkipIndicator] = useState<'forward' | 'backward' | null>(null);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
-  const [showNextEpisode, setShowNextEpisode] = useState(false);
-  const [countdown, setCountdown] = useState(10);
+
 
   // ==========================================
   // LOAD ANIME DATA
@@ -163,7 +162,7 @@ export default function AnimeDetail() {
     setVideoUrl(targetEpisode.video_url);
     setIsWatchMode(true);
     setCurrentTime(0);
-    setIsPlaying(false);
+    setIsPlaying(true); // Auto-play when entering watch mode
     setShowControls(true);
 
     // Scroll to top for better UX
@@ -181,10 +180,8 @@ export default function AnimeDetail() {
   }, []);
 
   const goToEpisode = useCallback((episode: Episode) => {
-    setIsPlaying(false);
+    setIsPlaying(true); // Auto-play when switching episodes
     setCurrentTime(0);
-    setShowNextEpisode(false);
-    setCountdown(10);
     setCurrentEpisode(episode);
     setVideoUrl(episode.video_url);
     setShowEpisodeList(false);
@@ -238,9 +235,27 @@ export default function AnimeDetail() {
       if (!document.fullscreenElement) {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
+        
+        // Mobile landscape orientation
+        if (screen.orientation && 'lock' in screen.orientation) {
+          try {
+            await (screen.orientation as any).lock('landscape');
+          } catch (orientationError) {
+            console.log('Orientation lock not supported:', orientationError);
+          }
+        }
       } else {
         await document.exitFullscreen();
         setIsFullscreen(false);
+        
+        // Unlock orientation when exiting fullscreen
+        if (screen.orientation && 'unlock' in screen.orientation) {
+          try {
+            (screen.orientation as any).unlock();
+          } catch (orientationError) {
+            console.log('Orientation unlock not supported:', orientationError);
+          }
+        }
       }
     } catch (err) {
       console.error('Fullscreen error:', err);
@@ -394,25 +409,37 @@ export default function AnimeDetail() {
       const bufferedEnd = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
       setBuffered(bufferedEnd);
     }
-
-    // Auto show next episode at 90%
-    if (duration > 0 && current / duration > 0.9 && !showNextEpisode && anime?.type === 'series') {
-      const nextEp = anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) + 1);
-      if (nextEp) setShowNextEpisode(true);
-    }
-  }, [duration, showNextEpisode, anime, currentEpisode]);
+  }, []);
 
   // ==========================================
-  // COUNTDOWN TIMER
+  // AUTO NEXT EPISODE
+  // ==========================================
+  const handleVideoEnded = useCallback(() => {
+    if (anime?.type === 'series') {
+      const nextEp = anime.episodes?.find(e => e.episode_number === (currentEpisode?.episode_number || 0) + 1);
+      if (nextEp) {
+        // Auto play next episode immediately when current ends
+        goToEpisode(nextEp);
+      }
+    }
+  }, [anime, currentEpisode, goToEpisode]);
+
+  // ==========================================
+  // AUTO PLAY WHEN VIDEO LOADS
   // ==========================================
   useEffect(() => {
-    if (showNextEpisode && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (showNextEpisode && countdown === 0) {
-      nextEpisode();
+    if (videoRef.current && isPlaying && videoUrl) {
+      const playVideo = async () => {
+        try {
+          await videoRef.current?.play();
+        } catch (error) {
+          console.log('Auto-play prevented by browser:', error);
+          setIsPlaying(false);
+        }
+      };
+      playVideo();
     }
-  }, [showNextEpisode, countdown, nextEpisode]);
+  }, [videoUrl, isPlaying]);
 
   // ==========================================
   // KEYBOARD SHORTCUTS
@@ -605,10 +632,15 @@ export default function AnimeDetail() {
                 onPause={() => setIsPlaying(false)}
                 onWaiting={() => setIsBuffering(true)}
                 onCanPlay={() => setIsBuffering(false)}
+                onLoadStart={() => setIsBuffering(true)}
+                onLoadedData={() => setIsBuffering(false)}
+                onEnded={handleVideoEnded}
                 onClick={handleVideoClick}
                 onTouchEnd={handleVideoTap}
                 playsInline
-                preload="metadata"
+                preload="auto"
+                autoPlay={isPlaying}
+                crossOrigin="anonymous"
               />
 
               {/* Buffering */}
@@ -838,13 +870,13 @@ export default function AnimeDetail() {
                           {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
                         </motion.button>
 
-                        {/* Volume Slider - Hidden on small screens */}
-                        <div className="hidden sm:block">
+                        {/* Volume Slider - Now visible on all screens */}
+                        <div className="flex items-center justify-center">
                           <input
                             type="range"
                             min="0"
                             max="1"
-                            step="0.1"
+                            step="0.05"
                             value={isMuted ? 0 : volume}
                             onChange={(e) => {
                               e.stopPropagation();
@@ -857,8 +889,19 @@ export default function AnimeDetail() {
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => e.stopPropagation()}
-                            className="w-20 h-1 bg-white/30 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full"
+                            className="w-16 sm:w-20 h-2 bg-white/30 rounded-full appearance-none cursor-pointer touch-manipulation
+                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                              [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
+                              [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white/50
+                              [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-primary 
+                              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-lg"
+                            style={{
+                              background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
+                            }}
                           />
+                          <span className="text-xs text-white/70 ml-2 min-w-[2rem]">
+                            {Math.round((isMuted ? 0 : volume) * 100)}%
+                          </span>
                         </div>
                       </div>
 
@@ -941,7 +984,7 @@ export default function AnimeDetail() {
                     <X className="w-5 h-5 text-white" />
                   </button>
                 </div>
-                <div className="overflow-y-auto h-full pb-20">
+                <div className="overflow-y-auto h-full pb-20 max-h-[calc(100vh-120px)] custom-scrollbar">
                   {anime.episodes.map((ep) => (
                     <button
                       key={ep.id}
@@ -975,7 +1018,7 @@ export default function AnimeDetail() {
                 <h3 className="text-white font-semibold">Episodes</h3>
                 <p className="text-sm text-gray-400 mt-1">{anime.episodes.length} Episodes</p>
               </div>
-              <div className="overflow-y-auto h-full pb-4">
+              <div className="overflow-y-auto h-full pb-4 max-h-[calc(100vh-120px)] custom-scrollbar">
                 {anime.episodes.map((ep) => (
                   <button
                     key={ep.id}
@@ -1001,34 +1044,7 @@ export default function AnimeDetail() {
             </div>
           )}
 
-          {/* Next Episode Countdown */}
-          <AnimatePresence>
-            {showNextEpisode && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/90 rounded-lg p-6 text-center z-50 border border-gray-700"
-              >
-                <h3 className="text-white text-lg font-semibold mb-2">Keyingi epizod</h3>
-                <div className="text-primary text-4xl font-bold mb-4">{countdown}</div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => { setShowNextEpisode(false); setCountdown(10); }}
-                    className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-colors"
-                  >
-                    Bekor qilish
-                  </button>
-                  <button
-                    onClick={nextEpisode}
-                    className="flex-1 px-4 py-2 bg-primary hover:bg-primary-dark rounded-lg text-white text-sm transition-colors"
-                  >
-                    Davom etish
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
         </div>
       </>
     );

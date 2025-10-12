@@ -181,8 +181,8 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted, 
                       >
                         <Star
                           className={`w-8 h-8 sm:w-6 sm:h-6 transition-colors ${star <= (hoveredRating || rating)
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-600'
+                            ? 'text-yellow-400 fill-yellow-400'
+                            : 'text-gray-600'
                             }`}
                         />
                       </button>

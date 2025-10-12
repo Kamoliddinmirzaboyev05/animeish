@@ -103,10 +103,12 @@ const AnimeCard = ({ anime, showProgress, onShowToast }: AnimeCardProps) => {
           </div>
 
           <div className="absolute top-1 sm:top-2 right-1 sm:right-2 flex gap-1 sm:gap-2">
-            <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
-              <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-semibold">{anime.rating || 'N/A'}</span>
-            </div>
+            {anime.rating && anime.rating > 0 && (
+              <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
+                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
+                <span className="text-xs font-semibold">{anime.rating}</span>
+              </div>
+            )}
           </div>
 
           <div className="absolute top-1 sm:top-2 left-1 sm:left-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

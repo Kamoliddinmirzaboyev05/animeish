@@ -30,16 +30,10 @@ const Home = () => {
   useEffect(() => {
     const loadAnimeData = async () => {
       try {
-        console.log('🚀 Starting to load anime data...');
-
-        // Load banners first to debug the issue
-        console.log('📡 Fetching banners...');
+        // Load banners first
         const bannersData = await getBanners();
-        console.log('🎯 Banners received:', bannersData);
-        console.log('📊 Banners count:', bannersData.length);
-        console.log('🔍 First banner:', bannersData[0]);
 
-        // Load other data
+        // Load other data in parallel for better performance
         const [trending, popular, newRel, action, romance, fantasy, continueWatch] = await Promise.all([
           getTrendingAnime(),
           getPopularAnime(),
@@ -50,19 +44,7 @@ const Home = () => {
           getContinueWatching(),
         ]);
 
-        console.log('🏠 Home component received all data:', {
-          banners: bannersData.length,
-          trending: trending.length,
-          popular: popular.length,
-          newReleases: newRel.length,
-          action: action.length,
-          romance: romance.length,
-          fantasy: fantasy.length,
-          continueWatch: continueWatch.length
-        });
-
-        // Set state with detailed logging
-        console.log('💾 Setting banners state:', bannersData);
+        // Set state
         setBanners(bannersData);
         setTrendingAnime(trending);
         setPopularAnime(popular);
@@ -71,10 +53,8 @@ const Home = () => {
         setRomanceAnime(romance);
         setFantasyAnime(fantasy);
         setContinueWatching(continueWatch);
-
-        console.log('✅ All data loaded successfully');
       } catch (error) {
-        console.error('❌ Error loading anime data:', error);
+        console.error('Error loading anime data:', error);
         showToast('Ma\'lumotlarni yuklashda xatolik yuz berdi', 'error');
       } finally {
         setLoading(false);
@@ -108,34 +88,17 @@ const Home = () => {
 
       <div className="pt-16">
         {/* Hero Section */}
-        {(() => {
-          console.log('🎬 Rendering Hero Section:', {
-            loading,
-            bannersLength: banners.length,
-            banners: banners
-          });
-
-          if (loading) {
-            console.log('⏳ Showing loading state');
-            return (
-              <div className="h-[50vh] sm:h-[60vh] lg:h-[70vh] bg-gradient-to-r from-dark via-dark-light to-dark flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Aniki</h1>
-                  <p className="text-gray-400 text-lg">Ma'lumotlar yuklanmoqda...</p>
-                </div>
-              </div>
-            );
-          }
-
-          if (banners.length > 0) {
-            console.log('🎯 Showing HeroSlider with banners:', banners);
-            return <HeroSlider anime={banners} />;
-          }
-
-          console.log('❌ No banners found');
-          return null;
-        })()}
+        {loading ? (
+          <div className="h-[50vh] sm:h-[60vh] lg:h-[70vh] bg-gradient-to-r from-dark via-dark-light to-dark flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Aniki</h1>
+              <p className="text-gray-400 text-lg">Ma'lumotlar yuklanmoqda...</p>
+            </div>
+          </div>
+        ) : banners.length > 0 ? (
+          <HeroSlider anime={banners} />
+        ) : null}
 
         <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8">
           {continueWatching.length > 0 && (
