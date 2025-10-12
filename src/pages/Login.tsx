@@ -60,17 +60,34 @@ const Login = () => {
       
       let errorMessage = 'Noto\'g\'ri email yoki parol';
       
-      if (apiError.errors) {
-        const errorMessages = Object.entries(apiError.errors)
-          .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-          .join('\n');
-        errorMessage = errorMessages;
-        setError(errorMessages);
-      } else {
-        errorMessage = apiError.message || 'Noto\'g\'ri email yoki parol';
-        setError(errorMessage);
+      // Handle specific error cases
+      if (apiError.message) {
+        if (apiError.message.includes('Invalid credentials') || apiError.message.includes('invalid')) {
+          errorMessage = 'Email yoki parol noto\'g\'ri';
+        } else if (apiError.message.includes('User not found') || apiError.message.includes('topilmadi')) {
+          errorMessage = 'Bunday foydalanuvchi topilmadi';
+        } else if (apiError.message.includes('password') || apiError.message.includes('parol')) {
+          errorMessage = 'Parol noto\'g\'ri';
+        } else if (apiError.message.includes('email')) {
+          errorMessage = 'Email manzil noto\'g\'ri';
+        } else {
+          errorMessage = apiError.message;
+        }
+      } else if (apiError.errors) {
+        // Handle field-specific errors
+        if (apiError.errors.username || apiError.errors.email) {
+          errorMessage = 'Email manzil noto\'g\'ri';
+        } else if (apiError.errors.password) {
+          errorMessage = 'Parol noto\'g\'ri';
+        } else {
+          const errorMessages = Object.entries(apiError.errors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+            .join('\n');
+          errorMessage = errorMessages;
+        }
       }
       
+      setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

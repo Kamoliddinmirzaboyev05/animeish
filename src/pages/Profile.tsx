@@ -42,6 +42,19 @@ const Profile = () => {
         setBookmarks(userBookmarks);
         setRecommendations(userRecommendations);
         
+        // Debug: Log recommendations data
+        console.log('📊 Final recommendations data for Profile:', userRecommendations);
+        userRecommendations.forEach((rec, index) => {
+          console.log(`📋 Recommendation ${index + 1}:`, {
+            id: rec.id,
+            title: rec.title,
+            thumbnail: rec.thumbnail,
+            banner: rec.banner,
+            rating: rec.rating,
+            hasImage: !!rec.thumbnail
+          });
+        });
+        
       } catch (err) {
         const apiError = err as ApiError;
         setError(apiError.message || 'Profil ma\'lumotlarini yuklashda xatolik');
@@ -208,12 +221,38 @@ const Profile = () => {
                     transition={{ delay: 0.2 + index * 0.05 }}
                     className="group block"
                   >
-                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-dark">
-                      <img
-                        src={anime.thumbnail}
-                        alt={anime.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
+                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gradient-to-br from-dark-light to-dark">
+                      {anime.thumbnail ? (
+                        <>
+                          <img
+                            src={`https://api.aniki.uz/${anime.thumbnail}`}
+                            alt={anime.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            onError={(e) => {
+                              console.log('🖼️ Image failed to load:', anime.thumbnail);
+                              // Replace with fallback content
+                              const container = (e.target as HTMLImageElement).parentElement;
+                              if (container) {
+                                container.innerHTML = `
+                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+                                    <div class="text-center p-2">
+                                      <div class="text-2xl mb-1">🎬</div>
+                                      <div class="text-xs text-gray-400 line-clamp-2">${anime.title}</div>
+                                    </div>
+                                  </div>
+                                `;
+                              }
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+                          <div className="text-center p-2">
+                            <div className="text-2xl mb-1">🎬</div>
+                            <div className="text-xs text-gray-400 line-clamp-2">{anime.title}</div>
+                          </div>
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="absolute bottom-2 left-2 right-2">
                           <h3 className="text-xs font-semibold line-clamp-2">{anime.title}</h3>

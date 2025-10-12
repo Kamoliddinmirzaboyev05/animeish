@@ -943,7 +943,7 @@ export default function AnimeDetail() {
 
                       {/* Right Side - Settings & Fullscreen */}
                       <div className="flex items-center gap-1 sm:gap-2">
-                        {/* Settings */}
+                        {/* Settings with Speed Indicator */}
                         <div className="relative">
                           <motion.button
                             whileHover={{ scale: 1.1 }}
@@ -953,9 +953,15 @@ export default function AnimeDetail() {
                               e.preventDefault();
                               setShowSettings(!showSettings);
                             }}
-                            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                            className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
                           >
                             <Settings className="w-4 h-4 text-white" />
+                            {/* Speed Indicator Badge */}
+                            {playbackSpeed !== 1 && (
+                              <div className="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border border-white/20">
+                                {playbackSpeed}x
+                              </div>
+                            )}
                           </motion.button>
 
                           <AnimatePresence>

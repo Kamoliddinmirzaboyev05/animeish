@@ -598,14 +598,44 @@ export const getVideoUrlById = async (animeId: string | number, episodeNumber: n
 
 // Data transformation function - using only real API data
 const transformAnimeData = (apiData: any) => {
+    // Debug: Log the input data
+    console.log('🔄 transformAnimeData input:', {
+        id: apiData.id,
+        title: apiData.title,
+        poster: apiData.poster,
+        thumbnail: apiData.thumbnail,
+        image: apiData.image,
+        banner: apiData.banner,
+        allKeys: Object.keys(apiData)
+    });
+
+    // Try multiple possible image field names
+    const possibleImageFields = [
+        'poster', 'thumbnail', 'image', 'banner', 'poster_url', 
+        'thumbnail_url', 'image_url', 'cover', 'cover_image'
+    ];
+    
+    let imageUrl = null;
+    for (const field of possibleImageFields) {
+        if (apiData[field]) {
+            imageUrl = apiData[field];
+            console.log(`📸 Found image in field '${field}':`, imageUrl);
+            break;
+        }
+    }
+
+    if (!imageUrl) {
+        console.warn('⚠️ No image found for anime:', apiData.title);
+    }
+
     return {
         id: apiData.id,
         title: apiData.title,
         slug: apiData.slug,
         description: apiData.description,
-        // Use only real poster from API, no fallbacks
-        thumbnail: apiData.poster,
-        banner: apiData.poster,
+        // Use found image URL or null
+        thumbnail: imageUrl,
+        banner: imageUrl,
         rating: apiData.rating_avg || 0,
         year: apiData.release_year,
         totalEpisodes: apiData.episodes?.length || 0,
@@ -939,10 +969,78 @@ export const getRecommendations = async (): Promise<any[]> => {
         }
 
         const data = await response.json();
-        console.log('Recommendations response:', data);
+        console.log('🎯 Raw Recommendations API response:', data);
+
+        // Check if data is an array and has items
+        if (!Array.isArray(data) || data.length === 0) {
+            console.warn('Recommendations API returned empty or invalid data, falling back to popular anime');
+            return await getPopularAnime();
+        }
+
+        // Log first item to understand structure
+        if (data.length > 0) {
+            console.log('🔍 First recommendation item structure:', data[0]);
+            console.log('🔍 Available keys:', Object.keys(data[0]));
+        }
+
+        // Get all anime data for fallback images
+        let allAnimeData: any[] = [];
+        try {
+            allAnimeData = await fetchAnimeList();
+        } catch (error) {
+            console.warn('Could not fetch anime list for fallback images:', error);
+        }
 
         // Transform the data to match our anime format
-        return data.map(transformAnimeData);
+        const transformedData = data.map((item: any, index: number) => {
+            // Handle different possible API response formats
+            const animeData = item.anime || item.movie || item;
+            
+            console.log(`🎬 Processing item ${index}:`, {
+                originalItem: item,
+                extractedAnimeData: animeData,
+                poster: animeData.poster,
+                thumbnail: animeData.thumbnail,
+                image: animeData.image
+            });
+            
+            let transformed = transformAnimeData(animeData);
+            
+            // If no image found, try to get it from the main anime list
+            if (!transformed.thumbnail && transformed.id && allAnimeData.length > 0) {
+                const fullAnimeData = allAnimeData.find((anime: any) => anime.id === transformed.id);
+                if (fullAnimeData && fullAnimeData.poster) {
+                    console.log(`🔄 Found fallback image for ${transformed.title}:`, fullAnimeData.poster);
+                    transformed.thumbnail = fullAnimeData.poster;
+                    transformed.banner = fullAnimeData.poster;
+                }
+            }
+            
+            console.log(`✅ Transformed item ${index}:`, {
+                id: transformed.id,
+                title: transformed.title,
+                thumbnail: transformed.thumbnail,
+                banner: transformed.banner
+            });
+            
+            return transformed;
+        }).filter((item: any) => item && item.id); // Filter out invalid items
+
+        console.log('🎉 Final recommendations count:', transformedData.length);
+        
+        // If no images found in recommendations, add some test data for debugging
+        if (transformedData.length > 0 && !transformedData[0].thumbnail) {
+            console.log('⚠️ No images found in recommendations, adding test image URLs for debugging');
+            transformedData.forEach((item) => {
+                if (!item.thumbnail) {
+                    // Add a test image URL for debugging
+                    item.thumbnail = `https://via.placeholder.com/300x450/740775/ffffff?text=${encodeURIComponent(item.title || 'Anime')}`;
+                    item.banner = item.thumbnail;
+                }
+            });
+        }
+        
+        return transformedData;
     } catch (error) {
         console.error('Error fetching recommendations:', error);
         // Fallback to popular anime if recommendations fail
