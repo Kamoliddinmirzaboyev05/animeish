@@ -6,32 +6,42 @@ import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import { getBookmarks, removeBookmark } from '../services/api';
 
+interface Anime {
+  id: number;
+  title: string;
+  rating?: number;
+  created_at?: string;
+  [key: string]: any;
+}
+
 type SortOption = 'recent' | 'alphabetical' | 'rating';
 
-const MyList = () => {
-  const [myListAnime, setMyListAnime] = useState<any[]>([]);
+const MyList: React.FC = () => {
+  const [myListAnime, setMyListAnime] = useState<Anime[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
 
   useEffect(() => {
     loadMyList();
   }, []);
 
-  const loadMyList = async () => {
+  const loadMyList = async (): Promise<void> => {
     try {
       const bookmarks = await getBookmarks();
       setMyListAnime(bookmarks);
     } catch (error) {
       console.error('Error loading my list:', error);
+      toast.error('Ro\'yxatni yuklashda xatolik yuz berdi');
     } finally {
       setLoading(false);
     }
   };
 
-  const removeFromList = async (animeId: number, e: React.MouseEvent) => {
+  const removeFromList = async (animeId: number, e: React.MouseEvent): Promise<void> => {
     e.preventDefault();
     e.stopPropagation();
+    
     try {
       await removeBookmark(animeId);
       // Update local state immediately for better UX
@@ -41,13 +51,13 @@ const MyList = () => {
       console.error('Error removing from list:', error);
       toast.error('Xatolik yuz berdi');
       // Reload list if there was an error
-      loadMyList();
+      await loadMyList();
     }
   };
 
 
 
-  const sortedAnime = [...myListAnime].sort((a, b) => {
+  const sortedAnime: Anime[] = [...myListAnime].sort((a, b) => {
     switch (sortBy) {
       case 'alphabetical':
         return (a.title || '').localeCompare(b.title || '');
@@ -55,7 +65,9 @@ const MyList = () => {
         return (b.rating || 0) - (a.rating || 0);
       case 'recent':
       default:
-        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
     }
   });
 
@@ -87,13 +99,13 @@ const MyList = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
-          <div className='sm:flex flex-wrap'>
+          <div className="sm:flex flex-wrap">
             <h1 className="text-2xl sm:text-3xl font-bold mb-2">Mening Ro'yxatim</h1>
             <p className="text-gray-400 text-sm sm:text-base">
               {myListAnime.length} ta anime
             </p>
           </div>
-{/* Kamoliddin Mirzaboyev Product */}
+
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-400 hidden sm:inline">Saralash:</span>
             <select
@@ -121,12 +133,12 @@ const MyList = () => {
             <p className="text-gray-400 mb-4 sm:mb-6 max-w-md text-sm sm:text-base">
               Tomosha qilmoqchi bo'lgan animelarni kuzatib borish uchun ro'yxatga qo'shishni boshlang
             </p>
-            <a
-              href="/search"
+            <button
+              onClick={() => window.location.href = '/search'}
               className="px-4 sm:px-6 py-2 sm:py-3 bg-primary rounded-lg hover:bg-primary-dark transition-colors text-sm sm:text-base"
             >
               Anime Qidirish
-            </a>
+            </button>
           </motion.div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
@@ -154,13 +166,6 @@ const MyList = () => {
         )}
       </div>
 
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 };
