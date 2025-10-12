@@ -343,7 +343,7 @@ export default function AnimeDetail() {
     if (isPlaying && !showSettings && !showEpisodeList) {
       hideControlsTimerRef.current = window.setTimeout(() => {
         setShowControls(false);
-      }, 3000);
+      }, 4000); // 4 seconds
     }
   }, [isPlaying, showSettings, showEpisodeList]);
 
@@ -377,26 +377,23 @@ export default function AnimeDetail() {
       // Reset tap time to prevent triple tap
       lastTapRef.current = 0;
     } else {
-      // Single tap - toggle controls visibility with proper timer management
-      setShowControls(prev => {
-        const newShowControls = !prev;
-
-        // Clear existing timer
-        if (hideControlsTimerRef.current) {
-          clearTimeout(hideControlsTimerRef.current);
-          hideControlsTimerRef.current = undefined;
-        }
-
-        // If showing controls, set auto-hide timer
-        if (newShowControls && isPlaying && !showSettings && !showEpisodeList) {
-          hideControlsTimerRef.current = window.setTimeout(() => {
-            setShowControls(false);
-          }, 3000);
-        }
-
-        return newShowControls;
-      });
-
+      // Single tap - show controls and set auto-hide timer
+      // Clear existing timer
+      if (hideControlsTimerRef.current) {
+        clearTimeout(hideControlsTimerRef.current);
+        hideControlsTimerRef.current = undefined;
+      }
+      
+      // Always show controls on tap
+      setShowControls(true);
+      
+      // Set auto-hide timer (only if video is playing and no menus are open)
+      if (isPlaying && !showSettings && !showEpisodeList) {
+        hideControlsTimerRef.current = window.setTimeout(() => {
+          setShowControls(false);
+        }, 4000); // 4 seconds
+      }
+      
       lastTapRef.current = currentTapTime;
     }
   }, [skipTime, togglePlay, isPlaying, showSettings, showEpisodeList]);
@@ -654,8 +651,27 @@ export default function AnimeDetail() {
                 src={videoUrl}
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
-                onPlay={() => { setIsPlaying(true); setIsBuffering(false); }}
-                onPause={() => setIsPlaying(false)}
+                onPlay={() => { 
+                  setIsPlaying(true); 
+                  setIsBuffering(false);
+                  // Restart auto-hide timer when video starts playing
+                  if (showControls && !showSettings && !showEpisodeList) {
+                    if (hideControlsTimerRef.current) {
+                      clearTimeout(hideControlsTimerRef.current);
+                    }
+                    hideControlsTimerRef.current = window.setTimeout(() => {
+                      setShowControls(false);
+                    }, 4000);
+                  }
+                }}
+                onPause={() => { 
+                  setIsPlaying(false);
+                  // Clear auto-hide timer when video is paused
+                  if (hideControlsTimerRef.current) {
+                    clearTimeout(hideControlsTimerRef.current);
+                    hideControlsTimerRef.current = undefined;
+                  }
+                }}
                 onWaiting={() => setIsBuffering(true)}
                 onCanPlay={() => setIsBuffering(false)}
                 onLoadStart={() => setIsBuffering(true)}
