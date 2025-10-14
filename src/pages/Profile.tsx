@@ -19,11 +19,11 @@ const Profile = () => {
       try {
         setIsLoading(true);
         setError('');
-        
+
         // Fetch user profile from API
         const profileData = await getUserProfile();
         setUser(profileData);
-        
+
         // Also update localStorage with fresh data
         localStorage.setItem('user', JSON.stringify(profileData));
 
@@ -41,7 +41,7 @@ const Profile = () => {
 
         setBookmarks(userBookmarks);
         setRecommendations(userRecommendations);
-        
+
         // Debug: Log recommendations data
         console.log('📊 Final recommendations data for Profile:', userRecommendations);
         userRecommendations.forEach((rec, index) => {
@@ -54,12 +54,12 @@ const Profile = () => {
             hasImage: !!rec.thumbnail
           });
         });
-        
+
       } catch (err) {
         const apiError = err as ApiError;
         setError(apiError.message || 'Profil ma\'lumotlarini yuklashda xatolik');
         console.error('Profile fetch error:', err);
-        
+
         // Fallback to localStorage data if API fails
         const userData = localStorage.getItem('user');
         if (userData) {
@@ -224,8 +224,10 @@ const Profile = () => {
                     <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gradient-to-br from-dark-light to-dark">
                       {anime.thumbnail ? (
                         <>
+                          {console.log(`Tavsiya rasmi:  https://api.aniki.uz/${anime.thumbnail}`)}
                           <img
                             src={`https://api.aniki.uz/${anime.thumbnail}`}
+
                             alt={anime.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {

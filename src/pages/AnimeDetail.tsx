@@ -744,7 +744,7 @@ export default function AnimeDetail() {
                       <div className="flex-1 text-white min-w-0">
                         <h1 className="font-semibold truncate text-base sm:text-lg">{anime.title}</h1>
                         <p className="text-xs sm:text-sm text-gray-300 truncate">
-                          {anime.type === 'movie' ? 'Film' : `Episode ${currentEpisode?.episode_number}`}
+                          {anime.type === 'movie' ? 'Film' : `${currentEpisode?.episode_number}-Qism`}
                           {currentEpisode?.title && ` - ${currentEpisode.title}`}
                         </p>
                       </div>
@@ -1018,7 +1018,7 @@ export default function AnimeDetail() {
                 className="absolute top-0 right-0 w-80 h-full bg-dark z-50 lg:hidden overflow-hidden"
               >
                 <div className="p-4 border-b border-dark-lighter flex items-center justify-between">
-                  <h3 className="text-white font-semibold">Episodes</h3>
+                  <h3 className="text-white font-semibold">Qismlar</h3>
                   <button
                     onClick={() => setShowEpisodeList(false)}
                     className="p-2 hover:bg-white/10 rounded-full transition-colors"
@@ -1041,7 +1041,7 @@ export default function AnimeDetail() {
                           className="w-20 h-12 object-cover rounded"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium text-sm">Episode {ep.episode_number}</p>
+                          <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
                           <p className="text-gray-400 text-xs truncate">{ep.title}</p>
                           {ep.duration && <p className="text-gray-500 text-xs mt-1">{ep.duration}</p>}
                         </div>
@@ -1057,8 +1057,8 @@ export default function AnimeDetail() {
           {!isFullscreen && anime.type === 'series' && (
             <div className="hidden lg:block absolute top-0 right-0 w-80 h-full bg-dark border-l border-dark-lighter overflow-hidden">
               <div className="p-4 border-b border-dark-lighter">
-                <h3 className="text-white font-semibold">Episodes</h3>
-                <p className="text-sm text-gray-400 mt-1">{anime.episodes.length} Episodes</p>
+                <h3 className="text-white font-semibold">Qismlar</h3>
+                <p className="text-sm text-gray-400 mt-1">{anime.episodes.length} Qism</p>
               </div>
               <div className="overflow-y-auto h-full pb-4 max-h-[calc(100vh-120px)] custom-scrollbar">
                 {anime.episodes.map((ep) => (
@@ -1075,7 +1075,7 @@ export default function AnimeDetail() {
                         className="w-20 h-12 object-cover rounded"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm">Episode {ep.episode_number}</p>
+                        <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
                         <p className="text-gray-400 text-xs truncate">{ep.title}</p>
                         {ep.duration && <p className="text-gray-500 text-xs mt-1">{ep.duration}</p>}
                       </div>
@@ -1119,7 +1119,7 @@ export default function AnimeDetail() {
             "@type": "AggregateRating",
             "ratingValue": anime.rating || 8.5,
             "ratingCount": 1000,
-            "bestRating": 10,
+            "bestRating": 5,
             "worstRating": 1
           },
           "numberOfEpisodes": anime.totalEpisodes || anime.episodes?.length || 0,
@@ -1188,7 +1188,7 @@ export default function AnimeDetail() {
                   <span className="text-gray-400 hidden sm:inline">•</span>
                   <div className="flex items-center gap-1 sm:gap-2">
                     <Film className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>{anime.totalEpisodes || 0} Epizod</span>
+                    <span>{anime.type === 'movie' ? 'Film' : `${anime.totalEpisodes || 0} Qism`}</span>
                   </div>
                   <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
                     ? 'bg-green-500/10 text-green-400 border-green-500/30'
@@ -1286,8 +1286,8 @@ export default function AnimeDetail() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Epizodlar:</span>
-                    <span className="font-semibold">{anime.totalEpisodes || 0}</span>
+                    <span className="text-gray-400">{anime.type === 'movie' ? 'Turi:' : 'Qismlar:'}</span>
+                    <span className="font-semibold">{anime.type === 'movie' ? 'Film' : (anime.totalEpisodes || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Yil:</span>
@@ -1296,7 +1296,7 @@ export default function AnimeDetail() {
                   {anime.rating && anime.rating > 0 && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">Reyting:</span>
-                      <span className="font-semibold">{anime.rating}/10</span>
+                      <span className="font-semibold">{anime.rating.toFixed(1)}/5</span>
                     </div>
                   )}
                 </div>
@@ -1304,9 +1304,9 @@ export default function AnimeDetail() {
             </div>
           </div>
 
-          {anime.episodes && anime.episodes.length > 0 && (
+          {anime.episodes && anime.episodes.length > 0 && anime.type === 'series' && (
             <div className="mb-8 sm:mb-12">
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Epizodlar</h2>
+              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Qismlar</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
                 {anime.episodes.map((episode: any) => (
                   <button
@@ -1333,7 +1333,7 @@ export default function AnimeDetail() {
                       </div>
                     </div>
                     <h3 className="font-semibold text-xs sm:text-sm group-hover:text-primary transition-colors line-clamp-2">
-                      {episode.title || `Episode ${episode.episode_number}`}
+                      {episode.title || `${episode.episode_number}-Qism`}
                     </h3>
                   </button>
                 ))}

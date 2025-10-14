@@ -24,8 +24,34 @@ interface RatingsSectionProps {
 const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loading = false, userRating }: RatingsSectionProps) => {
   const [showAllRatings, setShowAllRatings] = useState(false);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'highest' | 'lowest'>('newest');
+  const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
 
   const isLoggedIn = localStorage.getItem('access_token');
+
+  // Toggle comment expansion
+  const toggleCommentExpansion = (ratingId: number) => {
+    const newExpanded = new Set(expandedComments);
+    if (newExpanded.has(ratingId)) {
+      newExpanded.delete(ratingId);
+    } else {
+      newExpanded.add(ratingId);
+    }
+    setExpandedComments(newExpanded);
+  };
+
+  // Check if comment should be truncated
+  const shouldTruncateComment = (comment: string) => {
+    return comment && comment.length > 100;
+  };
+
+  // Get truncated comment
+  const getTruncatedComment = (comment: string, isExpanded: boolean) => {
+    if (!comment) return '';
+    if (!shouldTruncateComment(comment) || isExpanded) {
+      return comment;
+    }
+    return comment.substring(0, 100) + '...';
+  };
 
   // Sort ratings based on selected option
   const sortedRatings = [...ratings].sort((a, b) => {
@@ -261,9 +287,21 @@ const RatingsSection = ({ ratings, averageRating, ratingsCount, onAddRating, loa
                           </span>
                         </div>
                       </div>
-                      <p className="text-gray-300 text-sm leading-relaxed">
-                        {rating.comment}
-                      </p>
+                      {rating.comment && (
+                        <div className="text-gray-300 text-sm leading-relaxed">
+                          <p className="mb-2">
+                            {getTruncatedComment(rating.comment, expandedComments.has(rating.id))}
+                          </p>
+                          {shouldTruncateComment(rating.comment) && (
+                            <button
+                              onClick={() => toggleCommentExpansion(rating.id)}
+                              className="text-primary hover:text-primary-light text-xs font-medium transition-colors"
+                            >
+                              {expandedComments.has(rating.id) ? 'Kamroq o\'qish' : 'Ko\'proq o\'qish...'}
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>
