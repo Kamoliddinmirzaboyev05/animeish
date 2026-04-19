@@ -176,6 +176,17 @@ export default function AnimeDetail() {
           video_url: detailedEp.video_url || episode.video_url
         });
         setVideoUrl(detailedEp.video_url || episode.video_url);
+
+        // Update view count in episodes list
+        setAnime(prev => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            episodes: prev.episodes.map(ep =>
+              ep.id === episode.id ? { ...ep, viewCount: detailedEp.viewCount } : ep
+            )
+          };
+        });
       } else {
         setCurrentEpisode(episode);
         setVideoUrl(episode.video_url);
@@ -771,9 +782,18 @@ export default function AnimeDetail() {
 
                       <div className="flex-1 text-white min-w-0">
                         <h1 className="font-semibold truncate text-base sm:text-lg">{anime.title}</h1>
-                        <p className="text-xs sm:text-sm text-gray-300 truncate">
-                          {anime.type === 'movie' ? 'Film' : `${currentEpisode?.episode_number}-Qism`}
-                          {currentEpisode?.title && ` - ${currentEpisode.title}`}
+                        <p className="text-xs sm:text-sm text-gray-300 truncate flex items-center gap-2">
+                          <span>
+                            {anime.type === 'movie' ? 'Film' : `${currentEpisode?.episode_number}-Qism`}
+                            {currentEpisode?.title && ` - ${currentEpisode.title}`}
+                          </span>
+                          {currentEpisode?.viewCount !== undefined && (
+                            <span className="flex items-center gap-1 opacity-80">
+                              <span className="w-1 h-1 bg-gray-400 rounded-full" />
+                              <Eye className="w-3 h-3" />
+                              {currentEpisode.viewCount}
+                            </span>
+                          )}
                         </p>
                       </div>
 
@@ -1389,6 +1409,12 @@ export default function AnimeDetail() {
                     <h3 className="font-semibold text-xs sm:text-sm group-hover:text-primary transition-colors line-clamp-2">
                       {episode.title || `${episode.episode_number}-Qism`}
                     </h3>
+                    {episode.viewCount !== undefined && (
+                      <div className="flex items-center gap-1 text-gray-500 text-[10px] sm:text-xs mt-0.5">
+                        <Eye className="w-2.5 h-2.5 sm:w-3 h-3" />
+                        <span>{episode.viewCount} marta ko'rilgan</span>
+                      </div>
+                    )}
                   </button>
                 ))}
               </div>

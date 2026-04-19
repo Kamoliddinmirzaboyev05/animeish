@@ -566,7 +566,7 @@ const transformAnimeData = (apiData: any) => {
             first_name: rating.first_name || 'Anonim',
             is_comment: rating.is_comment
         })) || [],
-        ratingsCount: apiData.ratings?.length || 0,
+        ratingsCount: apiData.rating_count || apiData.ratings?.length || 0,
         averageRating: apiData.rating_avg || 0,
         // Additional API fields
         type: apiData.type,
@@ -727,15 +727,26 @@ export const searchAnime = async (query: string): Promise<any[]> => {
 
 export const fetchAnimeById = async (id: number): Promise<any | null> => {
     try {
+        const token = getAuthToken();
+        const headers: any = {
+            'Content-Type': 'application/json',
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         // Try fetching individual movie data first for more details (like view_count)
-        const response = await cachedFetch(`${API_BASE_URL}/movie/${id}/`, undefined, 10);
+        const response = await fetch(`${API_BASE_URL}/movie/${id}/`, {
+            headers
+        });
         
         if (response.ok) {
             const data = await response.json();
             return transformAnimeData(data);
         }
         
-        // Fallback to list if individual fetch fails
+        // Fallback to list if individual fetch fails (no auth needed for list usually)
         const listResponse = await cachedFetch(`${API_BASE_URL}/movies/`, undefined, 15);
         if (!listResponse.ok) {
             throw new Error('Failed to fetch anime list');
@@ -784,7 +795,19 @@ export const fetchAnimeBySlug = async (slug: string): Promise<any | null> => {
 
 export const fetchEpisodeById = async (id: number): Promise<any | null> => {
     try {
-        const response = await cachedFetch(`${API_BASE_URL}/episodes/${id}/`, undefined, 30);
+        const token = getAuthToken();
+        const headers: any = {
+            'Content-Type': 'application/json',
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/episodes/${id}/`, {
+            headers
+        });
+        
         if (!response.ok) {
             throw new Error(`Failed to fetch episode: ${response.status}`);
         }
