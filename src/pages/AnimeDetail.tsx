@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
-  Star, Play, Pause, Heart, Calendar, Film, MessageSquare, ChevronLeft,
+  Star, Play, Pause, Heart, Calendar, Film, ChevronLeft,
   Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward,
   Settings, RotateCcw, RotateCw, X, List, Eye
 } from 'lucide-react';
@@ -102,7 +102,6 @@ export default function AnimeDetail() {
   const fetchedRef = useRef<string | null>(null);
 
   const [showRatingModal, setShowRatingModal] = useState(false);
-  const [checkingRating, setCheckingRating] = useState(false);
 
   // Video Player State
   const [isWatchMode, setIsWatchMode] = useState(false);
@@ -295,13 +294,38 @@ export default function AnimeDetail() {
   }, [duration]);
 
   const toggleFullscreen = useCallback(async () => {
-    if (!containerRef.current) return;
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
+    if (!containerRef.current || !videoRef.current) return;
+    const video = videoRef.current;
+    const container = containerRef.current;
 
-        // Mobile landscape orientation
+    try {
+      // Check if already in fullscreen (standard and non-standard)
+      const isCurrentlyFullscreen = 
+        document.fullscreenElement || 
+        // @ts-ignore
+        document.webkitFullscreenElement || 
+        // @ts-ignore
+        video.webkitDisplayingFullscreen;
+
+      if (!isCurrentlyFullscreen) {
+        // 1. Try standard Fullscreen API on container
+        if (container.requestFullscreen) {
+          await container.requestFullscreen();
+        } 
+        // 2. Try iOS Safari webkitEnterFullscreen on video element
+        // @ts-ignore
+        else if (video.webkitEnterFullscreen) {
+          // @ts-ignore
+          video.webkitEnterFullscreen();
+        }
+        // 3. Try older webkitRequestFullscreen on container
+        // @ts-ignore
+        else if (container.webkitRequestFullscreen) {
+          // @ts-ignore
+          container.webkitRequestFullscreen();
+        }
+
+        // Mobile landscape orientation lock
         if (screen.orientation && 'lock' in screen.orientation) {
           try {
             await (screen.orientation as any).lock('landscape');
@@ -310,10 +334,22 @@ export default function AnimeDetail() {
           }
         }
       } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
+        // Exit fullscreen (standard and non-standard)
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } 
+        // @ts-ignore
+        else if (document.webkitExitFullscreen) {
+          // @ts-ignore
+          document.webkitExitFullscreen();
+        }
+        // @ts-ignore
+        else if (video.webkitExitFullscreen) {
+          // @ts-ignore
+          video.webkitExitFullscreen();
+        }
 
-        // Unlock orientation when exiting fullscreen
+        // Unlock orientation
         if (screen.orientation && 'unlock' in screen.orientation) {
           try {
             (screen.orientation as any).unlock();
@@ -325,6 +361,38 @@ export default function AnimeDetail() {
     } catch (err) {
       console.error('Fullscreen error:', err);
     }
+  }, []);
+
+  // Fullscreen event listeners to sync state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(
+        !!document.fullscreenElement || 
+        // @ts-ignore
+        !!document.webkitFullscreenElement
+      );
+    };
+
+    const handleWebkitBeginFullscreen = () => setIsFullscreen(true);
+    const handleWebkitEndFullscreen = () => setIsFullscreen(false);
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+      video.addEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
+    }
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (video) {
+        video.removeEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+        video.removeEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
+      }
+    };
   }, []);
 
   const changeSpeed = useCallback((speed: number) => {
@@ -707,6 +775,9 @@ export default function AnimeDetail() {
                 ref={videoRef}
                 className="w-full h-full object-contain bg-black cursor-pointer"
                 src={videoUrl}
+                playsInline
+                // @ts-ignore
+                webkit-playsinline="true"
                 onLoadedMetadata={handleLoadedMetadata}
                 onTimeUpdate={handleTimeUpdate}
                 onPlay={() => {
@@ -737,7 +808,6 @@ export default function AnimeDetail() {
                 onEnded={handleVideoEnded}
                 onClick={handleVideoClick}
                 onTouchEnd={handleVideoTap}
-                playsInline
                 preload="auto"
                 autoPlay={isPlaying}
                 crossOrigin="anonymous"
@@ -1314,26 +1384,19 @@ export default function AnimeDetail() {
                   {isLoggedIn && (
                     <button
                       onClick={handleRatingClick}
-                      disabled={checkingRating || !!userRating}
+                      disabled={!!userRating}
                       className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-2 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${userRating
                         ? 'bg-green-500/20 text-green-400 border-green-500/30 cursor-not-allowed opacity-75'
                         : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
-                        } ${checkingRating ? 'opacity-50 cursor-wait' : ''}`}
+                        }`}
                       title={userRating ? `Siz ${userRating.score}/5 reyting bergansiz` : 'Reyting berish'}
                     >
-                      {checkingRating ? (
-                        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      ) : userRating ? (
+                      {userRating ? (
                         <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                       ) : (
-                        <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5" />
                       )}
-                      <span className="hidden sm:inline">
-                        {userRating ? `${userRating.score}/5 Berilgan` : 'Baholash'}
-                      </span>
-                      <span className="sm:hidden">
-                        {userRating ? `${userRating.score}/5` : 'Baholash'}
-                      </span>
+                      <span>{userRating ? `${userRating.score}/5 Berilgan` : 'Baholash'}</span>
                     </button>
                   )}
                 </div>

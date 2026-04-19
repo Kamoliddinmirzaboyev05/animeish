@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { User, Heart, TrendingUp, Crown, Calendar, Loader2, ChevronLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getBookmarks, getRecommendations } from '../services/api';
