@@ -30,27 +30,16 @@ const Profile = () => {
 
         // Fetch user bookmarks and recommendations in parallel
         const [userBookmarks, userRecommendations] = await Promise.all([
-          getBookmarks().catch((error) => {
+          getBookmarks().catch(() => {
             return [];
           }),
-          getRecommendations().catch((error) => {
+          getRecommendations().catch(() => {
             return [];
           })
         ]);
 
         setBookmarks(userBookmarks);
         setRecommendations(userRecommendations);
-
-        // Debug: Log recommendations data
-        userRecommendations.forEach((rec, index) => {
-            id: rec.id,
-            title: rec.title,
-            thumbnail: rec.thumbnail,
-            banner: rec.banner,
-            rating: rec.rating,
-            hasImage: !!rec.thumbnail
-          });
-        });
 
       } catch (err) {
         const apiError = err as ApiError;

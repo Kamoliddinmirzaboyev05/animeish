@@ -905,7 +905,7 @@ export const getRecommendations = async (): Promise<any[]> => {
         }
 
         // Transform the data to match our anime format
-        const transformedData = data.map((item: any, index: number) => {
+        const transformedData = data.map((item: any) => {
             // Handle different possible API response formats
             const animeData = item.anime || item.movie || item;
             

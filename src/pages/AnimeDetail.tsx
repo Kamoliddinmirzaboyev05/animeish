@@ -398,14 +398,26 @@ export default function AnimeDetail() {
 
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+  const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     e.stopPropagation(); // Prevent video click handler
-    if (!progressBarRef.current || !videoRef.current) return;
+    if (!progressBarRef.current || !videoRef.current || !isFinite(duration) || duration <= 0) return;
+    
     const rect = progressBarRef.current.getBoundingClientRect();
-    const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    let clientX: number;
+    
+    if ('clientX' in e) {
+      clientX = e.clientX;
+    } else {
+      clientX = e.touches[0].clientX;
+    }
+    
+    const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
     const newTime = pos * duration;
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+    
+    if (isFinite(newTime)) {
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   }, [duration]);
 
   const handleProgressMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -415,12 +427,15 @@ export default function AnimeDetail() {
   }, [handleProgressClick]);
 
   const handleProgressMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !progressBarRef.current || !videoRef.current) return;
+    if (!isDragging || !progressBarRef.current || !videoRef.current || !isFinite(duration) || duration <= 0) return;
     const rect = progressBarRef.current.getBoundingClientRect();
     const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const newTime = pos * duration;
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
+    
+    if (isFinite(newTime)) {
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
   }, [isDragging, duration]);
 
   const handleProgressMouseUp = useCallback(() => {
@@ -431,14 +446,17 @@ export default function AnimeDetail() {
   useEffect(() => {
     if (isDragging) {
       const handleTouchMove = (e: TouchEvent) => {
-        if (!progressBarRef.current || !videoRef.current) return;
+        if (!progressBarRef.current || !videoRef.current || !isFinite(duration) || duration <= 0) return;
         e.preventDefault();
         const touch = e.touches[0];
         const rect = progressBarRef.current.getBoundingClientRect();
         const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
         const newTime = pos * duration;
-        videoRef.current.currentTime = newTime;
-        setCurrentTime(newTime);
+        
+        if (isFinite(newTime)) {
+          videoRef.current.currentTime = newTime;
+          setCurrentTime(newTime);
+        }
       };
 
       const handleTouchEnd = () => {
@@ -765,7 +783,7 @@ export default function AnimeDetail() {
               <video
                 ref={videoRef}
                 className="w-full h-full object-contain bg-black cursor-pointer"
-                src={videoUrl}
+                src={videoUrl || undefined}
                 playsInline
                 // @ts-ignore
                 webkit-playsinline="true"
@@ -917,14 +935,16 @@ export default function AnimeDetail() {
                           handleProgressClick(e as any);
                         }}
                         onTouchMove={(e) => {
-                          if (!isDragging || !progressBarRef.current || !videoRef.current) return;
+                          if (!isDragging || !progressBarRef.current || !videoRef.current || !isFinite(duration) || duration <= 0) return;
                           e.preventDefault();
                           const touch = e.touches[0];
                           const rect = progressBarRef.current.getBoundingClientRect();
                           const pos = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
                           const newTime = pos * duration;
-                          videoRef.current.currentTime = newTime;
-                          setCurrentTime(newTime);
+                          if (isFinite(newTime)) {
+                            videoRef.current.currentTime = newTime;
+                            setCurrentTime(newTime);
+                          }
                         }}
                         onTouchEnd={() => setIsDragging(false)}
                       >
