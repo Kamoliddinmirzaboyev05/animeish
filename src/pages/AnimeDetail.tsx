@@ -99,6 +99,8 @@ export default function AnimeDetail() {
   const [userRating, setUserRating] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchedRef = useRef<string | null>(null);
+
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [checkingRating, setCheckingRating] = useState(false);
 
@@ -128,6 +130,10 @@ export default function AnimeDetail() {
     const loadData = async () => {
       if (!slug) return;
       
+      // Prevent duplicate fetches for the same slug in a short time
+      if (fetchedRef.current === slug) return;
+      fetchedRef.current = slug;
+      
       try {
         setLoading(true);
         const data = await fetchAnimeBySlug(slug);
@@ -143,10 +149,18 @@ export default function AnimeDetail() {
           const saved = await checkBookmarkStatus(Number(data.id));
           setIsSaved(saved);
 
-          setCheckingRating(true);
-          const rating = await checkUserRating(Number(data.id));
-          setUserRating(rating);
-          setCheckingRating(false);
+          // Find user rating from the already fetched anime data to avoid extra API call
+          const currentUserEmail = localStorage.getItem('userEmail');
+          const currentUserId = localStorage.getItem('userId');
+          
+          if (data.ratings && (currentUserEmail || currentUserId)) {
+            const rating = data.ratings.find((r: any) => {
+              const ratingUser = r.user?.toLowerCase?.() || r.user;
+              const currentUser = currentUserEmail?.toLowerCase();
+              return ratingUser === currentUser || ratingUser === currentUserId?.toString();
+            });
+            setUserRating(rating || null);
+          }
         }
       } catch (err) {
         setError('Ma\'lumotlarni yuklashda xatolik');
@@ -157,6 +171,11 @@ export default function AnimeDetail() {
     };
 
     loadData();
+
+    // Reset fetchedRef when slug changes
+    return () => {
+      // We don't necessarily want to reset it immediately on cleanup if it's the same slug
+    };
   }, [slug, isLoggedIn]);
 
   // ==========================================

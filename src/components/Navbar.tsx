@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, Menu, X, User, LogOut } from 'lucide-react';
+import { Bell, Menu, X, User, LogOut, Youtube, Instagram, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getNotifications } from '../services/api';
 
@@ -51,11 +51,45 @@ const Navbar = () => {
   const isLoggedIn = localStorage.getItem('access_token');
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-dark/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
-      }`}
-    >
+    <>
+      {/* Top Bar - Social Links */}
+      <div className="fixed top-0 left-0 right-0 z-[60] h-8 bg-dark-light border-b border-dark-lighter hidden sm:flex items-center">
+        <div className="max-w-7xl mx-auto px-4 w-full flex justify-end gap-6">
+          <a
+            href="https://t.me/Anikiuz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Telegram</span>
+          </a>
+          <a
+            href="https://instagram.com/anikiuz"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
+          >
+            <Instagram className="w-3.5 h-3.5" />
+            <span>Instagram</span>
+          </a>
+          <a
+            href="https://www.youtube.com/@Anikirasmiy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
+          >
+            <Youtube className="w-3.5 h-3.5" />
+            <span>YouTube</span>
+          </a>
+        </div>
+      </div>
+
+      <nav
+        className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled ? 'bg-dark/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
+        } ${scrolled ? 'top-0' : 'top-8'}`}
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-0 lg:px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
@@ -222,6 +256,7 @@ const Navbar = () => {
         )}
       </AnimatePresence>
     </nav>
+    </>
   );
 };
 
