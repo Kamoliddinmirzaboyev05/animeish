@@ -9,6 +9,7 @@ import { getBookmarks, removeBookmark } from '../services/api';
 
 interface Anime {
   id: number;
+  slug: string;
   title: string;
   rating?: number;
   created_at?: string;

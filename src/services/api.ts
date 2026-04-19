@@ -755,6 +755,33 @@ export const fetchAnimeById = async (id: number): Promise<any | null> => {
     }
 };
 
+export const fetchAnimeBySlug = async (slug: string): Promise<any | null> => {
+    try {
+        // If slug is actually a number, fetch by ID directly
+        if (!isNaN(Number(slug))) {
+            return await fetchAnimeById(Number(slug));
+        }
+
+        const response = await cachedFetch(`${API_BASE_URL}/movies/`, undefined, 15);
+        if (!response.ok) {
+            throw new Error('Failed to fetch anime list');
+        }
+        const data = await response.json();
+
+        const anime = data.find((item: any) => item.slug === slug);
+
+        if (anime) {
+            // After finding the anime in the list, fetch its full details by ID to get viewCount and episodes
+            return await fetchAnimeById(anime.id);
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error('❌ Error fetching anime by slug:', error);
+        return null;
+    }
+};
+
 export const fetchEpisodeById = async (id: number): Promise<any | null> => {
     try {
         const response = await cachedFetch(`${API_BASE_URL}/episodes/${id}/`, undefined, 30);

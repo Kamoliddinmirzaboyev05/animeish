@@ -12,9 +12,11 @@ import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import RatingModal from '../components/RatingModal';
 import RatingsSection from '../components/RatingsSection';
+import Image from '../components/Image';
 import { AnimeDetailSkeleton } from '../components/Skeletons';
 import {
   fetchAnimeById,
+  fetchAnimeBySlug,
   fetchEpisodeById,
   addBookmark,
   removeBookmark,
@@ -39,6 +41,7 @@ interface Episode {
 
 interface Anime {
   id: number;
+  slug: string;
   title: string;
   description: string;
   banner: string;
@@ -76,7 +79,7 @@ const formatTime = (time: number): string => {
 // MAIN COMPONENT
 // ==========================================
 export default function AnimeDetail() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
 
   // Refs
@@ -123,17 +126,25 @@ export default function AnimeDetail() {
   // ==========================================
   useEffect(() => {
     const loadData = async () => {
+      if (!slug) return;
+      
       try {
         setLoading(true);
-        const data = await fetchAnimeById(Number(id));
+        const data = await fetchAnimeBySlug(slug);
+        
+        if (!data) {
+          setError('Anime topilmadi');
+          return;
+        }
+        
         setAnime(data);
 
         if (isLoggedIn) {
-          const saved = await checkBookmarkStatus(Number(id));
+          const saved = await checkBookmarkStatus(Number(data.id));
           setIsSaved(saved);
 
           setCheckingRating(true);
-          const rating = await checkUserRating(Number(id));
+          const rating = await checkUserRating(Number(data.id));
           setUserRating(rating);
           setCheckingRating(false);
         }
@@ -146,7 +157,7 @@ export default function AnimeDetail() {
     };
 
     loadData();
-  }, [id, isLoggedIn]);
+  }, [slug, isLoggedIn]);
 
   // ==========================================
   // VIDEO PLAYER LOGIC
@@ -549,11 +560,11 @@ export default function AnimeDetail() {
 
     try {
       if (isSaved) {
-        await removeBookmark(Number(id));
+        await removeBookmark(Number(anime?.id));
         setIsSaved(false);
         toast.success('Ro\'yxatdan olib tashlandi');
       } else {
-        await addBookmark(Number(id));
+        await addBookmark(Number(anime?.id));
         setIsSaved(true);
         toast.success('Ro\'yxatga qo\'shildi');
       }
@@ -590,11 +601,11 @@ export default function AnimeDetail() {
       await new Promise(resolve => setTimeout(resolve, 500));
 
       // Force refresh by fetching fresh data
-      const animeData = await fetchAnimeById(Number(id));
+      const animeData = await fetchAnimeById(Number(anime?.id));
       setAnime(animeData);
 
       // Check user rating again
-      const rating = await checkUserRating(Number(id));
+      const rating = await checkUserRating(Number(anime?.id));
       setUserRating(rating);
 
       // Show success message
@@ -1052,12 +1063,12 @@ export default function AnimeDetail() {
                         }`}
                     >
                       <div className="flex gap-3">
-                        <img
-                          src={ep.thumbnail || anime.thumbnail}
-                          alt={ep.title}
-                          className="w-20 h-12 object-cover rounded"
-                        />
-                        <div className="flex-1 min-w-0">
+                  <Image
+                    src={ep.thumbnail || anime.thumbnail}
+                    alt={ep.title}
+                    className="w-20 h-12 rounded"
+                  />
+                  <div className="flex-1 min-w-0">
                           <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
                           <p className="text-gray-400 text-xs truncate">{ep.title}</p>
                           <div className="flex items-center gap-2 mt-1">
@@ -1094,10 +1105,10 @@ export default function AnimeDetail() {
                       }`}
                   >
                     <div className="flex gap-3">
-                      <img
+                      <Image
                         src={ep.thumbnail || anime.thumbnail}
                         alt={ep.title}
-                        className="w-20 h-12 object-cover rounded"
+                        className="w-20 h-12 rounded"
                       />
                       <div className="flex-1 min-w-0">
                       <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
@@ -1135,7 +1146,7 @@ export default function AnimeDetail() {
         description={`${anime.title} anime serialini yuqori sifatda va bepul tomosha qiling. ${anime.description || 'Eng yaxshi anime streaming platformasi Aniki da.'}`}
         keywords={`${anime.title}, anime, anime uzbek, ${anime.genres?.join(', ') || 'anime serial'}, anime tomosha, aniki`}
         image={anime.banner || anime.thumbnail}
-        url={`https://aniki.uz/anime/${anime.id}`}
+        url={`https://aniki.uz/anime/${anime.slug}`}
         type="video.tv_show"
       />
       <StructuredData
@@ -1145,7 +1156,7 @@ export default function AnimeDetail() {
           "name": anime.title,
           "description": anime.description || `${anime.title} anime seriali`,
           "image": anime.banner || anime.thumbnail,
-          "url": `https://aniki.uz/anime/${anime.id}`,
+          "url": `https://aniki.uz/anime/${anime.slug}`,
           "genre": anime.genres || [],
           "datePublished": anime.year,
           "aggregateRating": {
@@ -1178,10 +1189,11 @@ export default function AnimeDetail() {
       <div className="pt-16">
         {/* Hero Banner */}
         <div className="relative h-[50vh] sm:h-[60vh]">
-          <img
+          <Image
             src={anime.banner}
             alt={anime.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full"
+            priority={true}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-transparent" />
 
@@ -1357,10 +1369,10 @@ export default function AnimeDetail() {
                     className="group text-left w-full"
                   >
                     <div className="relative aspect-video rounded-lg overflow-hidden bg-dark-light mb-1 sm:mb-2">
-                      <img
+                      <Image
                         src={episode.thumbnail}
                         alt={episode.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        className="w-full h-full transition-transform duration-300 group-hover:scale-110"
                       />
                       {episode.watched && (
                         <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 h-4 sm:w-6 sm:h-6 bg-primary rounded-full flex items-center justify-center">
@@ -1398,7 +1410,7 @@ export default function AnimeDetail() {
       <RatingModal
         isOpen={showRatingModal}
         onClose={() => setShowRatingModal(false)}
-        animeId={Number(id)}
+        animeId={Number(anime?.id)}
         animeTitle={anime?.title || ''}
 
         onRatingSubmitted={handleRatingSubmitted}

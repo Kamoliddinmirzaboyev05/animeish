@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 
 // Lazy load pages for performance
 const Login = lazy(() => import('./pages/Login'));
@@ -28,6 +29,7 @@ const PageLoader = () => (
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -47,8 +49,8 @@ function App() {
           
           <Route path="/home" element={<Home />} />
           
-          <Route path="/anime/:id" element={<AnimeDetail />} />
-          <Route path="/watch/:animeId/:episodeNumber" element={<VideoPlayer />} />
+          <Route path="/anime/:slug" element={<AnimeDetail />} />
+          <Route path="/watch/:slug/:episodeNumber" element={<VideoPlayer />} />
           <Route path="/search" element={<Search />} />
           
           <Route

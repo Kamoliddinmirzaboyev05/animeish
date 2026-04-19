@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 const VideoPlayer = () => {
-  const { animeId } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Redirect to AnimeDetail page which now handles video playing
-    navigate(`/anime/${animeId}`, { replace: true });
-  }, [animeId, navigate]);
+    navigate(`/anime/${slug}`, { replace: true });
+  }, [slug, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Play, Info, ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { addBookmark, removeBookmark, checkBookmarkStatus, getAuthToken } from '../services/api';
+import Image from './Image';
 interface HeroSliderProps {
   anime: any[];
 }
@@ -99,20 +100,14 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          {current.banner ? (
-            <img
-              src={current.banner}
-              alt={current.title}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // Replace with gradient background if image fails
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-primary/20 via-dark to-primary/20" />
-          )}
+          <Image
+            src={current.banner}
+            alt={current.title}
+            className="w-full h-full"
+            priority={true}
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent" />
         </motion.div>
       </AnimatePresence>
 
@@ -169,7 +164,7 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <Link
-                to={`/watch/${current.movieId || current.id}/1`}
+                to={`/watch/${current.slug}/1`}
                 className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-primary hover:bg-primary-dark rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
               >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
@@ -177,7 +172,7 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
               </Link>
               <div className="flex gap-2 sm:gap-3">
                 <Link
-                  to={`/anime/${current.movieId || current.id}`}
+                  to={`/anime/${current.slug}`}
                   className="flex-1 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
                 >
                   <Info className="w-4 h-4 sm:w-5 sm:h-5" />

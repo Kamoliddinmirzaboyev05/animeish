@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import { User, Heart, TrendingUp, Crown, Calendar, Loader2, ChevronLeft } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import { getBookmarks, getRecommendations } from '../services/api';
@@ -213,61 +214,45 @@ const Profile = () => {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 {recommendations.slice(0, 6).map((anime, index) => (
-                  <motion.a
+                  <motion.div
                     key={anime.id}
-                    href={`/anime/${anime.id}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.2 + index * 0.05 }}
-                    className="group block"
                   >
-                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gradient-to-br from-dark-light to-dark">
-                      {anime.thumbnail ? (
-                        <>
-                          {console.log(`Tavsiya rasmi:  https://api.aniki.uz/${anime.thumbnail}`)}
+                    <Link
+                      to={`/anime/${anime.slug}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-dark">
+                        {anime.thumbnail ? (
                           <img
-                            src={`${anime.thumbnail}`}
-
+                            src={anime.thumbnail}
                             alt={anime.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            onError={(e) => {
-                              console.log('🖼️ Image failed to load:', anime.thumbnail);
-                              // Replace with fallback content
-                              const container = (e.target as HTMLImageElement).parentElement;
-                              if (container) {
-                                container.innerHTML = `
-                                  <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
-                                    <div class="text-center p-2">
-                                      <div class="text-2xl mb-1">🎬</div>
-                                      <div class="text-xs text-gray-400 line-clamp-2">${anime.title}</div>
-                                    </div>
-                                  </div>
-                                `;
-                              }
-                            }}
                           />
-                        </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
-                          <div className="text-center p-2">
-                            <div className="text-2xl mb-1">🎬</div>
-                            <div className="text-xs text-gray-400 line-clamp-2">{anime.title}</div>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-800">
+                            <div className="text-center p-2">
+                              <div className="text-2xl mb-1">🎬</div>
+                              <div className="text-xs text-gray-400 line-clamp-2">{anime.title}</div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <h3 className="text-xs font-semibold line-clamp-2">{anime.title}</h3>
+                            {anime.rating && anime.rating > 0 && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                                <span className="text-xs text-yellow-400">{anime.rating.toFixed(1)}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <h3 className="text-xs font-semibold line-clamp-2">{anime.title}</h3>
-                          {anime.rating && anime.rating > 0 && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                              <span className="text-xs text-yellow-400">{anime.rating.toFixed(1)}</span>
-                            </div>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                  </motion.a>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -304,27 +289,30 @@ const Profile = () => {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                 {bookmarks.slice(0, 6).map((anime, index) => (
-                  <motion.a
+                  <motion.div
                     key={anime.id}
-                    href={`/anime/${anime.id}`}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4 + index * 0.05 }}
-                    className="group block"
                   >
-                    <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-dark">
-                      <img
-                        src={anime.thumbnail}
-                        alt={anime.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <h3 className="text-xs font-semibold line-clamp-2">{anime.title}</h3>
+                    <Link
+                      to={`/anime/${anime.slug}`}
+                      className="group block"
+                    >
+                      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-dark">
+                        <img
+                          src={anime.thumbnail}
+                          alt={anime.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <h3 className="text-xs font-semibold line-clamp-2">{anime.title}</h3>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.a>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             )}
