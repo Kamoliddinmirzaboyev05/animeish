@@ -27,7 +27,6 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
           const saved = await checkBookmarkStatus(anime.id);
           setIsSaved(saved);
         } catch (error) {
-          console.error('Error checking bookmark status:', error);
         }
       }
     };
@@ -53,7 +52,6 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
         setIsSaved(true);
       }
     } catch (error) {
-      console.error('Error toggling bookmark:', error);
     }
   };
 
@@ -164,7 +162,6 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
         animeTitle={anime.title}
         onRatingSubmitted={() => {
           // Optionally refresh data or show success message
-          console.log('Rating submitted successfully');
         }}
       />
     </Link>

@@ -56,90 +56,27 @@ const Navbar = () => {
         scrolled ? 'bg-dark/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 md:h-20">
-          <div className="flex items-center gap-4 md:gap-12">
-            <Link to="/" className="flex items-center gap-2 md:gap-3 shrink-0">
-              <img src="/logo.svg" alt="Aniki" className="w-8 h-8 md:w-10 md:h-10" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-0 lg:px-4">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center gap-2 md:gap-3">
+              <img src="/logo.svg" alt="Aniki" className="w-6 h-6 md:w-8 md:h-8" />
               <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
                 Aniki
               </div>
             </Link>
 
-            <div className="hidden md:flex items-center gap-8">
-              <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
+            <div className="hidden md:flex items-center gap-6">
+              <Link to="/" className="text-sm hover:text-primary transition-colors">
                 Bosh Sahifa
               </Link>
-              <Link to="/search" className="text-sm font-medium hover:text-primary transition-colors">
+              <Link to="/search" className="text-sm hover:text-primary transition-colors">
                 Qidirish
               </Link>
-              
-              {/* Desktop Social Links */}
-              <div className="h-4 w-px bg-dark-lighter mx-2" />
-              <div className="flex items-center gap-5">
-                <a
-                  href="https://t.me/Anikiuz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                  title="Telegram"
-                >
-                  <Send className="w-4 h-4" />
-                </a>
-                <a
-                  href="https://instagram.com/anikiuz"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                  title="Instagram"
-                >
-                  <Instagram className="w-4 h-4" />
-                </a>
-                <a
-                  href="https://www.youtube.com/@Anikirasmiy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-primary transition-colors"
-                  title="YouTube"
-                >
-                  <Youtube className="w-4 h-4" />
-                </a>
-              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-4">
-            {/* Mobile Social Links */}
-            <div className="flex md:hidden items-center gap-1">
-              <a
-                href="https://t.me/Anikiuz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 hover:bg-dark-light rounded-full transition-colors text-gray-400"
-                title="Telegram"
-              >
-                <Send className="w-5 h-5" />
-              </a>
-              <a
-                href="https://instagram.com/anikiuz"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 hover:bg-dark-light rounded-full transition-colors text-gray-400"
-                title="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="https://www.youtube.com/@Anikirasmiy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 hover:bg-dark-light rounded-full transition-colors text-gray-400"
-                title="YouTube"
-              >
-                <Youtube className="w-5 h-5" />
-              </a>
-            </div>
-
+          <div className="flex items-center gap-4">
             {isLoggedIn ? (
               <>
                 <Link
@@ -200,10 +137,10 @@ const Navbar = () => {
             )}
 
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => setMobileMenuOpen(true)}
               className="md:hidden p-2 hover:bg-dark-light rounded-full transition-colors"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -211,77 +148,160 @@ const Navbar = () => {
 
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-dark-light border-t border-dark-lighter"
-          >
-            <div className="px-4 py-2 space-y-2">
-              <Link
-                to="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-3 hover:text-primary transition-colors border-b border-dark-lighter"
-              >
-                Bosh Sahifa
-              </Link>
-              <Link
-                to="/search"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-3 hover:text-primary transition-colors border-b border-dark-lighter"
-              >
-                Qidirish
-              </Link>
-              
-              {isLoggedIn ? (
-                <>
-                  <Link
-                    to="/notifications"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center justify-between py-3 hover:text-primary transition-colors border-b border-dark-lighter"
-                  >
-                    <span>Bildirishnomalar</span>
-                    {unreadNotifications > 0 && (
-                      <span className="min-w-[18px] h-[18px] bg-primary text-white text-xs rounded-full flex items-center justify-center font-medium">
-                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                      </span>
-                    )}
-                  </Link>
-                  <Link
-                    to="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-3 hover:text-primary transition-colors border-b border-dark-lighter"
-                  >
-                    Profil
-                  </Link>
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMobileMenuOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+            />
+
+            {/* Sidebar */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-[80%] max-w-sm bg-dark-light z-[70] shadow-2xl md:hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-dark-lighter">
+                <div className="flex items-center gap-2">
+                  <img src="/logo.svg" alt="Aniki" className="w-8 h-8" />
+                  <span className="text-xl font-bold">Aniki</span>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-2 hover:bg-dark-lighter rounded-full transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 py-3 px-4 hover:bg-primary/10 hover:text-primary rounded-xl transition-all"
+                >
+                  <span className="font-medium text-lg">Bosh Sahifa</span>
+                </Link>
+                <Link
+                  to="/search"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 py-3 px-4 hover:bg-primary/10 hover:text-primary rounded-xl transition-all"
+                >
+                  <span className="font-medium text-lg">Qidirish</span>
+                </Link>
+                
+                {isLoggedIn ? (
+                  <>
+                    <Link
+                      to="/notifications"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between py-3 px-4 hover:bg-primary/10 hover:text-primary rounded-xl transition-all"
+                    >
+                      <span className="font-medium text-lg">Bildirishnomalar</span>
+                      {unreadNotifications > 0 && (
+                        <span className="w-6 h-6 bg-primary text-white text-xs rounded-full flex items-center justify-center font-bold">
+                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-3 py-3 px-4 hover:bg-primary/10 hover:text-primary rounded-xl transition-all"
+                    >
+                      <span className="font-medium text-lg">Profil</span>
+                    </Link>
+                  </>
+                ) : (
+                  <div className="pt-4 space-y-3 px-4">
+                    <Link
+                      to="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block w-full py-3 text-center border border-primary/30 rounded-xl font-bold hover:bg-primary/10 transition-all"
+                    >
+                      Kirish
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block w-full py-3 text-center bg-primary hover:bg-primary-dark rounded-xl font-bold transition-all shadow-lg shadow-primary/20"
+                    >
+                      Ro'yxatdan o'tish
+                    </Link>
+                  </div>
+                )}
+
+                {/* Social Media Section */}
+                <div className="pt-8 mt-8 border-t border-dark-lighter px-4">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Biz ijtimoiy tarmoqlarda</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    <a
+                      href="https://t.me/Anikiuz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-3 bg-dark-lighter hover:bg-primary/10 hover:text-primary rounded-2xl transition-all group"
+                    >
+                      <div className="w-10 h-10 bg-blue-500/10 text-blue-400 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                        <Send className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold">Telegram</span>
+                        <span className="text-xs text-gray-500">Eng so'nggi yangiliklar</span>
+                      </div>
+                    </a>
+                    <a
+                      href="https://instagram.com/anikiuz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-3 bg-dark-lighter hover:bg-primary/10 hover:text-primary rounded-2xl transition-all group"
+                    >
+                      <div className="w-10 h-10 bg-pink-500/10 text-pink-400 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                        <Instagram className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold">Instagram</span>
+                        <span className="text-xs text-gray-400 font-medium">Foto va videolar</span>
+                      </div>
+                    </a>
+                    <a
+                      href="https://www.youtube.com/@Anikirasmiy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-3 bg-dark-lighter hover:bg-primary/10 hover:text-primary rounded-2xl transition-all group"
+                    >
+                      <div className="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-all">
+                        <Youtube className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold">YouTube</span>
+                        <span className="text-xs text-gray-400 font-medium">Rasmiy kanalimiz</span>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {isLoggedIn && (
+                <div className="p-4 border-t border-dark-lighter">
                   <button
-                    onClick={handleLogout}
-                    className="w-full text-left py-3 text-red-400 flex items-center gap-2 border-b border-dark-lighter"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-center gap-3 py-3 bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white rounded-xl font-bold transition-all"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-5 h-5" />
                     Chiqish
                   </button>
-                </>
-              ) : (
-                <div className="pt-4 space-y-3">
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block w-full py-3 text-center border border-primary rounded-lg hover:bg-primary/10 transition-colors"
-                  >
-                    Kirish
-                  </Link>
-                  <Link
-                    to="/register"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block w-full py-3 text-center bg-primary hover:bg-primary-dark rounded-lg transition-colors"
-                  >
-                    Ro'yxatdan o'tish
-                  </Link>
                 </div>
               )}
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </nav>

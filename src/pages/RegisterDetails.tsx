@@ -74,7 +74,6 @@ const RegisterDetails = () => {
         toast.error(errorMsg);
       }
     } catch (err: any) {
-      console.error('Registration error:', err);
       
       let errorMessage = 'Ro\'yxatdan o\'tishda xatolik yuz berdi';
       

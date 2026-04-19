@@ -113,7 +113,6 @@ const ForgotPasswordReset = () => {
         });
       }, 2000);
     } catch (err: any) {
-      console.error('Password reset error:', err);
       
       // Handle specific error cases
       let errorMessage = 'Parolni tiklashda xatolik yuz berdi';
@@ -160,7 +159,6 @@ const ForgotPasswordReset = () => {
         }
       }, 100);
     } catch (error: any) {
-      console.error('Resend code error:', error);
       
       let errorMessage = 'Kodni qayta yuborishda xatolik';
       

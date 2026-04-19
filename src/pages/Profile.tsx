@@ -31,11 +31,9 @@ const Profile = () => {
         // Fetch user bookmarks and recommendations in parallel
         const [userBookmarks, userRecommendations] = await Promise.all([
           getBookmarks().catch((error) => {
-            console.error('Error fetching bookmarks:', error);
             return [];
           }),
           getRecommendations().catch((error) => {
-            console.error('Error fetching recommendations:', error);
             return [];
           })
         ]);
@@ -44,9 +42,7 @@ const Profile = () => {
         setRecommendations(userRecommendations);
 
         // Debug: Log recommendations data
-        console.log('📊 Final recommendations data for Profile:', userRecommendations);
         userRecommendations.forEach((rec, index) => {
-          console.log(`📋 Recommendation ${index + 1}:`, {
             id: rec.id,
             title: rec.title,
             thumbnail: rec.thumbnail,
@@ -59,7 +55,6 @@ const Profile = () => {
       } catch (err) {
         const apiError = err as ApiError;
         setError(apiError.message || 'Profil ma\'lumotlarini yuklashda xatolik');
-        console.error('Profile fetch error:', err);
 
         // Fallback to localStorage data if API fails
         const userData = localStorage.getItem('user');
@@ -67,7 +62,6 @@ const Profile = () => {
           try {
             setUser(JSON.parse(userData));
           } catch (parseError) {
-            console.error('Error parsing user data:', parseError);
           }
         }
       } finally {

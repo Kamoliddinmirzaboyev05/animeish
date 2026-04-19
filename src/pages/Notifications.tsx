@@ -25,7 +25,6 @@ const Notifications = () => {
       const data = await getNotifications();
       setNotifications(data);
     } catch (error) {
-      console.error('Error loading notifications:', error);
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +39,6 @@ const Notifications = () => {
         );
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
     }
   };
 
@@ -52,7 +50,6 @@ const Notifications = () => {
         setNotifications((prev) => prev.map((notif) => ({ ...notif, is_read: true })));
       }
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
     } finally {
       setIsMarkingAllRead(false);
     }

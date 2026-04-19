@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Play, Info, ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react';
+import { Play, Info, ChevronLeft, ChevronRight, Plus, Check, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { addBookmark, removeBookmark, checkBookmarkStatus, getAuthToken } from '../services/api';
 import Image from './Image';
@@ -77,7 +77,6 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
         setBookmarkStates(prev => ({ ...prev, [movieId]: true }));
       }
     } catch (error) {
-      console.error('Bookmark error:', error);
     } finally {
       setBookmarkLoading(prev => ({ ...prev, [movieId]: false }));
     }
@@ -90,107 +89,106 @@ const HeroSlider = ({ anime }: HeroSliderProps) => {
   }
 
   return (
-    <div className="relative h-[50vh] sm:h-[60vh] lg:h-[70vh] overflow-hidden">
+    <div className="relative h-[65vh] sm:h-[75vh] lg:h-[85vh] overflow-hidden bg-dark">
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
           className="absolute inset-0"
         >
           <Image
             src={current.banner}
             alt={current.title}
-            className="w-full h-full"
+            className="w-full h-full object-cover"
             priority={true}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent" />
+          {/* Professional Overlay Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-dark via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-dark/60 via-transparent to-transparent h-32" />
         </motion.div>
       </AnimatePresence>
 
-      <div className="absolute inset-0 flex items-center">
+      <div className="absolute inset-0 flex items-center pt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <motion.div
             key={`content-${currentIndex}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="max-w-2xl"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="max-w-3xl"
           >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4">{current.title}</h1>
-            <p className="text-sm sm:text-base lg:text-lg text-gray-300 mb-4 sm:mb-6 line-clamp-2 sm:line-clamp-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary border border-primary/30 rounded-full text-xs font-bold uppercase tracking-widest mb-4">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+              Tavsiya etiladi
+            </div>
+            
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-4 lg:mb-6 text-white leading-tight drop-shadow-lg">
+              {current.title}
+            </h1>
+            
+            <p className="text-sm sm:text-lg text-gray-200 mb-6 lg:mb-8 line-clamp-2 sm:line-clamp-3 max-w-2xl drop-shadow-md leading-relaxed">
               {current.description}
             </p>
-            <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6 text-sm sm:text-base flex-wrap">
+
+            <div className="flex items-center gap-4 sm:gap-6 mb-8 text-sm sm:text-base flex-wrap text-white font-medium">
               {current.rating && current.rating > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-400">★</span>
-                  <span className="font-semibold">{current.rating.toFixed(1)}</span>
-                  {current.ratingCount && (
-                    <span className="text-gray-400 text-xs">({current.ratingCount})</span>
-                  )}
+                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-3 py-1 rounded-lg">
+                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                  <span className="font-bold">{current.rating.toFixed(1)}</span>
                 </div>
               )}
-              {current.year && (
-                <>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
-                  <span>{current.year}</span>
-                </>
-              )}
-              {current.totalEpisodes > 0 && (
-                <>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
-                  <span className="hidden sm:inline">{current.totalEpisodes} Epizod</span>
-                </>
-              )}
-              {current.genres && current.genres.length > 0 && (
-                <>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
-                  <span className="hidden md:inline">{current.genres.slice(0, 2).join(', ')}</span>
-                </>
-              )}
-              <span className={`px-2 py-1 text-xs rounded font-medium ${
-                current.status === 'Ongoing' || current.status === 'Davom etmoqda' 
-                  ? 'bg-green-500/20 text-green-400' 
-                  : current.status === 'Completed' || current.status === 'Tugallangan'
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : 'bg-primary/20 text-primary'
-              }`}>
-                {current.status}
-              </span>
+              <div className="flex items-center gap-4">
+                {current.year && (
+                  <span className="drop-shadow-md">{current.year}</span>
+                )}
+                {current.totalEpisodes > 0 && (
+                  <>
+                    <span className="w-1 h-1 bg-gray-400 rounded-full" />
+                    <span className="drop-shadow-md">{current.totalEpisodes} Qism</span>
+                  </>
+                )}
+                <span className={`px-3 py-1 rounded-lg text-xs font-bold border ${
+                  current.status === 'Ongoing' || current.status === 'Davom etmoqda' 
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                    : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                }`}>
+                  {current.status}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+
+            <div className="flex flex-wrap gap-3 sm:gap-4">
               <Link
                 to={`/watch/${current.slug}/1`}
-                className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-primary hover:bg-primary-dark rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
+                className="px-8 sm:px-12 py-3 sm:py-4 bg-primary hover:bg-primary-dark text-white rounded-full font-bold flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-xl shadow-primary/25"
               >
-                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
+                <Play className="w-5 h-5 fill-white" />
                 Tomosha Qilish
               </Link>
               <div className="flex gap-2 sm:gap-3">
                 <Link
                   to={`/anime/${current.slug}`}
-                  className="flex-1 px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
+                  className="px-6 sm:px-10 py-3 sm:py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-full font-bold flex items-center justify-center gap-3 transition-all"
                 >
-                  <Info className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <Info className="w-5 h-5" />
                   Batafsil
                 </Link>
                 {current.movieId && getAuthToken() && (
                   <button
                     onClick={(e) => handleBookmark(current.movieId, e)}
                     disabled={bookmarkLoading[current.movieId]}
-                    className="px-3 sm:px-4 py-2 sm:py-3 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base disabled:opacity-50"
-                    title={bookmarkStates[current.movieId] ? "Ro'yxatdan o'chirish" : "Ro'yxatga qo'shish"}
+                    className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-full flex items-center justify-center transition-all disabled:opacity-50"
                   >
                     {bookmarkLoading[current.movieId] ? (
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : bookmarkStates[current.movieId] ? (
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Check className="w-6 h-6 text-primary" />
                     ) : (
-                      <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <Plus className="w-6 h-6" />
                     )}
                   </button>
                 )}

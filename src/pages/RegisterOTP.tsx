@@ -84,7 +84,6 @@ const RegisterOTP = () => {
                 }
             }, 100);
         } catch (error: any) {
-            console.error('Resend OTP error:', error);
             setError(error.message || 'Kodni qayta yuborishda xatolik');
         } finally {
             setIsLoading(false);

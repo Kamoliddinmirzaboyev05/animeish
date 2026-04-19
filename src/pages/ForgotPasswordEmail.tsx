@@ -41,7 +41,6 @@ const ForgotPasswordEmail = () => {
         } 
       });
     } catch (err: any) {
-      console.error('Password reset request error:', err);
       
       // Handle specific error cases
       if (err.message?.includes('404') || err.message?.includes('topilmadi')) {

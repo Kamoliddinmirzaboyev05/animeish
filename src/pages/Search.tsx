@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, SlidersHorizontal, X, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, SlidersHorizontal, X, Sparkles, Send, Instagram, Youtube } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import SEO from '../components/SEO';
@@ -35,7 +35,6 @@ const Search = () => {
         setAnimeList(data);
         setSearchResults(data);
       } catch (error) {
-        console.error('Error loading anime data:', error);
       } finally {
         setLoading(false);
       }
@@ -68,7 +67,6 @@ const Search = () => {
     const minYear = years.length > 0 ? years[0] : 2000;
     const maxYear = new Date().getFullYear();
     
-    console.log('📅 Year bounds calculated:', { minYear, maxYear, totalAnime: animeList.length });
     
     return { min: minYear, max: maxYear };
   }, [animeList]);
@@ -101,7 +99,6 @@ const Search = () => {
         setSearchResults(results);
         setShowSuggestions(results.some((anime: any) => anime.isSuggestion));
       } catch (error) {
-        console.error('Search error:', error);
         setSearchResults([]);
       } finally {
         setSearching(false);
@@ -225,21 +222,21 @@ const Search = () => {
           </div>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-8 items-start relative">
           <AnimatePresence>
             {(showFilters || window.innerWidth >= 1024) && (
               <motion.aside
                 initial={{ x: -300, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 exit={{ x: -300, opacity: 0 }}
-                className="fixed lg:static inset-y-0 left-0 z-40 w-80 lg:w-64 bg-dark lg:bg-transparent p-6 lg:p-0 overflow-y-auto custom-scrollbar lg:overflow-visible"
+                className="fixed lg:sticky top-0 lg:top-24 left-0 z-[60] lg:z-30 w-80 lg:w-72 h-screen lg:h-auto lg:max-h-[calc(100vh-120px)] bg-dark lg:bg-transparent p-6 lg:p-0 overflow-y-auto custom-scrollbar shadow-2xl lg:shadow-none border-r lg:border-r-0 border-white/10 pt-24 lg:pt-0"
               >
-                <div className="lg:sticky lg:top-24">
-                  <div className="flex items-center justify-between mb-6 lg:hidden">
+                <div className="space-y-8">
+                  <div className="flex items-center justify-between lg:hidden mb-4">
                     <h2 className="text-xl font-bold">Filtrlar</h2>
                     <button
                       onClick={() => setShowFilters(false)}
-                      className="p-2 hover:bg-dark-light rounded-full"
+                      className="p-2 hover:bg-dark-light rounded-full transition-colors"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -407,6 +404,46 @@ const Search = () => {
                         Tozalash
                       </button>
                     </div>
+
+                    {/* Social Media Section in Sidebar */}
+                    <div className="pt-6 border-t border-dark-lighter space-y-4">
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Ijtimoiy Tarmoqlar</h3>
+                      <div className="flex flex-col gap-2">
+                        <a
+                          href="https://t.me/Anikiuz"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-dark-light hover:bg-primary/10 hover:text-primary rounded-xl transition-all group"
+                        >
+                          <div className="w-8 h-8 bg-blue-500/20 text-blue-400 rounded-lg flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
+                            <Send className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold">Telegram</span>
+                        </a>
+                        <a
+                          href="https://instagram.com/anikiuz"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-dark-light hover:bg-primary/10 hover:text-primary rounded-xl transition-all group"
+                        >
+                          <div className="w-8 h-8 bg-pink-500/20 text-pink-400 rounded-lg flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
+                            <Instagram className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold">Instagram</span>
+                        </a>
+                        <a
+                          href="https://www.youtube.com/@Anikirasmiy"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-dark-light hover:bg-primary/10 hover:text-primary rounded-xl transition-all group"
+                        >
+                          <div className="w-8 h-8 bg-red-500/20 text-red-400 rounded-lg flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-all">
+                            <Youtube className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold">YouTube</span>
+                        </a>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.aside>
@@ -415,7 +452,7 @@ const Search = () => {
 
           {showFilters && (
             <div
-              className="lg:hidden fixed inset-0 bg-black/50 z-30"
+              className="lg:hidden fixed inset-0 top-16 md:top-20 bg-black/60 backdrop-blur-sm z-30"
               onClick={() => setShowFilters(false)}
             />
           )}
@@ -427,7 +464,7 @@ const Search = () => {
                   <AnimeCardSkeleton key={i} />
                 ))}
               </div>
-            ) : filteredAnime.length > 0 ? (
+            ) : filteredAnime.length === 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

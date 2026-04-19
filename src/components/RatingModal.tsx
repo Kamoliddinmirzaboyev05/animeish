@@ -35,21 +35,6 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted }
     setSuccess(false);
 
     try {
-      console.log('🎯 Submitting rating:', {
-        movie_id: animeId,
-        score: rating,
-        comment: comment.trim()
-      });
-
-      // Check if user is logged in
-      const token = localStorage.getItem('access_token');
-      const userStr = localStorage.getItem('user');
-      console.log('🔐 Auth status:', {
-        hasToken: !!token,
-        hasUser: !!userStr,
-        user: userStr ? JSON.parse(userStr) : null
-      });
-
       await addRating({
         movie_id: animeId,
         score: rating,
@@ -57,21 +42,16 @@ const RatingModal = ({ isOpen, onClose, animeId, animeTitle, onRatingSubmitted }
       });
 
       setSuccess(true);
-
-      // Show success message
       toast.success('Reyting va izoh muvaffaqiyatli yuborildi!');
 
-      // Call callback if provided
       if (onRatingSubmitted) {
         onRatingSubmitted();
       }
 
-      // Close modal after a short delay to show success state
       setTimeout(() => {
         onClose();
       }, 1500);
     } catch (error: any) {
-      console.error('Error submitting rating:', error);
 
       // Handle different error types
       let errorMessage = 'Reyting yuborishda xatolik yuz berdi';

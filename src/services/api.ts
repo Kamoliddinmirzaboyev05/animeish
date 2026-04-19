@@ -1,5 +1,4 @@
 const API_BASE_URL = 'https://api.aniki.uz';
-console.log('🔧 API_BASE_URL configured as:', API_BASE_URL);
 
 // Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -86,7 +85,6 @@ export interface RegisterWithOTPData {
 
 export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse> => {
     try {
-        console.log('Verifying OTP:', verifyData);
 
         const response = await fetch(`${API_BASE_URL}/verify-otp/`, {
             method: 'POST',
@@ -101,14 +99,12 @@ export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse
             data = await response.json();
         } catch (parseError) {
             // If response is not JSON (like HTML error page), handle it
-            console.error('Failed to parse response as JSON:', parseError);
             throw {
                 message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
                 errors: {},
             } as ApiError;
         }
 
-        console.log('OTP verification response:', { status: response.status, data });
 
         if (!response.ok) {
             throw {
@@ -124,14 +120,12 @@ export const verifyOTP = async (verifyData: VerifyOTPData): Promise<AuthResponse
 
         return data;
     } catch (error) {
-        console.error('OTP verification error:', error);
         throw error;
     }
 };
 
 export const registerWithOTP = async (registerData: RegisterWithOTPData): Promise<AuthResponse> => {
     try {
-        console.log('Registering with OTP:', registerData);
 
         const response = await fetch(`${API_BASE_URL}/verify-otp/`, {
             method: 'POST',
@@ -145,14 +139,12 @@ export const registerWithOTP = async (registerData: RegisterWithOTPData): Promis
         try {
             data = await response.json();
         } catch (parseError) {
-            console.error('Failed to parse registration response as JSON:', parseError);
             throw {
                 message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
                 errors: {},
             } as ApiError;
         }
 
-        console.log('Registration response:', { status: response.status, data });
 
         if (!response.ok) {
             // Handle different error response formats
@@ -183,7 +175,6 @@ export const registerWithOTP = async (registerData: RegisterWithOTPData): Promis
 
         return data;
     } catch (error) {
-        console.error('Registration with OTP error:', error);
         throw error;
     }
 };
@@ -266,7 +257,6 @@ export interface Notification {
 // Authentication functions
 export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> => {
     try {
-        console.log('Sending OTP to email:', otpData.email);
 
         const response = await fetch(`${API_BASE_URL}/send-otp/`, {
             method: 'POST',
@@ -280,14 +270,12 @@ export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> =>
         try {
             data = await response.json();
         } catch (parseError) {
-            console.error('Failed to parse OTP response as JSON:', parseError);
             throw {
                 message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
                 errors: {},
             } as ApiError;
         }
 
-        console.log('OTP response:', { status: response.status, data });
 
         if (!response.ok) {
             // Handle different error response formats
@@ -309,14 +297,12 @@ export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> =>
 
         return data;
     } catch (error) {
-        console.error('OTP sending error:', error);
         throw error;
     }
 };
 
 export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => {
     try {
-        console.log('Logging in user with data:', loginData);
 
         const response = await fetch(`${API_BASE_URL}/token/`, {
             method: 'POST',
@@ -327,7 +313,6 @@ export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => 
         });
 
         const data = await response.json();
-        console.log('Login response:', { status: response.status, data });
 
         if (!response.ok) {
             throw {
@@ -338,7 +323,6 @@ export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => 
 
         return data;
     } catch (error) {
-        console.error('Login error:', error);
         throw error;
     }
 };
@@ -378,7 +362,6 @@ export interface PasswordResetConfirmData {
 // Password reset functions
 export const requestPasswordReset = async (data: PasswordResetRequestData): Promise<{ message: string }> => {
     try {
-        console.log('Requesting password reset for email:', data.email);
 
         const response = await fetch(`${API_BASE_URL}/password-reset/request/`, {
             method: 'POST',
@@ -392,14 +375,12 @@ export const requestPasswordReset = async (data: PasswordResetRequestData): Prom
         try {
             responseData = await response.json();
         } catch (parseError) {
-            console.error('Failed to parse password reset response as JSON:', parseError);
             throw {
                 message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
                 errors: {},
             } as ApiError;
         }
 
-        console.log('Password reset request response:', { status: response.status, data: responseData });
 
         if (!response.ok) {
             throw {
@@ -410,14 +391,12 @@ export const requestPasswordReset = async (data: PasswordResetRequestData): Prom
 
         return responseData;
     } catch (error) {
-        console.error('Password reset request error:', error);
         throw error;
     }
 };
 
 export const confirmPasswordReset = async (data: PasswordResetConfirmData): Promise<{ message: string }> => {
     try {
-        console.log('Confirming password reset:', { email: data.email, code: data.code });
 
         const response = await fetch(`${API_BASE_URL}/password-reset/confirm/`, {
             method: 'POST',
@@ -431,14 +410,12 @@ export const confirmPasswordReset = async (data: PasswordResetConfirmData): Prom
         try {
             responseData = await response.json();
         } catch (parseError) {
-            console.error('Failed to parse password reset confirm response as JSON:', parseError);
             throw {
                 message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
                 errors: {},
             } as ApiError;
         }
 
-        console.log('Password reset confirm response:', { status: response.status, data: responseData });
 
         if (!response.ok) {
             throw {
@@ -449,7 +426,6 @@ export const confirmPasswordReset = async (data: PasswordResetConfirmData): Prom
 
         return responseData;
     } catch (error) {
-        console.error('Password reset confirm error:', error);
         throw error;
     }
 };
@@ -462,7 +438,6 @@ export const getUserProfile = async (): Promise<UserProfile> => {
             throw new Error('No access token found');
         }
 
-        console.log('Fetching user profile...');
 
         const response = await fetch(`${API_BASE_URL}/user/me`, {
             method: 'GET',
@@ -473,7 +448,6 @@ export const getUserProfile = async (): Promise<UserProfile> => {
         });
 
         const data = await response.json();
-        console.log('Profile response:', { status: response.status, data });
 
         if (!response.ok) {
             throw {
@@ -484,24 +458,12 @@ export const getUserProfile = async (): Promise<UserProfile> => {
 
         return data;
     } catch (error) {
-        console.error('Profile fetch error:', error);
         throw error;
     }
 };
 
 // Data transformation function - using only real API data
 const transformAnimeData = (apiData: any) => {
-    // Debug: Log the input data
-    console.log('🔄 transformAnimeData input:', {
-        id: apiData.id,
-        title: apiData.title,
-        poster: apiData.poster,
-        thumbnail: apiData.thumbnail,
-        image: apiData.image,
-        banner: apiData.banner,
-        allKeys: Object.keys(apiData)
-    });
-
     // Try multiple possible image field names
     const possibleImageFields = [
         'poster', 'thumbnail', 'image', 'banner', 'poster_url', 
@@ -512,13 +474,11 @@ const transformAnimeData = (apiData: any) => {
     for (const field of possibleImageFields) {
         if (apiData[field]) {
             imageUrl = apiData[field];
-            console.log(`📸 Found image in field '${field}':`, imageUrl);
             break;
         }
     }
 
     if (!imageUrl) {
-        console.warn('⚠️ No image found for anime:', apiData.title);
     }
 
     return {
@@ -590,7 +550,6 @@ export const fetchAnimeList = async (): Promise<any[]> => {
         const data = await response.json();
         return data.map(transformAnimeData);
     } catch (error) {
-        console.error('Error fetching anime list:', error);
         return [];
     }
 };
@@ -714,13 +673,11 @@ export const searchAnime = async (query: string): Promise<any[]> => {
                 .slice(0, 12)
                 .map(anime => ({ ...anime, isSuggestion: true }));
 
-            console.log('No matches found, returning suggestions:', suggestions.length);
             return suggestions;
         }
 
         return filteredResults;
     } catch (error) {
-        console.error('Error searching anime:', error);
         return [];
     }
 };
@@ -761,7 +718,6 @@ export const fetchAnimeById = async (id: number): Promise<any | null> => {
             return null;
         }
     } catch (error) {
-        console.error('❌ Error fetching anime by ID:', error);
         return null;
     }
 };
@@ -788,7 +744,6 @@ export const fetchAnimeBySlug = async (slug: string): Promise<any | null> => {
             return null;
         }
     } catch (error) {
-        console.error('❌ Error fetching anime by slug:', error);
         return null;
     }
 };
@@ -819,7 +774,6 @@ export const fetchEpisodeById = async (id: number): Promise<any | null> => {
             viewCount: data.view_count || 0
         };
     } catch (error) {
-        console.error('❌ Error fetching episode by ID:', error);
         return null;
     }
 };
@@ -833,7 +787,6 @@ export const getTrendingAnime = async () => {
             .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching trending anime:', error);
         return [];
     }
 };
@@ -850,7 +803,6 @@ export const getPopularAnime = async () => {
             })
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching popular anime:', error);
         return [];
     }
 };
@@ -865,7 +817,6 @@ export const getNewReleases = async () => {
             .sort((a: any, b: any) => (b.year || 0) - (a.year || 0))
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching new releases:', error);
         return [];
     }
 };
@@ -880,7 +831,6 @@ export const getActionAnime = async () => {
             ))
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching action anime:', error);
         return [];
     }
 };
@@ -896,7 +846,6 @@ export const getRomanceAnime = async () => {
             ))
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching romance anime:', error);
         return [];
     }
 };
@@ -912,7 +861,6 @@ export const getFantasyAnime = async () => {
             ))
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching fantasy anime:', error);
         return [];
     }
 };
@@ -925,7 +873,6 @@ export const getRecommendations = async (): Promise<any[]> => {
             return await getPopularAnime();
         }
 
-        console.log('Fetching recommendations...');
 
         const response = await cachedFetch(`${API_BASE_URL}/recommendations/`, {
             method: 'GET',
@@ -936,23 +883,18 @@ export const getRecommendations = async (): Promise<any[]> => {
         }, 10); // Cache for 10 minutes
 
         if (!response.ok) {
-            console.warn('Recommendations API failed, falling back to popular anime');
             return await getPopularAnime();
         }
 
         const data = await response.json();
-        console.log('🎯 Raw Recommendations API response:', data);
 
         // Check if data is an array and has items
         if (!Array.isArray(data) || data.length === 0) {
-            console.warn('Recommendations API returned empty or invalid data, falling back to popular anime');
             return await getPopularAnime();
         }
 
         // Log first item to understand structure
         if (data.length > 0) {
-            console.log('🔍 First recommendation item structure:', data[0]);
-            console.log('🔍 Available keys:', Object.keys(data[0]));
         }
 
         // Get all anime data for fallback images
@@ -960,7 +902,6 @@ export const getRecommendations = async (): Promise<any[]> => {
         try {
             allAnimeData = await fetchAnimeList();
         } catch (error) {
-            console.warn('Could not fetch anime list for fallback images:', error);
         }
 
         // Transform the data to match our anime format
@@ -968,41 +909,23 @@ export const getRecommendations = async (): Promise<any[]> => {
             // Handle different possible API response formats
             const animeData = item.anime || item.movie || item;
             
-            console.log(`🎬 Processing item ${index}:`, {
-                originalItem: item,
-                extractedAnimeData: animeData,
-                poster: animeData.poster,
-                thumbnail: animeData.thumbnail,
-                image: animeData.image
-            });
-            
             let transformed = transformAnimeData(animeData);
             
             // If no image found, try to get it from the main anime list
             if (!transformed.thumbnail && transformed.id && allAnimeData.length > 0) {
                 const fullAnimeData = allAnimeData.find((anime: any) => anime.id === transformed.id);
                 if (fullAnimeData && fullAnimeData.poster) {
-                    console.log(`🔄 Found fallback image for ${transformed.title}:`, fullAnimeData.poster);
                     transformed.thumbnail = fullAnimeData.poster;
                     transformed.banner = fullAnimeData.poster;
                 }
             }
             
-            console.log(`✅ Transformed item ${index}:`, {
-                id: transformed.id,
-                title: transformed.title,
-                thumbnail: transformed.thumbnail,
-                banner: transformed.banner
-            });
-            
             return transformed;
         }).filter((item: any) => item && item.id); // Filter out invalid items
 
-        console.log('🎉 Final recommendations count:', transformedData.length);
         
         // If no images found in recommendations, add some test data for debugging
         if (transformedData.length > 0 && !transformedData[0].thumbnail) {
-            console.log('⚠️ No images found in recommendations, adding test image URLs for debugging');
             transformedData.forEach((item) => {
                 if (!item.thumbnail) {
                     // Add a test image URL for debugging
@@ -1014,7 +937,6 @@ export const getRecommendations = async (): Promise<any[]> => {
         
         return transformedData;
     } catch (error) {
-        console.error('Error fetching recommendations:', error);
         // Fallback to popular anime if recommendations fail
         return await getPopularAnime();
     }
@@ -1033,7 +955,6 @@ export const getContinueWatching = async () => {
             .filter((anime: any) => continueWatchingIds.includes(anime.id))
             .slice(0, 10);
     } catch (error) {
-        console.error('Error fetching continue watching:', error);
         return [];
     }
 };
@@ -1046,7 +967,6 @@ export const getBookmarks = async (): Promise<any[]> => {
             throw new Error('No access token found');
         }
 
-        console.log('Fetching bookmarks...');
 
         const response = await fetch(`${API_BASE_URL}/bookmarks/`, {
             method: 'GET',
@@ -1057,7 +977,6 @@ export const getBookmarks = async (): Promise<any[]> => {
         });
 
         const data = await response.json();
-        console.log('Bookmarks response:', { status: response.status, data });
 
         if (!response.ok) {
             throw {
@@ -1076,7 +995,6 @@ export const getBookmarks = async (): Promise<any[]> => {
             };
         });
     } catch (error) {
-        console.error('Bookmarks fetch error:', error);
         return [];
     }
 };
@@ -1111,7 +1029,6 @@ export const addBookmark = async (movieId: number): Promise<{ message: string }>
 
         return data;
     } catch (error) {
-        console.error('Add bookmark error:', error);
         throw error;
     }
 };
@@ -1152,7 +1069,6 @@ export const removeBookmark = async (movieId: number): Promise<{ message: string
 
         return { message: 'Bookmark removed successfully' };
     } catch (error) {
-        console.error('Remove bookmark error:', error);
         throw error;
     }
 };
@@ -1162,7 +1078,6 @@ export const checkBookmarkStatus = async (movieId: number): Promise<boolean> => 
         const bookmarks = await getBookmarks();
         return bookmarks.some((bookmark: any) => bookmark.id === movieId);
     } catch (error) {
-        console.error('Check bookmark status error:', error);
         return false;
     }
 };
@@ -1204,28 +1119,22 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
         // Get user info - try multiple sources
         let userId = 0;
 
-        console.log('🔍 Getting user ID for rating...');
 
         // First try localStorage
         try {
             const userStr = localStorage.getItem('user');
-            console.log('📦 User from localStorage:', userStr);
 
             if (userStr) {
                 const user = JSON.parse(userStr);
-                console.log('👤 Parsed user:', user);
                 userId = user.id || 0;
             }
         } catch (e) {
-            console.error('❌ Error parsing user from localStorage:', e);
         }
 
         // If no user ID, try to get from API
         if (!userId) {
-            console.log('🌐 No user ID in localStorage, fetching from API...');
             try {
                 const profile = await getUserProfile();
-                console.log('👤 Profile from API:', profile);
                 userId = profile.id || 0;
 
                 // Store updated user info
@@ -1233,11 +1142,9 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
                     localStorage.setItem('user', JSON.stringify(profile));
                 }
             } catch (profileError) {
-                console.error('❌ Could not get user profile:', profileError);
             }
         }
 
-        console.log('🆔 Final user ID:', userId);
 
         if (!userId) {
             throw {
@@ -1255,9 +1162,6 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
             is_comment: !!ratingData.comment
         };
 
-        console.log('Adding rating with payload:', payload);
-        console.log('User ID:', userId);
-        console.log('Token:', token ? 'Present' : 'Missing');
 
         const response = await fetch(`${API_BASE_URL}/ratings/`, {
             method: 'POST',
@@ -1272,14 +1176,12 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
         try {
             data = await response.json();
         } catch (parseError) {
-            console.error('Failed to parse rating response as JSON:', parseError);
             throw {
                 message: response.status === 500 ? 'Server xatosi. Iltimos, keyinroq urinib ko\'ring.' : 'Noto\'g\'ri javob formati',
                 errors: {},
             } as ApiError;
         }
 
-        console.log('Add rating response:', { status: response.status, data });
 
         if (!response.ok) {
             // Handle specific error cases
@@ -1316,7 +1218,6 @@ export const addRating = async (ratingData: RatingData): Promise<RatingResponse>
 
         return data;
     } catch (error: any) {
-        console.error('Add rating error:', error);
 
         // If it's already a formatted error, throw it as is
         if (error.message && error.errors) {
@@ -1346,7 +1247,6 @@ export const getUserRatings = async (): Promise<RatingResponse[]> => {
             throw new Error('No access token found');
         }
 
-        console.log('Fetching user ratings...');
 
         const response = await fetch(`${API_BASE_URL}/ratings/`, {
             method: 'GET',
@@ -1357,7 +1257,6 @@ export const getUserRatings = async (): Promise<RatingResponse[]> => {
         });
 
         const data = await response.json();
-        console.log('User ratings response:', { status: response.status, data });
 
         if (!response.ok) {
             throw {
@@ -1368,7 +1267,6 @@ export const getUserRatings = async (): Promise<RatingResponse[]> => {
 
         return data;
     } catch (error) {
-        console.error('Fetch ratings error:', error);
         return [];
     }
 };
@@ -1377,7 +1275,6 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
     try {
         const token = getAuthToken();
         if (!token) {
-            console.log('No auth token for rating check');
             return null;
         }
 
@@ -1391,10 +1288,8 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
                 const user = JSON.parse(userStr);
                 currentUserEmail = user.email || user.username || '';
                 currentUserId = user.id || 0;
-                console.log('Current user info:', { email: currentUserEmail, id: currentUserId });
             }
         } catch (e) {
-            console.error('Error parsing user from localStorage:', e);
         }
 
         // If no user info in localStorage, try to get from API
@@ -1403,26 +1298,20 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
                 const profile = await getUserProfile();
                 currentUserEmail = profile.email || profile.username || '';
                 currentUserId = profile.id || 0;
-                console.log('User info from API:', { email: currentUserEmail, id: currentUserId });
             } catch (profileError) {
-                console.error('Could not get user profile:', profileError);
             }
         }
 
         if (!currentUserEmail && !currentUserId) {
-            console.log('No user identification found');
             return null;
         }
 
         // Get the anime data to check ratings
         const anime = await fetchAnimeById(movieId);
         if (!anime || !anime.ratings) {
-            console.log('No anime or ratings found');
             return null;
         }
 
-        console.log('Checking ratings for user:', currentUserEmail);
-        console.log('Available ratings:', anime.ratings.map((r: any) => ({ user: r.user, score: r.score })));
 
         // Find user's rating by email/username (more flexible matching)
         const userRating = anime.ratings.find((rating: any) => {
@@ -1435,14 +1324,11 @@ export const checkUserRating = async (movieId: number): Promise<RatingResponse |
         });
 
         if (userRating) {
-            console.log('Found user rating:', userRating);
         } else {
-            console.log('No user rating found');
         }
 
         return userRating || null;
     } catch (error) {
-        console.error('Error checking user rating:', error);
         return null;
     }
 };
@@ -1518,11 +1404,9 @@ export const getNotifications = async (): Promise<Notification[]> => {
     try {
         const token = getAuthToken();
         if (!token) {
-            console.log('No auth token for notifications');
             return [];
         }
 
-        console.log('🔔 Fetching notifications...');
 
         const response = await fetch(`${API_BASE_URL}/notification/`, {
             method: 'GET',
@@ -1533,16 +1417,13 @@ export const getNotifications = async (): Promise<Notification[]> => {
         });
 
         if (!response.ok) {
-            console.error('Failed to fetch notifications:', response.status);
             return [];
         }
 
         const data = await response.json();
-        console.log('📬 Notifications received:', data.length);
 
         return data;
     } catch (error) {
-        console.error('❌ Error fetching notifications:', error);
         return [];
     }
 };
@@ -1565,7 +1446,6 @@ export const markNotificationAsRead = async (notificationId: number): Promise<bo
 
         return response.ok;
     } catch (error) {
-        console.error('Error marking notification as read:', error);
         return false;
     }
 };
@@ -1574,11 +1454,9 @@ export const markAllNotificationsAsRead = async (): Promise<boolean> => {
     try {
         const token = getAuthToken();
         if (!token) {
-            console.error('No auth token for marking all notifications as read');
             return false;
         }
 
-        console.log('🔔 Marking all notifications as read...');
 
         const response = await fetch(`${API_BASE_URL}/notification/all/`, {
             method: 'POST',
@@ -1589,14 +1467,11 @@ export const markAllNotificationsAsRead = async (): Promise<boolean> => {
         });
 
         if (!response.ok) {
-            console.error('Failed to mark all notifications as read:', response.status);
             return false;
         }
 
-        console.log('✅ All notifications marked as read');
         return true;
     } catch (error) {
-        console.error('❌ Error marking all notifications as read:', error);
         return false;
     }
 };

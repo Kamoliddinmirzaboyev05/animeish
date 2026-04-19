@@ -76,7 +76,6 @@ const VerifyOTP = () => {
         });
       }
     } catch (error: any) {
-      console.error('OTP verification error:', error);
       let errorMessage = 'Tasdiqlash kodida xatolik. Iltimos, qayta urinib ko\'ring.';
       
       if (error.message) {
@@ -100,7 +99,6 @@ const VerifyOTP = () => {
       setOtp(['', '', '', '', '', '']); // Clear OTP inputs
       toast.success('Tasdiqlash kodi qayta yuborildi!');
     } catch (error: any) {
-      console.error('Resend OTP error:', error);
       const errorMessage = error.message || 'Kodni qayta yuborishda xatolik';
       setError(errorMessage);
       toast.error(errorMessage);

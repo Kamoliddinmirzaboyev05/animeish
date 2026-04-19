@@ -41,7 +41,6 @@ const RegisterEmail = () => {
       });
     } catch (err) {
       const apiError = err as ApiError;
-      console.error('Send OTP error:', err);
       setError(apiError.message || 'Email yuborishda xatolik yuz berdi');
     } finally {
       setIsLoading(false);

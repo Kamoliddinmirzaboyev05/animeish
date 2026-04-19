@@ -163,7 +163,6 @@ export default function AnimeDetail() {
         }
       } catch (err) {
         setError('Ma\'lumotlarni yuklashda xatolik');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -210,7 +209,6 @@ export default function AnimeDetail() {
         setVideoUrl(episode.video_url);
       }
     } catch (err) {
-      console.error('Failed to fetch detailed episode:', err);
       setCurrentEpisode(episode);
       setVideoUrl(episode.video_url);
     }
@@ -274,7 +272,6 @@ export default function AnimeDetail() {
     if (isPlaying) {
       videoRef.current.pause();
     } else {
-      videoRef.current.play().catch(console.error);
     }
   }, [isPlaying]);
 
@@ -330,7 +327,6 @@ export default function AnimeDetail() {
           try {
             await (screen.orientation as any).lock('landscape');
           } catch (orientationError) {
-            console.log('Orientation lock not supported:', orientationError);
           }
         }
       } else {
@@ -354,12 +350,10 @@ export default function AnimeDetail() {
           try {
             (screen.orientation as any).unlock();
           } catch (orientationError) {
-            console.log('Orientation unlock not supported:', orientationError);
           }
         }
       }
     } catch (err) {
-      console.error('Fullscreen error:', err);
     }
   }, []);
 
@@ -581,7 +575,6 @@ export default function AnimeDetail() {
         try {
           await videoRef.current?.play();
         } catch (error) {
-          console.log('Auto-play prevented by browser:', error);
           setIsPlaying(false);
         }
       };
@@ -667,7 +660,6 @@ export default function AnimeDetail() {
         toast.success('Ro\'yxatga qo\'shildi');
       }
     } catch (err) {
-      console.error('Bookmark error:', err);
       toast.error('Xatolik yuz berdi');
     }
   };
@@ -709,7 +701,6 @@ export default function AnimeDetail() {
       // Show success message
       toast.success('Reyting muvaffaqiyatli yangilandi!');
     } catch (error) {
-      console.error('Error reloading anime data:', error);
       toast.error('Ma\'lumotlarni yangilashda xatolik');
     }
   };
@@ -1249,7 +1240,7 @@ export default function AnimeDetail() {
   // DETAIL MODE (ANIME INFO)
   // ==========================================
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-dark">
       <SEO
         title={`${anime.title} - Anime Tomosha Qiling | Aniki`}
         description={`${anime.title} anime serialini yuqori sifatda va bepul tomosha qiling. ${anime.description || 'Eng yaxshi anime streaming platformasi Aniki da.'}`}
@@ -1259,7 +1250,7 @@ export default function AnimeDetail() {
         type="video.tv_show"
       />
       <Navbar />
-      <div className="pt-20 md:pt-24">
+
       <StructuredData
         data={{
           "@context": "https://schema.org",
@@ -1295,110 +1286,108 @@ export default function AnimeDetail() {
           }
         }}
       />
-      <Navbar />
 
-      <div className="pt-16">
-        {/* Hero Banner */}
-        <div className="relative h-[50vh] sm:h-[60vh]">
+      {/* Hero Banner Section - Starts from top (under navbar) */}
+      <div className="relative w-full">
+        {/* Hero Banner Image */}
+        <div className="relative h-[60vh] sm:h-[70vh] lg:h-[85vh] w-full overflow-hidden">
           <Image
             src={anime.banner}
             alt={anime.title}
-            className="w-full h-full"
+            className="w-full h-full object-cover"
             priority={true}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/60 to-transparent" />
+          {/* Overlay Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-dark/60 via-transparent to-transparent hidden lg:block" />
 
           {/* Back Button */}
-          <div className="absolute top-4 left-4 sm:top-6 sm:left-6">
+          <div className="absolute top-24 left-4 sm:left-6 lg:left-8 z-10">
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 px-3 py-2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full text-white transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-black/40 hover:bg-black/60 backdrop-blur-md rounded-full text-white transition-all border border-white/10 group"
             >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Orqaga</span>
+              <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-sm font-medium">Orqaga</span>
             </button>
           </div>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
+          {/* Banner Content (Title, Stats, Buttons) */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 lg:p-12">
             <div className="max-w-7xl mx-auto">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-3xl"
+                transition={{ duration: 0.6 }}
+                className="max-w-4xl"
               >
-                <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold mb-3 sm:mb-4">{anime.title}</h1>
-                <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-3 sm:mb-4 text-sm sm:text-base">
+                <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold mb-4 lg:mb-6 text-white leading-tight">
+                  {anime.title}
+                </h1>
+
+                <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-6 sm:mb-8 text-sm sm:text-base text-gray-200">
                   {anime.rating && anime.rating > 0 && (
-                    <>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400" />
-                        <span className="font-semibold">{anime.rating.toFixed(1)}</span>
-                      </div>
-                      <span className="text-gray-400 hidden sm:inline">•</span>
-                    </>
+                    <div className="flex items-center gap-1.5">
+                      <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                      <span className="font-bold">{anime.rating.toFixed(1)}</span>
+                    </div>
                   )}
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>{anime.year || 'N/A'}</span>
+                  <span className="w-1 h-1 bg-gray-500 rounded-full hidden sm:block" />
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{anime.year || 'N/A'}</span>
                   </div>
-                  <span className="text-gray-400 hidden sm:inline">•</span>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Film className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span>{anime.type === 'movie' ? 'Film' : `${anime.totalEpisodes || 0} Qism`}</span>
+                  <span className="w-1 h-1 bg-gray-500 rounded-full hidden sm:block" />
+                  <div className="flex items-center gap-2">
+                    <Film className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{anime.type === 'movie' ? 'Film' : `${anime.totalEpisodes || 0} Qism`}</span>
                   </div>
                   {anime.viewCount !== undefined && (
                     <>
-                      <span className="text-gray-400 hidden sm:inline">•</span>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span>{anime.viewCount.toLocaleString()} marta ko'rilgan</span>
+                      <span className="w-1 h-1 bg-gray-500 rounded-full hidden sm:block" />
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-primary" />
+                        <span className="font-medium">{anime.viewCount.toLocaleString()} marta</span>
                       </div>
                     </>
                   )}
-                  <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
-                    ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                    : anime.status === 'Completed' || anime.status === 'Tugallangan'
-                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                      : 'bg-primary/10 text-primary border-primary/30'
+                  <div className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                    : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                     }`}>
                     {translateStatus(anime.status) || anime.status}
-                  </span>
+                  </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+
+                <div className="flex flex-wrap gap-3 sm:gap-4">
                   <button
                     onClick={() => enterWatchMode()}
-                    className="px-4 sm:px-6 lg:px-8 py-2 sm:py-3 bg-primary hover:bg-primary-dark rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
+                    className="px-6 sm:px-10 py-3 sm:py-4 bg-primary hover:bg-primary-dark text-white rounded-full font-bold flex items-center justify-center gap-3 transition-all transform hover:scale-105 shadow-lg shadow-primary/20"
                   >
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />
+                    <Play className="w-5 h-5 fill-white" />
                     Hozir Tomosha Qilish
                   </button>
                   <button
                     onClick={toggleSaved}
-                    className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${isSaved
-                      ? 'bg-primary/20 text-primary border-2 border-primary'
-                      : 'bg-white/10 hover:bg-white/20 backdrop-blur-sm'
+                    className={`px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold flex items-center justify-center gap-3 transition-all border-2 ${isSaved
+                      ? 'bg-primary/20 text-primary border-primary'
+                      : 'bg-white/10 hover:bg-white/20 text-white border-white/10 backdrop-blur-sm'
                       }`}
                   >
-                    <Heart className={`w-4 h-4 sm:w-5 sm:h-5 ${isSaved ? 'fill-primary' : ''}`} />
-                    <span className="hidden sm:inline">{isSaved ? 'Ro\'yxatimda' : 'Ro\'yxatga Qo\'shish'}</span>
-                    <span className="sm:hidden">{isSaved ? 'Saqlangan' : 'Saqlash'}</span>
+                    <Heart className={`w-5 h-5 ${isSaved ? 'fill-primary' : ''}`} />
+                    {isSaved ? 'Ro\'yxatimda' : 'Saqlash'}
                   </button>
                   {isLoggedIn && (
                     <button
                       onClick={handleRatingClick}
                       disabled={!!userRating}
-                      className={`px-4 sm:px-6 lg:px-8 py-2 sm:py-3 border-2 rounded-full font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base ${userRating
-                        ? 'bg-green-500/20 text-green-400 border-green-500/30 cursor-not-allowed opacity-75'
-                        : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30'
+                      className={`px-6 sm:px-8 py-3 sm:py-4 border-2 rounded-full font-bold flex items-center justify-center gap-3 transition-all ${userRating
+                        ? 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30 cursor-not-allowed'
+                        : 'bg-white/10 hover:bg-white/20 text-white border-white/10 backdrop-blur-sm'
                         }`}
-                      title={userRating ? `Siz ${userRating.score}/5 reyting bergansiz` : 'Reyting berish'}
                     >
-                      {userRating ? (
-                        <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                      ) : (
-                        <Star className="w-4 h-4 sm:w-5 sm:h-5" />
-                      )}
-                      <span>{userRating ? `${userRating.score}/5 Berilgan` : 'Baholash'}</span>
+                      <Star className={`w-5 h-5 ${userRating ? 'fill-yellow-500' : ''}`} />
+                      {userRating ? `${userRating.score}/5` : 'Baholash'}
                     </button>
                   )}
                 </div>
@@ -1406,114 +1395,150 @@ export default function AnimeDetail() {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 mb-8 sm:mb-12">
-            <div className="lg:col-span-2">
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Qisqacha Mazmun</h2>
-              <p className="text-gray-300 leading-relaxed mb-4 sm:mb-6 text-sm sm:text-base">{anime.description}</p>
+      {/* Main Content Sections */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+          {/* Left Column: Description & Episodes */}
+          <div className="lg:col-span-2 space-y-12">
+            {/* Description */}
+            <section>
+              <h2 className="text-2xl lg:text-3xl font-bold mb-6 flex items-center gap-3">
+                <span className="w-1.5 h-8 bg-primary rounded-full" />
+                Qisqacha Mazmun
+              </h2>
+              <p className="text-gray-300 leading-relaxed text-base lg:text-lg">
+                {anime.description}
+              </p>
+            </section>
 
-              <div className="mb-4 sm:mb-6">
-                <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">Janrlar</h3>
-                <div className="flex flex-wrap gap-2">
-                  {anime.genres?.map((genre: string, index: number) => (
-                    <span
-                      key={`${genre}-${index}`}
-                      className="px-3 sm:px-4 py-1 sm:py-2 bg-dark-light border border-dark-lighter rounded-full hover:border-primary transition-colors text-xs sm:text-sm"
-                    >
-                      {translateGenres([genre])[0] || genre}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="bg-dark-light border border-dark-lighter rounded-lg p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Ma'lumot</h3>
-                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Holat:</span>
-                    <span className={`font-semibold ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
-                      ? 'text-green-400'
-                      : anime.status === 'Completed' || anime.status === 'Tugallangan'
-                        ? 'text-blue-400'
-                        : 'text-primary'
-                      }`}>
-                      {translateStatus(anime.status) || anime.status}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">{anime.type === 'movie' ? 'Turi:' : 'Qismlar:'}</span>
-                    <span className="font-semibold">{anime.type === 'movie' ? 'Film' : (anime.totalEpisodes || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Yil:</span>
-                    <span className="font-semibold">{anime.year || 'N/A'}</span>
-                  </div>
-                  {anime.rating && anime.rating > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Reyting:</span>
-                      <span className="font-semibold">{anime.rating.toFixed(1)}/5</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {anime.episodes && anime.episodes.length > 0 && anime.type === 'series' && (
-            <div className="mb-8 sm:mb-12">
-              <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Qismlar</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
-                {anime.episodes.map((episode: any) => (
-                  <button
-                    key={episode.id}
-                    onClick={() => enterWatchMode(episode)}
-                    className="group text-left w-full"
+            {/* Genres */}
+            <section>
+              <h2 className="text-2xl lg:text-3xl font-bold mb-6 flex items-center gap-3">
+                <span className="w-1.5 h-8 bg-primary rounded-full" />
+                Janrlar
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {anime.genres?.map((genre: string, index: number) => (
+                  <span
+                    key={`${genre}-${index}`}
+                    className="px-5 py-2.5 bg-dark-light border border-dark-lighter rounded-xl hover:border-primary hover:text-primary transition-all cursor-default text-sm font-medium"
                   >
-                    <div className="relative aspect-video rounded-lg overflow-hidden bg-dark-light mb-1 sm:mb-2">
-                      <Image
-                        src={episode.thumbnail}
-                        alt={episode.title}
-                        className="w-full h-full transition-transform duration-300 group-hover:scale-110"
-                      />
-                      {episode.watched && (
-                        <div className="absolute top-1 sm:top-2 right-1 sm:right-2 w-4 h-4 sm:w-6 sm:h-6 bg-primary rounded-full flex items-center justify-center">
-                          <span className="text-xs">✓</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <Play className="w-8 h-8 sm:w-12 sm:h-12 text-primary" />
-                      </div>
-                      <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 px-1 sm:px-2 py-0.5 sm:py-1 bg-dark/90 rounded text-xs">
-                        {episode.duration}
-                      </div>
-                    </div>
-                    <h3 className="font-semibold text-xs sm:text-sm group-hover:text-primary transition-colors line-clamp-2">
-                      {episode.title || `${episode.episode_number}-Qism`}
-                    </h3>
-                    {episode.viewCount !== undefined && (
-                      <div className="flex items-center gap-1 text-gray-500 text-[10px] sm:text-xs mt-0.5">
-                        <Eye className="w-2.5 h-2.5 sm:w-3 h-3" />
-                        <span>{episode.viewCount} marta ko'rilgan</span>
-                      </div>
-                    )}
-                  </button>
+                    {translateGenres([genre])[0] || genre}
+                  </span>
                 ))}
               </div>
-            </div>
-          )}
+            </section>
 
-          {/* Ratings and Comments Section */}
-          <RatingsSection
-            ratings={anime?.ratings || []}
-            averageRating={anime?.averageRating || 0}
-            ratingsCount={anime?.ratingsCount || 0}
-            onAddRating={handleRatingClick}
-            loading={loading}
-            userRating={userRating}
-          />
+            {/* Episodes List */}
+            {anime.episodes && anime.episodes.length > 0 && anime.type === 'series' && (
+              <section>
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl lg:text-3xl font-bold flex items-center gap-3">
+                    <span className="w-1.5 h-8 bg-primary rounded-full" />
+                    Qismlar
+                  </h2>
+                  <span className="px-4 py-1.5 bg-dark-light rounded-full text-sm text-gray-400 border border-dark-lighter">
+                    {anime.episodes.length} qism
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                  {anime.episodes.map((episode: any) => (
+                    <button
+                      key={episode.id}
+                      onClick={() => enterWatchMode(episode)}
+                      className="group text-left w-full space-y-3"
+                    >
+                      <div className="relative aspect-video rounded-xl overflow-hidden bg-dark-light ring-1 ring-white/5 group-hover:ring-primary/50 transition-all">
+                        <Image
+                          src={episode.thumbnail}
+                          alt={episode.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        />
+                        {episode.watched && (
+                          <div className="absolute top-2 right-2 w-7 h-7 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white text-sm">✓</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-dark/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                            <Play className="w-6 h-6 text-white fill-white" />
+                          </div>
+                        </div>
+                        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/80 backdrop-blur-sm rounded text-[10px] font-bold text-white uppercase tracking-wider">
+                          {episode.duration}
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-sm lg:text-base group-hover:text-primary transition-colors line-clamp-1 mb-1">
+                          {episode.title || `${episode.episode_number}-Qism`}
+                        </h3>
+                        {episode.viewCount !== undefined && (
+                          <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>{episode.viewCount} marta</span>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Ratings and Comments Section */}
+            <RatingsSection
+              ratings={anime?.ratings || []}
+              averageRating={anime?.averageRating || 0}
+              ratingsCount={anime?.ratingsCount || 0}
+              onAddRating={handleRatingClick}
+              loading={loading}
+              userRating={userRating}
+            />
+          </div>
+
+          {/* Right Column: Sidebar Info */}
+          <aside className="space-y-8">
+            <div className="bg-dark-light border border-dark-lighter rounded-2xl p-6 lg:p-8 sticky top-24">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                Ma'lumot
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 border-b border-dark-lighter/50">
+                  <span className="text-gray-400">Holat</span>
+                  <span className={`font-bold ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
+                    ? 'text-green-400'
+                    : 'text-blue-400'
+                    }`}>
+                    {translateStatus(anime.status) || anime.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-dark-lighter/50">
+                  <span className="text-gray-400">Turi</span>
+                  <span className="font-bold text-white">{anime.type === 'movie' ? 'Film' : 'Serial'}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-dark-lighter/50">
+                  <span className="text-gray-400">Yil</span>
+                  <span className="font-bold text-white">{anime.year || 'N/A'}</span>
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-dark-lighter/50">
+                  <span className="text-gray-400">Reyting</span>
+                  <div className="flex items-center gap-1.5 font-bold text-white">
+                    <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    {anime.rating?.toFixed(1) || '0.0'}
+                  </div>
+                </div>
+                {anime.studio && (
+                  <div className="flex items-center justify-between py-3">
+                    <span className="text-gray-400">Studio</span>
+                    <span className="font-bold text-white text-right">{anime.studio}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
 
@@ -1522,10 +1547,8 @@ export default function AnimeDetail() {
         onClose={() => setShowRatingModal(false)}
         animeId={Number(anime?.id)}
         animeTitle={anime?.title || ''}
-
         onRatingSubmitted={handleRatingSubmitted}
       />
-      </div>
     </div>
   );
 }

@@ -33,7 +33,6 @@ const MyList: React.FC = () => {
       const bookmarks = await getBookmarks();
       setMyListAnime(bookmarks);
     } catch (error) {
-      console.error('Error loading my list:', error);
       toast.error('Ro\'yxatni yuklashda xatolik yuz berdi');
     } finally {
       setLoading(false);
@@ -50,7 +49,6 @@ const MyList: React.FC = () => {
       setMyListAnime(prev => prev.filter(anime => anime.id !== animeId));
       toast.success('Ro\'yxatdan olib tashlandi');
     } catch (error) {
-      console.error('Error removing from list:', error);
       toast.error('Xatolik yuz berdi');
       // Reload list if there was an error
       await loadMyList();

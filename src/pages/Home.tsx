@@ -57,7 +57,6 @@ const Home = () => {
         setFantasyAnime(fantasy);
         setContinueWatching(continueWatch);
       } catch (error) {
-        console.error('Error loading anime data:', error);
         toast.error('Ma\'lumotlarni yuklashda xatolik yuz berdi');
       } finally {
         setLoading(false);
@@ -79,10 +78,12 @@ const Home = () => {
       />
       <Navbar />
 
-      <div className="pt-20 md:pt-24">
-        {/* Hero Section */}
+      <div>
+        {/* Hero Section - No top padding so banner starts from the very top */}
         {loading ? (
-          <HeroSkeleton />
+          <div className="pt-20 md:pt-24">
+            <HeroSkeleton />
+          </div>
         ) : banners.length > 0 ? (
           <HeroSlider anime={banners} />
         ) : null}
