@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Heart, Play } from 'lucide-react';
+import { Star, Heart, Play, Eye } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { addBookmark, removeBookmark, checkBookmarkStatus } from '../services/api';
@@ -101,24 +101,30 @@ const AnimeCard = ({ anime, showProgress }: AnimeCardProps) => {
             </div>
           </div>
 
-          {anime.rating && anime.rating > 0 && (
-            <div className="absolute top-1 sm:top-2 right-1 sm:right-2 flex gap-1 sm:gap-2">
-              <div className="bg-dark/90 backdrop-blur-sm px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md flex items-center gap-1">
-                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-semibold">{anime.rating.toFixed(1)}</span>
-              </div>
-            </div>
-          )}
-
-          <div className="absolute top-1 sm:top-2 left-1 sm:left-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={toggleSaved}
-              className="w-6 h-6 sm:w-8 sm:h-8 bg-dark/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary transition-colors"
+              className={`p-2 rounded-full backdrop-blur-md transition-colors ${isSaved ? 'bg-primary text-white' : 'bg-black/40 text-white hover:bg-primary/80'
+                }`}
             >
-              <Heart
-                className={`w-3 h-3 sm:w-4 sm:h-4 ${isSaved ? 'fill-primary text-primary' : 'text-white'}`}
-              />
+              <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
             </button>
+          </div>
+
+          {/* Views and Rating Overlay (Bottom) */}
+          <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+            <div className="flex items-center justify-between text-[10px] sm:text-xs text-white">
+              <div className="flex items-center gap-1">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                <span>{anime.rating?.toFixed(1) || '0.0'}</span>
+              </div>
+              {anime.viewCount !== undefined && (
+                <div className="flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  <span>{anime.viewCount > 1000 ? `${(anime.viewCount / 1000).toFixed(1)}k` : anime.viewCount}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {showProgress && watchedEpisodes > 0 && (

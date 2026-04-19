@@ -67,18 +67,6 @@ const cachedFetch = async (url: string, options?: RequestInit, cacheMinutes: num
   return response;
 };
 
-export interface VideoData {
-    id: string;
-    videoUrl: string;
-}
-
-export interface RegisterData {
-    first_name: string;
-    email: string;
-    password: string;
-    confirm_password: string;
-}
-
 export interface OTPData {
     email: string;
 }
@@ -326,50 +314,6 @@ export const sendOTP = async (otpData: OTPData): Promise<{ message: string }> =>
     }
 };
 
-export const registerUser = async (userData: RegisterData): Promise<AuthResponse> => {
-    try {
-        console.log('Registering user with data:', userData);
-
-        const response = await fetch(`${API_BASE_URL}/users/register/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-
-        const data = await response.json();
-        console.log('Registration response:', { status: response.status, data });
-
-        if (!response.ok) {
-            // Handle different error response formats
-            let errorMessage = 'Ro\'yxatdan o\'tishda xatolik';
-            
-            if (data.error) {
-                errorMessage = data.error;
-            } else if (data.message) {
-                errorMessage = data.message;
-            } else if (data.email && Array.isArray(data.email)) {
-                errorMessage = data.email[0];
-            } else if (data.first_name && Array.isArray(data.first_name)) {
-                errorMessage = data.first_name[0];
-            } else if (data.password && Array.isArray(data.password)) {
-                errorMessage = data.password[0];
-            }
-            
-            throw {
-                message: errorMessage,
-                errors: data,
-            } as ApiError;
-        }
-
-        return data;
-    } catch (error) {
-        console.error('Registration error:', error);
-        throw error;
-    }
-};
-
 export const loginUser = async (loginData: LoginData): Promise<AuthResponse> => {
     try {
         console.log('Logging in user with data:', loginData);
@@ -545,57 +489,6 @@ export const getUserProfile = async (): Promise<UserProfile> => {
     }
 };
 
-export const fetchVideoData = async (): Promise<VideoData[]> => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/movies/`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch video data: ${response.status} ${response.statusText}`);
-        }
-        const data = await response.json();
-
-        // Transform to VideoData format - optimized for movie/series
-        return data.map((item: any) => ({
-            id: item.id.toString(),
-            videoUrl: item.type === 'movie'
-                ? item.episodes?.[0]?.video_url || ''
-                : item.episodes?.[0]?.video_url || ''
-        }));
-    } catch (error) {
-        console.error('Error fetching video data:', error);
-        return [];
-    }
-};
-
-export const getVideoUrlById = async (animeId: string | number, episodeNumber: number = 1): Promise<string> => {
-    try {
-        // Use cached anime data if available
-        const anime = await fetchAnimeById(Number(animeId));
-
-        if (!anime) {
-            console.log('❌ Anime not found');
-            return '';
-        }
-
-        // Movie: always has single video in episodes array (movies have episodes with video_url)
-        if (anime.type === 'movie') {
-            return anime.episodes?.[0]?.video_url || anime.videos?.[0]?.url || '';
-        }
-
-        // Series: get specific episode from episodes array
-        if (anime.type === 'series') {
-            const episode = anime.episodes?.find((ep: any) => ep.episode_number === episodeNumber) || anime.episodes?.[0];
-            return episode?.video_url || episode?.videoUrl || '';
-        }
-
-        // Fallback
-        return anime.videoUrl || '';
-
-    } catch (error) {
-        console.error('❌ Error getting video URL:', error);
-        return '';
-    }
-};
-
 // Data transformation function - using only real API data
 const transformAnimeData = (apiData: any) => {
     // Debug: Log the input data
@@ -638,6 +531,7 @@ const transformAnimeData = (apiData: any) => {
         banner: imageUrl,
         rating: apiData.rating_avg || 0,
         year: apiData.release_year,
+        viewCount: apiData.view_count || 0,
         totalEpisodes: apiData.episodes?.length || 0,
         genres: apiData.genres?.map((g: any) => g.name) || [],
         status: apiData.type === 'series' ? 'Ongoing' : 'Completed',
@@ -650,6 +544,7 @@ const transformAnimeData = (apiData: any) => {
             duration: ep.duration,
             video_url: ep.video_url,
             videoUrl: ep.video_url,
+            viewCount: ep.view_count || 0,
             watched: false // This should come from user's watch history
         })) || [],
         videos: apiData.videos?.map((video: any) => ({
@@ -832,22 +727,49 @@ export const searchAnime = async (query: string): Promise<any[]> => {
 
 export const fetchAnimeById = async (id: number): Promise<any | null> => {
     try {
-        const response = await cachedFetch(`${API_BASE_URL}/movies/`, undefined, 15); // Cache for 15 minutes
-        if (!response.ok) {
+        // Try fetching individual movie data first for more details (like view_count)
+        const response = await cachedFetch(`${API_BASE_URL}/movie/${id}/`, undefined, 10);
+        
+        if (response.ok) {
+            const data = await response.json();
+            return transformAnimeData(data);
+        }
+        
+        // Fallback to list if individual fetch fails
+        const listResponse = await cachedFetch(`${API_BASE_URL}/movies/`, undefined, 15);
+        if (!listResponse.ok) {
             throw new Error('Failed to fetch anime list');
         }
-        const data = await response.json();
+        const listData = await listResponse.json();
 
-        const anime = data.find((item: any) => item.id === id);
+        const anime = listData.find((item: any) => item.id === id);
 
         if (anime) {
-            const transformed = transformAnimeData(anime);
-            return transformed;
+            return transformAnimeData(anime);
         } else {
             return null;
         }
     } catch (error) {
         console.error('❌ Error fetching anime by ID:', error);
+        return null;
+    }
+};
+
+export const fetchEpisodeById = async (id: number): Promise<any | null> => {
+    try {
+        const response = await cachedFetch(`${API_BASE_URL}/episodes/${id}/`, undefined, 30);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch episode: ${response.status}`);
+        }
+        const data = await response.json();
+        return {
+            ...data,
+            episodeNumber: data.episode_number,
+            videoUrl: data.video_url,
+            viewCount: data.view_count || 0
+        };
+    } catch (error) {
+        console.error('❌ Error fetching episode by ID:', error);
         return null;
     }
 };

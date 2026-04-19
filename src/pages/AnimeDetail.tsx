@@ -5,15 +5,17 @@ import { toast } from 'sonner';
 import {
   Star, Play, Pause, Heart, Calendar, Film, MessageSquare, ChevronLeft,
   Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward,
-  Settings, RotateCcw, RotateCw, X, List
+  Settings, RotateCcw, RotateCw, X, List, Eye
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import SEO from '../components/SEO';
 import StructuredData from '../components/StructuredData';
 import RatingModal from '../components/RatingModal';
 import RatingsSection from '../components/RatingsSection';
+import { AnimeDetailSkeleton } from '../components/Skeletons';
 import {
   fetchAnimeById,
+  fetchEpisodeById,
   addBookmark,
   removeBookmark,
   checkBookmarkStatus,
@@ -31,6 +33,7 @@ interface Episode {
   video_url: string;
   thumbnail: string;
   duration?: string;
+  viewCount?: number;
   watched?: boolean;
 }
 
@@ -48,6 +51,7 @@ interface Anime {
   type: 'movie' | 'series';
   episodes: Episode[];
   studio?: string;
+  viewCount?: number;
   averageRating?: number;
   ratingsCount?: number;
   ratings?: any[];
@@ -147,7 +151,37 @@ export default function AnimeDetail() {
   // ==========================================
   // VIDEO PLAYER LOGIC
   // ==========================================
-  const enterWatchMode = useCallback((episode?: Episode) => {
+  const goToEpisode = useCallback(async (episode: Episode) => {
+    setIsPlaying(true); // Auto-play when switching episodes
+    setCurrentTime(0);
+    
+    try {
+      // Fetch detailed episode info if available
+      const detailedEp = await fetchEpisodeById(episode.id);
+      if (detailedEp) {
+        setCurrentEpisode({
+          ...episode,
+          ...detailedEp,
+          video_url: detailedEp.video_url || episode.video_url
+        });
+        setVideoUrl(detailedEp.video_url || episode.video_url);
+      } else {
+        setCurrentEpisode(episode);
+        setVideoUrl(episode.video_url);
+      }
+    } catch (err) {
+      console.error('Failed to fetch detailed episode:', err);
+      setCurrentEpisode(episode);
+      setVideoUrl(episode.video_url);
+    }
+    
+    setShowEpisodeList(false);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+  }, []);
+
+  const enterWatchMode = useCallback(async (episode?: Episode) => {
     if (!anime) return;
 
     if (!isLoggedIn) {
@@ -158,16 +192,17 @@ export default function AnimeDetail() {
     const targetEpisode = episode || anime.episodes[0];
     if (!targetEpisode) return;
 
-    setCurrentEpisode(targetEpisode);
-    setVideoUrl(targetEpisode.video_url);
     setIsWatchMode(true);
     setCurrentTime(0);
     setIsPlaying(true); // Auto-play when entering watch mode
     setShowControls(true);
+    
+    // Use goToEpisode to fetch details
+    await goToEpisode(targetEpisode);
 
     // Scroll to top for better UX
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [anime, isLoggedIn, navigate]);
+  }, [anime, isLoggedIn, navigate, goToEpisode]);
 
   const exitWatchMode = useCallback(() => {
     setIsWatchMode(false);
@@ -176,17 +211,6 @@ export default function AnimeDetail() {
     setVideoUrl('');
     if (videoRef.current) {
       videoRef.current.pause();
-    }
-  }, []);
-
-  const goToEpisode = useCallback((episode: Episode) => {
-    setIsPlaying(true); // Auto-play when switching episodes
-    setCurrentTime(0);
-    setCurrentEpisode(episode);
-    setVideoUrl(episode.video_url);
-    setShowEpisodeList(false);
-    if (videoRef.current) {
-      videoRef.current.load();
     }
   }, []);
 
@@ -587,14 +611,7 @@ export default function AnimeDetail() {
   // LOADING STATE
   // ==========================================
   if (loading) {
-    return (
-      <div className="min-h-screen">
-        <Navbar />
-        <div className="pt-24 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
+    return <AnimeDetailSkeleton />;
   }
 
   if (error || !anime) {
@@ -1043,7 +1060,15 @@ export default function AnimeDetail() {
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
                           <p className="text-gray-400 text-xs truncate">{ep.title}</p>
-                          {ep.duration && <p className="text-gray-500 text-xs mt-1">{ep.duration}</p>}
+                          <div className="flex items-center gap-2 mt-1">
+                            {ep.duration && <p className="text-gray-500 text-xs">{ep.duration}</p>}
+                            {ep.viewCount !== undefined && (
+                              <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                <Eye className="w-3 h-3" />
+                                <span>{ep.viewCount}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -1075,10 +1100,18 @@ export default function AnimeDetail() {
                         className="w-20 h-12 object-cover rounded"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
-                        <p className="text-gray-400 text-xs truncate">{ep.title}</p>
-                        {ep.duration && <p className="text-gray-500 text-xs mt-1">{ep.duration}</p>}
+                      <p className="text-white font-medium text-sm">{ep.episode_number}-Qism</p>
+                      <p className="text-gray-400 text-xs truncate">{ep.title}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        {ep.duration && <p className="text-gray-500 text-xs">{ep.duration}</p>}
+                        {ep.viewCount !== undefined && (
+                          <div className="flex items-center gap-1 text-gray-500 text-xs">
+                            <Eye className="w-3 h-3" />
+                            <span>{ep.viewCount}</span>
+                          </div>
+                        )}
                       </div>
+                    </div>
                     </div>
                   </button>
                 ))}
@@ -1190,6 +1223,15 @@ export default function AnimeDetail() {
                     <Film className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>{anime.type === 'movie' ? 'Film' : `${anime.totalEpisodes || 0} Qism`}</span>
                   </div>
+                  {anime.viewCount !== undefined && (
+                    <>
+                      <span className="text-gray-400 hidden sm:inline">•</span>
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span>{anime.viewCount.toLocaleString()} marta ko'rilgan</span>
+                      </div>
+                    </>
+                  )}
                   <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border ${anime.status === 'Ongoing' || anime.status === 'Davom etmoqda'
                     ? 'bg-green-500/10 text-green-400 border-green-500/30'
                     : anime.status === 'Completed' || anime.status === 'Tugallangan'

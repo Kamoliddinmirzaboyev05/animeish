@@ -5,6 +5,7 @@ import { Search as SearchIcon, SlidersHorizontal, X, Sparkles } from 'lucide-rea
 import Navbar from '../components/Navbar';
 import AnimeCard from '../components/AnimeCard';
 import SEO from '../components/SEO';
+import { AnimeCardSkeleton } from '../components/Skeletons';
 
 import { fetchAnimeList, searchAnime } from '../services/api';
 import { translateGenres } from '../utils/translations';
@@ -420,11 +421,13 @@ const Search = () => {
           )}
 
           <div className="flex-1">
-            {searching ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            {searching || loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                  <AnimeCardSkeleton key={i} />
+                ))}
               </div>
-            ) : filteredAnime.length === 0 ? (
+            ) : filteredAnime.length > 0 ? (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

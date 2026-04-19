@@ -13,8 +13,8 @@ A modern, full-featured anime streaming platform built with React 18, TypeScript
 - Skeleton loading states
 
 ### 🔐 Authentication
-- Landing page with animated hero
-- Login/Register with form validation (Zod)
+- Modern login/registration flow
+- Multi-step registration (Email -> OTP -> Details)
 - Protected routes
 - Local storage persistence
 

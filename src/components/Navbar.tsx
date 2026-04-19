@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Bell, Menu, X, User, LogOut } from 'lucide-react';
+import { Bell, Menu, X, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getNotifications } from '../services/api';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const navigate = useNavigate();
 
@@ -40,14 +39,6 @@ const Navbar = () => {
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-      setSearchQuery('');
-    }
-  };
 
   const handleLogout = () => {
     // Clear all auth data
@@ -86,19 +77,6 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <form onSubmit={handleSearch} className="hidden md:block">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Anime qidirish..."
-                  className="bg-dark-light border border-dark-lighter rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors w-64"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              </div>
-            </form>
-
             {isLoggedIn ? (
               <>
                 <Link
@@ -177,19 +155,6 @@ const Navbar = () => {
             className="md:hidden bg-dark-light border-t border-dark-lighter"
           >
             <div className="px-4 py-2 space-y-2">
-              <form onSubmit={handleSearch}>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Anime qidirish..."
-                    className="bg-dark border border-dark-lighter rounded-full pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors w-full"
-                  />
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                </div>
-              </form>
-
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
