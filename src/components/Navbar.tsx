@@ -51,66 +51,95 @@ const Navbar = () => {
   const isLoggedIn = localStorage.getItem('access_token');
 
   return (
-    <>
-      {/* Top Bar - Social Links */}
-      <div className="fixed top-0 left-0 right-0 z-[60] h-8 bg-dark-light border-b border-dark-lighter hidden sm:flex items-center">
-        <div className="max-w-7xl mx-auto px-4 w-full flex justify-end gap-6">
-          <a
-            href="https://t.me/Anikiuz"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>Telegram</span>
-          </a>
-          <a
-            href="https://instagram.com/anikiuz"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
-          >
-            <Instagram className="w-3.5 h-3.5" />
-            <span>Instagram</span>
-          </a>
-          <a
-            href="https://www.youtube.com/@Anikirasmiy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-400 hover:text-primary transition-colors flex items-center gap-1.5 text-xs font-medium"
-          >
-            <Youtube className="w-3.5 h-3.5" />
-            <span>YouTube</span>
-          </a>
-        </div>
-      </div>
-
-      <nav
-        className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? 'bg-dark/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
-        } ${scrolled ? 'top-0' : 'top-8'}`}
-      >
-      <div className="max-w-7xl mx-auto px-4 sm:px-0 lg:px-4">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-8">
-            <Link to="/" className="flex items-center gap-2 md:gap-3">
-              <img src="/logo.svg" alt="Aniki" className="w-6 h-6 md:w-8 md:h-8" />
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? 'bg-dark/95 backdrop-blur-md shadow-lg' : 'bg-transparent'
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16 md:h-20">
+          <div className="flex items-center gap-4 md:gap-12">
+            <Link to="/" className="flex items-center gap-2 md:gap-3 shrink-0">
+              <img src="/logo.svg" alt="Aniki" className="w-8 h-8 md:w-10 md:h-10" />
               <div className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">
                 Aniki
               </div>
             </Link>
 
-            <div className="hidden md:flex items-center gap-6">
-              <Link to="/" className="text-sm hover:text-primary transition-colors">
+            <div className="hidden md:flex items-center gap-8">
+              <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
                 Bosh Sahifa
               </Link>
-              <Link to="/search" className="text-sm hover:text-primary transition-colors">
+              <Link to="/search" className="text-sm font-medium hover:text-primary transition-colors">
                 Qidirish
               </Link>
+              
+              {/* Desktop Social Links */}
+              <div className="h-4 w-px bg-dark-lighter mx-2" />
+              <div className="flex items-center gap-5">
+                <a
+                  href="https://t.me/Anikiuz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-primary transition-colors"
+                  title="Telegram"
+                >
+                  <Send className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://instagram.com/anikiuz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-primary transition-colors"
+                  title="Instagram"
+                >
+                  <Instagram className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://www.youtube.com/@Anikirasmiy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-primary transition-colors"
+                  title="YouTube"
+                >
+                  <Youtube className="w-4 h-4" />
+                </a>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 sm:gap-4">
+            {/* Mobile Social Links */}
+            <div className="flex md:hidden items-center gap-1">
+              <a
+                href="https://t.me/Anikiuz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-dark-light rounded-full transition-colors text-gray-400"
+                title="Telegram"
+              >
+                <Send className="w-5 h-5" />
+              </a>
+              <a
+                href="https://instagram.com/anikiuz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-dark-light rounded-full transition-colors text-gray-400"
+                title="Instagram"
+              >
+                <Instagram className="w-5 h-5" />
+              </a>
+              <a
+                href="https://www.youtube.com/@Anikirasmiy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 hover:bg-dark-light rounded-full transition-colors text-gray-400"
+                title="YouTube"
+              >
+                <Youtube className="w-5 h-5" />
+              </a>
+            </div>
+
             {isLoggedIn ? (
               <>
                 <Link
@@ -256,7 +285,6 @@ const Navbar = () => {
         )}
       </AnimatePresence>
     </nav>
-    </>
   );
 };
 

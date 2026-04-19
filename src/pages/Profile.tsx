@@ -84,7 +84,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="pt-24 flex items-center justify-center">
+        <div className="pt-24 md:pt-32 flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <div className="text-xl">Profil yuklanmoqda...</div>
@@ -98,7 +98,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="pt-24 flex items-center justify-center">
+        <div className="pt-24 md:pt-32 flex items-center justify-center">
           <div className="text-center">
             <div className="text-red-500 text-xl mb-4">Xatolik yuz berdi</div>
             <div className="text-gray-400 mb-4">{error}</div>
@@ -118,7 +118,7 @@ const Profile = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="pt-24 flex items-center justify-center">
+        <div className="pt-24 md:pt-32 flex items-center justify-center">
           <div className="text-xl">Foydalanuvchi ma'lumotlari topilmadi</div>
         </div>
       </div>
@@ -129,7 +129,7 @@ const Profile = () => {
     <div className="min-h-screen">
       <Navbar />
 
-      <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="pt-20 md:pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {/* Back Button */}
         <div className="mb-6">
           <button

@@ -79,7 +79,7 @@ const Home = () => {
       />
       <Navbar />
 
-      <div className="pt-16">
+      <div className="pt-20 md:pt-24">
         {/* Hero Section */}
         {loading ? (
           <HeroSkeleton />

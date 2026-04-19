@@ -77,7 +77,7 @@ const MyList: React.FC = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="pt-24 max-w-7xl mx-auto px-4">
+        <div className="pt-24 md:pt-32 max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
               <AnimeCardSkeleton key={i} />
@@ -92,7 +92,7 @@ const MyList: React.FC = () => {
     <div className="min-h-screen">
       <Navbar />
 
-      <div className="pt-20 sm:pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="pt-20 md:pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {/* Back Button */}
         <div className="mb-6">
           <button

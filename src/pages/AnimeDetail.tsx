@@ -1258,6 +1258,8 @@ export default function AnimeDetail() {
         url={`https://aniki.uz/anime/${anime.slug}`}
         type="video.tv_show"
       />
+      <Navbar />
+      <div className="pt-20 md:pt-24">
       <StructuredData
         data={{
           "@context": "https://schema.org",
@@ -1523,8 +1525,7 @@ export default function AnimeDetail() {
 
         onRatingSubmitted={handleRatingSubmitted}
       />
-
-
+      </div>
     </div>
   );
 }

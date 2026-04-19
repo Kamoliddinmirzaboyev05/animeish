@@ -162,7 +162,7 @@ const Search = () => {
     return (
       <div className="min-h-screen">
         <Navbar />
-        <div className="pt-24 flex items-center justify-center">
+        <div className="pt-24 md:pt-32 flex items-center justify-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
         </div>
       </div>
@@ -179,7 +179,7 @@ const Search = () => {
       />
       <Navbar />
 
-      <div className="pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <div className="pt-20 md:pt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="mb-8">
 
           
