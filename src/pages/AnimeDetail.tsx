@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   Star, Play, Pause, Heart, Calendar, Film, ChevronLeft,
-  Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward,
+  Volume, Volume1, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward,
   Settings, RotateCcw, RotateCw, X, List, Eye
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -272,6 +272,9 @@ export default function AnimeDetail() {
     if (isPlaying) {
       videoRef.current.pause();
     } else {
+      videoRef.current.play().catch(err => {
+        console.error("Video play error:", err);
+      });
     }
   }, [isPlaying]);
 
@@ -396,6 +399,7 @@ export default function AnimeDetail() {
     setShowSettings(false);
   }, []);
 
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const handleProgressClick = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
@@ -623,19 +627,23 @@ export default function AnimeDetail() {
         case 'ArrowUp':
           e.preventDefault();
           if (videoRef.current) {
-            const newVol = Math.min(volume + 0.1, 1);
+            const newVol = Math.min(volume + 0.05, 1);
             videoRef.current.volume = newVol;
             setVolume(newVol);
             setIsMuted(newVol === 0);
+            setShowVolumeSlider(true);
+            setTimeout(() => setShowVolumeSlider(false), 2000);
           }
           break;
         case 'ArrowDown':
           e.preventDefault();
           if (videoRef.current) {
-            const newVol = Math.max(volume - 0.1, 0);
+            const newVol = Math.max(volume - 0.05, 0);
             videoRef.current.volume = newVol;
             setVolume(newVol);
             setIsMuted(newVol === 0);
+            setShowVolumeSlider(true);
+            setTimeout(() => setShowVolumeSlider(false), 2000);
           }
           break;
         case 'KeyF':
@@ -961,11 +969,10 @@ export default function AnimeDetail() {
                           />
                           {/* Progress Thumb - Larger for mobile */}
                           <div
-                            className="absolute w-3 h-3 sm:w-3 sm:h-3 bg-primary rounded-full -translate-y-1/2 top-1/2 shadow-lg border-2 border-white/50 transition-all"
+                            className="absolute w-3.5 h-3.5 sm:w-4 h-4 bg-white rounded-full top-1/2 shadow-lg border-2 border-primary transition-all"
                             style={{
                               left: `${(currentTime / duration) * 100}%`,
-                              marginLeft: '-6px',
-                              transform: `translateY(-50%) scale(${isDragging ? 1.4 : 1.1})`
+                              transform: `translate(-50%, -50%) scale(${isDragging ? 1.2 : 1})`
                             }}
                           />
                         </div>
@@ -980,48 +987,75 @@ export default function AnimeDetail() {
 
                     {/* Professional Mobile Controls Layout - Single Row */}
                     <div className="flex items-center justify-between">
-                      {/* Left Side - Volume Control */}
-                      <div className="flex items-center gap-2">
+                      {/* Left Side - Professional Volume Control */}
+                      <div 
+                        className="flex items-center group/volume relative"
+                        onMouseEnter={() => setShowVolumeSlider(true)}
+                        onMouseLeave={() => setShowVolumeSlider(false)}
+                      >
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
-                            toggleMute();
-                          }}
-                          className="p-2 hover:bg-white/10 rounded-full transition-colors"
-                        >
-                          {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
-                        </motion.button>
-
-                        {/* Volume Slider - Hidden on small screens */}
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.05"
-                          value={isMuted ? 0 : volume}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            const v = parseFloat(e.target.value);
-                            if (videoRef.current) {
-                              videoRef.current.volume = v;
-                              setVolume(v);
-                              setIsMuted(v === 0);
+                            if (window.innerWidth < 1024) {
+                              setShowVolumeSlider(!showVolumeSlider);
+                            } else {
+                              toggleMute();
                             }
                           }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onTouchStart={(e) => e.stopPropagation()}
-                          className="hidden sm:block w-16 h-1 bg-white/30 rounded-full appearance-none cursor-pointer touch-manipulation
-                            [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
-                            [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
-                            [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-primary 
-                            [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-none [&::-moz-range-thumb]:shadow-lg"
-                          style={{
-                            background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            toggleMute();
                           }}
-                        />
+                          className="p-2.5 hover:bg-white/10 rounded-full transition-colors z-10"
+                        >
+                          {isMuted || volume === 0 ? (
+                            <VolumeX className="w-5 h-5 text-white" />
+                          ) : volume < 0.3 ? (
+                            <Volume1 className="w-5 h-5 text-white" />
+                          ) : volume < 0.7 ? (
+                            <Volume className="w-5 h-5 text-white" />
+                          ) : (
+                            <Volume2 className="w-5 h-5 text-white" />
+                          )}
+                        </motion.button>
+
+                        <div className={`flex items-center h-10 overflow-hidden transition-all duration-300 ease-out ${showVolumeSlider ? 'w-32 ml-1 pr-2' : 'w-0'}`}>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.01"
+                            value={isMuted ? 0 : volume}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              const v = parseFloat(e.target.value);
+                              if (videoRef.current) {
+                                videoRef.current.volume = v;
+                                setVolume(v);
+                                setIsMuted(v === 0);
+                              }
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            className="w-20 h-1 bg-white/20 rounded-full appearance-none cursor-pointer touch-manipulation
+                              [&::-webkit-slider-runnable-track]:h-1
+                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
+                              [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
+                              [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-primary
+                              [&::-webkit-slider-thumb]:mt-[-4px]
+                              [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-white 
+                              [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-primary [&::-moz-range-thumb]:shadow-lg"
+                            style={{
+                              background: `linear-gradient(to right, #740775 0%, #740775 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) 100%)`
+                            }}
+                          />
+                          <span className="text-[10px] font-bold text-white min-w-[24px] ml-1">
+                            {Math.round((isMuted ? 0 : volume) * 100)}%
+                          </span>
+                        </div>
                       </div>
 
                       {/* Center - Main Playback Controls */}
