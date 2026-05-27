@@ -1,4 +1,5 @@
 const API_BASE_URL = "https://anikimovie.pythonanywhere.com/";
+// api changed to https to avoid mixed content errors
 
 // Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
