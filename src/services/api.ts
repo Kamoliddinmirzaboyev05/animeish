@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://api.aniki.uz';
+const API_BASE_URL = "https://anikimovie.pythonanywhere.com/";
 
 // Simple in-memory cache for API responses
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
